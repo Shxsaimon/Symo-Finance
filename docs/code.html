@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Symo - Gestão Financeira</title>
+<!-- Bootstrap CSS -->
+<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" rel="stylesheet"/>
+<!-- Google Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            /* Symo Theme Colors */
+            --primary: #5300c4;
+            --secondary: #600de6;
+            --secondary-container: #793cfe;
+            --on-secondary-fixed: #22005d;
+            --on-secondary-fixed-variant: #5300cc;
+            --on-secondary: #ffffff;
+            --surface: #faf9f9;
+            --surface-container-lowest: #ffffff;
+            --surface-container-low: #f4f3f3;
+            --surface-container-high: #e9e8e8;
+            --surface-variant: #e3e2e2;
+            --on-surface: #1a1c1c;
+            --on-surface-variant: #4a4457;
+            --outline-variant: #ccc3da;
+            --error: #ba1a1a;
+            
+            --font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #F8FAFC;
+            font-family: var(--font-family);
+            color: var(--on-surface);
+            overflow: hidden; /* Since we manage scrolling inside */
+        }
+        
+        .sidebar-bg {
+            background: linear-gradient(to bottom, #4a2ec2, #260058);
+            color: #ffffff;
+        }
+        
+        .sidebar-nav-link {
+            color: rgba(255,255,255,0.7);
+            border-radius: 0;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-nav-link:hover {
+            color: #ffffff;
+            background-color: rgba(255,255,255,0.05);
+        }
+        
+        .sidebar-nav-link.active {
+            color: #e9ddff; /* secondary-fixed */
+            background-color: rgba(121, 60, 254, 0.1); /* secondary-container/10 */
+            border-left: 4px solid var(--secondary);
+            font-weight: bold;
+        }
+
+        .card-shadow {
+            box-shadow: 0px 1px 3px rgba(0,0,0,0.05), 0px 4px 6px rgba(15, 23, 42, 0.05);
+            border: 1px solid #e2e8f0; /* slate-200 */
+        }
+        
+        .badge-trend-up {
+            background-color: #d1fae5;
+            color: #047857;
+            font-weight: 500;
+        }
+        
+        .badge-trend-down {
+            background-color: #ffe4e6;
+            color: #be123c;
+            font-weight: 500;
+        }
+
+        .icon-box {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .search-bar {
+            background-color: var(--surface-container-high);
+            border: 1px solid var(--outline-variant);
+            border-radius: 50rem;
+        }
+        
+        .search-bar:focus-within {
+            box-shadow: 0 0 0 2px var(--secondary);
+            border-color: transparent;
+        }
+        
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            box-shadow: none !important;
+        }
+        
+        .btn-custom-secondary {
+            background-color: var(--secondary);
+            color: var(--on-secondary);
+        }
+        .btn-custom-secondary:hover {
+            background-color: var(--on-secondary-fixed-variant);
+            color: white;
+        }
+
+        .table-custom th {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            color: var(--on-surface-variant);
+            background-color: #f8fafc;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .table-custom td {
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .table-custom tr:hover td {
+            background-color: #f8fafc;
+        }
+        
+        /* Chart utility classes per guidance */
+        .chart-primary { stroke: #0058be; fill: rgba(0,88,190,0.1); }
+        .chart-success { stroke: #059669; }
+        .chart-warning { stroke: #d97706; }
+        .chart-secondary { stroke: #7c3aed; }
+        
+        .fs-7 { font-size: 0.875rem; }
+        .fs-8 { font-size: 0.75rem; }
+    </style>
+</head>
+<body class="d-flex vh-100">
+<!-- SideNavBar -->
+<aside class="sidebar-bg d-none d-md-flex flex-column py-4" style="width: 288px;">
+<!-- Brand -->
+<div class="px-4 mb-4 d-flex align-items-center gap-3">
+<div class="icon-box" style="background-color: var(--secondary); color: var(--on-primary); border-radius: 4px;">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div>
+<h1 class="h6 mb-0 fw-semibold text-white">Symo</h1>
+<p class="mb-0 fs-8 text-white-50 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Gestão Financeira</p>
+</div>
+</div>
+<!-- Nav Links -->
+<nav class="nav flex-column mt-3 flex-grow-1">
+<a class="sidebar-nav-link active" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="sidebar-nav-link" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Transactions</span>
+</a>
+<a class="sidebar-nav-link" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span>Reports</span>
+</a>
+<a class="sidebar-nav-link" href="#">
+<span class="material-symbols-outlined">category</span>
+<span>Categories</span>
+</a>
+<a class="sidebar-nav-link" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<!-- User Profile Minimal -->
+<div class="px-4 mt-auto">
+<div class="d-flex align-items-center gap-3 p-2 rounded" onmouseout="this.style.backgroundColor='transparent'" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.05)'" style="border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+<img alt="A small, professional headshot of an executive in a modern office setting. Sharp focus, well-lit with soft natural light, conveying trust and competence. High contrast, clean aesthetic." class="rounded-circle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMOuda035UTnScY0q-vzwTOo0n1wA2joHFFbtBQsvC1Juobr137TblqS27OOfIv_ziEOkPj7-chGhjWspXiqxFvc6NOfqNc0GvlmZpTOE0VJghcvASvuoP9VWneeKfkNbyPJWc-8giQTu7ORldsuF0C-05mrkpnDlkgiBYUlVUaieeCOioCIb_CWHyX4tTzE0hXVvZpiHhjAh4Q2hUMOgtmMHNXh6TnWIJR5zxrenabd335pdOgm9w" style="width: 40px; height: 40px; object-fit: cover;"/>
+<div class="text-truncate">
+<p class="mb-0 fs-7 fw-medium text-white text-truncate">Admin User</p>
+<p class="mb-0 fs-8 text-white-50 text-truncate text-uppercase fw-semibold" style="letter-spacing: 0.05em;">admin@symo.local</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="d-flex flex-column flex-grow-1 h-100 overflow-hidden">
+<!-- TopNavBar -->
+<header class="navbar navbar-expand-lg border-bottom sticky-top" style="background-color: var(--surface); border-color: var(--outline-variant) !important; height: 64px;">
+<div class="container-fluid px-4" style="max-width: 1440px;">
+<div class="d-flex align-items-center gap-3">
+<!-- Mobile Menu Trigger -->
+<button class="btn btn-link d-md-none text-dark p-1 text-decoration-none">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h2 class="h4 mb-0 fw-semibold" style="color: var(--primary);">Dashboard</h2>
+</div>
+<div class="d-flex align-items-center gap-4">
+<!-- Search Bar -->
+<div class="d-none d-lg-flex align-items-center search-bar px-3 py-1" style="width: 256px;">
+<span class="material-symbols-outlined text-muted fs-6 me-2">search</span>
+<input class="form-control search-input fs-7 p-0" placeholder="Search transactions..." type="text"/>
+</div>
+<!-- Actions -->
+<div class="d-flex align-items-center gap-2">
+<button class="btn btn-link text-dark rounded-circle p-2 position-relative text-decoration-none" onmouseout="this.style.backgroundColor='transparent'" onmouseover="this.style.backgroundColor='var(--surface-container-high)'" style="color: var(--on-surface-variant) !important;">
+<span class="material-symbols-outlined">notifications</span>
+<span class="position-absolute rounded-circle" style="width: 8px; height: 8px; background-color: var(--error); top: 6px; right: 6px;"></span>
+</button>
+<button class="btn btn-link text-dark rounded-circle p-2 d-none d-sm-block text-decoration-none" onmouseout="this.style.backgroundColor='transparent'" onmouseover="this.style.backgroundColor='var(--surface-container-high)'" style="color: var(--on-surface-variant) !important;">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-grow-1 overflow-auto p-3 p-md-4">
+<div class="container-fluid p-0 mx-auto" style="max-width: 1440px;">
+<!-- Indicators Grid -->
+<section class="row g-4 mb-4">
+<!-- Card 1: Saldo Total -->
+<div class="col-12 col-md-6 col-lg-3">
+<div class="card h-100 border-0 card-shadow rounded-3 p-4">
+<div class="d-flex justify-content-between align-items-start mb-3">
+<div>
+<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Saldo Total</p>
+<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">R$ 142.500,00</h3>
+</div>
+<div class="icon-box" style="background-color: rgba(121, 60, 254, 0.2); color: var(--secondary);">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+</div>
+<div class="d-flex align-items-center gap-2 mt-auto fs-7">
+<span class="badge badge-trend-up rounded-pill d-flex align-items-center gap-1 py-1 px-2">
+<span class="material-symbols-outlined" style="font-size: 14px;">trending_up</span> +12.5%
+                                </span>
+<span class="text-muted" style="color: var(--on-surface-variant) !important;">vs último mês</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Receitas -->
+<div class="col-12 col-md-6 col-lg-3">
+<div class="card h-100 border-0 card-shadow rounded-3 p-4">
+<div class="d-flex justify-content-between align-items-start mb-3">
+<div>
+<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Receitas</p>
+<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">R$ 45.200,00</h3>
+</div>
+<div class="icon-box bg-success bg-opacity-10 text-success">
+<span class="material-symbols-outlined">arrow_upward</span>
+</div>
+</div>
+<div class="d-flex align-items-center gap-2 mt-auto fs-7">
+<span class="badge badge-trend-up rounded-pill d-flex align-items-center gap-1 py-1 px-2">
+<span class="material-symbols-outlined" style="font-size: 14px;">trending_up</span> +5.2%
+                                </span>
+<span class="text-muted" style="color: var(--on-surface-variant) !important;">vs último mês</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Despesas -->
+<div class="col-12 col-md-6 col-lg-3">
+<div class="card h-100 border-0 card-shadow rounded-3 p-4">
+<div class="d-flex justify-content-between align-items-start mb-3">
+<div>
+<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Despesas</p>
+<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">R$ 28.900,00</h3>
+</div>
+<div class="icon-box bg-danger bg-opacity-10 text-danger">
+<span class="material-symbols-outlined">arrow_downward</span>
+</div>
+</div>
+<div class="d-flex align-items-center gap-2 mt-auto fs-7">
+<span class="badge badge-trend-down rounded-pill d-flex align-items-center gap-1 py-1 px-2">
+<span class="material-symbols-outlined" style="font-size: 14px;">trending_down</span> -2.1%
+                                </span>
+<span class="text-muted" style="color: var(--on-surface-variant) !important;">vs último mês</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Meta de Economia -->
+<div class="col-12 col-md-6 col-lg-3">
+<div class="card h-100 border-0 card-shadow rounded-3 p-4">
+<div class="d-flex justify-content-between align-items-start mb-3">
+<div>
+<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Meta de Economia</p>
+<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">65%</h3>
+</div>
+<div class="icon-box bg-warning bg-opacity-10 text-warning text-dark">
+<span class="material-symbols-outlined">savings</span>
+</div>
+</div>
+<div class="mt-auto">
+<div class="progress mt-2" style="height: 10px; background-color: var(--surface-variant);">
+<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="65" class="progress-bar rounded-pill" role="progressbar" style="width: 65%; background-color: var(--secondary);"></div>
+</div>
+<p class="fs-7 text-muted mt-2 mb-0" style="color: var(--on-surface-variant) !important;">Faltam R$ 17.500 para atingir a meta anual.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Charts Section -->
+<section class="row g-4 mb-4">
+<!-- Line Chart (Receitas vs Despesas) - Spans 8 cols -->
+<div class="col-12 col-lg-8">
+<div class="card h-100 border-0 card-shadow rounded-3 p-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h3 class="h6 fw-semibold mb-0" style="color: var(--on-surface);">Receitas vs Despesas (Últimos 6 meses)</h3>
+<button class="btn btn-link p-0 fs-7 fw-medium text-decoration-none" style="color: var(--secondary);">Ver Relatório Completo</button>
+</div>
+<div class="position-relative w-100" style="height: 256px;">
+<!-- SVG Chart Visualization -->
+<svg class="w-100 h-100" preserveaspectratio="none" viewbox="0 0 800 240">
+<!-- Grid Lines -->
+<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="200" y2="200"></line>
+<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="150" y2="150"></line>
+<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="100" y2="100"></line>
+<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="50" y2="50"></line>
+<!-- Area Gradient Primary -->
+<lineargradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#059669" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#059669" stop-opacity="0"></stop>
+</lineargradient>
+<!-- Receitas Line (Emerald) -->
+<path d="M0,180 C100,160 200,190 300,120 C400,50 500,80 600,40 C700,0 800,20 800,20 L800,200 L0,200 Z" fill="url(#areaGradient)"></path>
+<path class="chart-success" d="M0,180 C100,160 200,190 300,120 C400,50 500,80 600,40 C700,0 800,20 800,20" fill="none" stroke-width="2"></path>
+<!-- Despesas Line (Rose/Red) -->
+<path d="M0,190 C100,180 200,170 300,150 C400,160 500,140 600,130 C700,150 800,140 800,140" fill="none" stroke="#e11d48" stroke-dasharray="4" stroke-width="2"></path>
+</svg>
+<!-- X Axis Labels -->
+<div class="d-flex justify-content-between mt-2 px-2 text-uppercase fs-8 fw-semibold" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">
+<span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Donut Chart (Gastos por Categoria) - Spans 4 cols -->
+<div class="col-12 col-lg-4">
+<div class="card h-100 border-0 card-shadow rounded-3 p-4">
+<h3 class="h6 fw-semibold mb-4" style="color: var(--on-surface);">Gastos por Categoria</h3>
+<div class="d-flex flex-column align-items-center justify-content-center h-100 pb-4">
+<div class="position-relative" style="width: 192px; height: 192px;">
+<svg class="w-100 h-100" style="transform: rotate(-90deg);" viewbox="0 0 36 36">
+<!-- Background Circle -->
+<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#f0edef" stroke-width="4"></circle>
+<!-- Segments -->
+<!-- Infraestrutura 40% (Primary Blue) -->
+<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#0058be" stroke-dasharray="40 60" stroke-dashoffset="0" stroke-width="4"></circle>
+<!-- Pessoal 30% (Violet) -->
+<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#7c3aed" stroke-dasharray="30 70" stroke-dashoffset="-40" stroke-width="4"></circle>
+<!-- Marketing 20% (Amber) -->
+<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#d97706" stroke-dasharray="20 80" stroke-dashoffset="-70" stroke-width="4"></circle>
+<!-- Outros 10% (Emerald) -->
+<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#059669" stroke-dasharray="10 90" stroke-dashoffset="-90" stroke-width="4"></circle>
+</svg>
+<!-- Center Text -->
+<div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+<span class="h6 fw-semibold mb-0" style="color: var(--on-surface);">R$ 28.9k</span>
+<span class="fs-8 fw-semibold text-uppercase" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Total</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="w-100 mt-4 row g-2 fs-7">
+<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: var(--secondary);"></div><span style="color: var(--on-surface-variant);">Infra (40%)</span></div>
+<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: #7c3aed;"></div><span style="color: var(--on-surface-variant);">Pessoal (30%)</span></div>
+<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: #d97706;"></div><span style="color: var(--on-surface-variant);">Mkt (20%)</span></div>
+<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: #059669;"></div><span style="color: var(--on-surface-variant);">Outros (10%)</span></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Data Table Section -->
+<section class="card border-0 card-shadow rounded-3 overflow-hidden">
+<div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+<h3 class="h6 fw-semibold mb-0" style="color: var(--on-surface);">Últimas Transações</h3>
+<div class="d-flex gap-2">
+<button class="btn btn-outline-secondary fs-7 fw-medium px-3" style="border-color: #cbd5e1; color: var(--on-secondary-fixed);">
+                                Filtrar
+                            </button>
+<button class="btn btn-custom-secondary fs-7 fw-medium px-3 d-flex align-items-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">add</span> Nova Transação
+                            </button>
+</div>
+</div>
+<div class="table-responsive">
+<table class="table table-custom mb-0 align-middle">
+<thead>
+<tr>
+<th class="ps-4 py-3">Data</th>
+<th class="py-3">Descrição</th>
+<th class="py-3">Categoria</th>
+<th class="py-3">Valor</th>
+<th class="pe-4 py-3">Status</th>
+</tr>
+</thead>
+<tbody class="fw-medium fs-7" style="color: var(--on-surface);">
+<tr>
+<td class="ps-4 py-3 text-muted fw-normal">24 Out, 2023</td>
+<td class="py-3">
+<div class="fw-semibold">Pagamento Fornecedor AWS</div>
+<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Serviços Cloud</div>
+</td>
+<td class="py-3 fw-normal">Infraestrutura</td>
+<td class="py-3 text-danger fw-semibold">- R$ 4.500,00</td>
+<td class="pe-4 py-3">
+<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Concluído</span>
+</td>
+</tr>
+<tr>
+<td class="ps-4 py-3 text-muted fw-normal">23 Out, 2023</td>
+<td class="py-3">
+<div class="fw-semibold">Recebimento Cliente XYZ</div>
+<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Fatura #4092</div>
+</td>
+<td class="py-3 fw-normal">Vendas</td>
+<td class="py-3 text-success fw-semibold">+ R$ 12.800,00</td>
+<td class="pe-4 py-3">
+<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Concluído</span>
+</td>
+</tr>
+<tr>
+<td class="ps-4 py-3 text-muted fw-normal">22 Out, 2023</td>
+<td class="py-3">
+<div class="fw-semibold">Folha de Pagamento</div>
+<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Salários Outubro</div>
+</td>
+<td class="py-3 fw-normal">Pessoal</td>
+<td class="py-3 text-danger fw-semibold">- R$ 18.200,00</td>
+<td class="pe-4 py-3">
+<span class="badge bg-warning bg-opacity-10 text-warning text-dark rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Processando</span>
+</td>
+</tr>
+<tr>
+<td class="ps-4 py-3 text-muted fw-normal">20 Out, 2023</td>
+<td class="py-3">
+<div class="fw-semibold">Campanha Ads Google</div>
+<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Marketing Q4</div>
+</td>
+<td class="py-3 fw-normal">Marketing</td>
+<td class="py-3 text-danger fw-semibold">- R$ 3.100,00</td>
+<td class="pe-4 py-3">
+<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Concluído</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+</div>
+<!-- Bootstrap JS Bundle -->
+<script crossorigin="anonymous" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body></html>

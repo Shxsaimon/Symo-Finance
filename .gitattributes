@@ -1,0 +1,40 @@
+# ==============================================================================
+# Symo — .gitattributes
+# Padronização de normalização de finais de linha e tipos de arquivo
+# ==============================================================================
+
+# Normalização automática padrão para arquivos de texto
+* text=auto eol=lf
+
+# Arquivos de código-fonte e scripts
+*.php text eol=lf diff=php
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.sql text eol=lf
+
+# Documentação e Markdown
+*.md text eol=lf
+*.txt text eol=lf
+
+# Configurações do servidor e do Git
+.htaccess text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.gitkeep text eol=lf
+
+# Imagens e mídias (arquivos binários)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg text eol=lf
+
+# Fontes Web (arquivos binários)
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary

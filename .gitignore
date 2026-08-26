@@ -1,0 +1,54 @@
+# ==============================================================================
+# Symo — .gitignore
+# Regras de exclusão para controle de versão com Git
+# ==============================================================================
+
+# --- Configurações Locais e Credenciais Sensíveis ---
+# O arquivo config/config.php contém senhas e parâmetros de conexão reais
+config/config.php
+.env
+.env.*
+!.env.example
+
+# --- Logs e Arquivos de Contingência ---
+storage/logs/*.log
+*.log
+
+# --- Uploads e Arquivos Gerados por Usuários ---
+storage/uploads/avatars/*
+!storage/uploads/avatars/.gitkeep
+storage/uploads/logos/*
+!storage/uploads/logos/.gitkeep
+
+# --- Backups, Dumps de Banco de Dados e Caches ---
+*.sql
+*.sql.gz
+*.dump
+*.sqlite
+*.db
+*.bak
+*.old
+*.orig
+*.tmp
+*.temp
+*.swp
+
+# --- Sistema Operacional (Windows, macOS, Linux) ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+*~
+.fuse_hidden*
+.directory
+
+# --- Configurações Pessoais de Editores / IDEs ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+nbproject/

@@ -1,0 +1,30 @@
+# ==============================================================================
+# Symo — Roteador Principal Apache (Front Controller)
+# ==============================================================================
+
+Options -Indexes
+Options +FollowSymLinks
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Se a requisição for para um arquivo existente na pasta public, serve diretamente
+    RewriteCond %{REQUEST_URI} ^/public/ [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Não reescrever se for arquivo ou diretório físico existente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Encaminha todas as demais requisições para o Front Controller index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Bloquear acesso a arquivos ocultos ou de configuração
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+

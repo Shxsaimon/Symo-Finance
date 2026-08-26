@@ -1,0 +1,189 @@
+/**
+ * Symo Design System — CSS Tokens & Theme Variables
+ * Baseado estritamente em docs/DESIGN.md
+ */
+
+:root {
+  /* Cores de Superfície */
+  --symo-surface: #faf9f9;
+  --symo-surface-dim: #dadada;
+  --symo-surface-bright: #faf9f9;
+  --symo-surface-container-lowest: #ffffff;
+  --symo-surface-container-low: #f4f3f3;
+  --symo-surface-container: #efeeed;
+  --symo-surface-container-high: #e9e8e8;
+  --symo-surface-container-highest: #e3e2e2;
+  --symo-surface-variant: #e3e2e2;
+
+  /* Cores de Texto e Contraste */
+  --symo-on-surface: #1a1c1c;
+  --symo-on-surface-variant: #4a4457;
+  --symo-inverse-surface: #2f3131;
+  --symo-inverse-on-surface: #f1f0f0;
+
+  /* Contornos e Bordas */
+  --symo-outline: #7b7489;
+  --symo-outline-variant: #ccc3da;
+  --symo-surface-tint: #7114ff;
+
+  /* Paleta Primária (Electric Violet) */
+  --symo-primary: #5300c4;
+  --symo-primary-brand: #6f02ff;
+  --symo-on-primary: #ffffff;
+  --symo-primary-container: #6f02ff;
+  --symo-on-primary-container: #ddcdff;
+  --symo-inverse-primary: #d0bcff;
+  --symo-primary-fixed: #e9ddff;
+  --symo-primary-fixed-dim: #d0bcff;
+  --symo-on-primary-fixed: #23005c;
+  --symo-on-primary-fixed-variant: #5600ca;
+
+  /* Paleta Secundária (Deep Lavender) */
+  --symo-secondary: #600de6;
+  --symo-secondary-brand: #793cfe;
+  --symo-on-secondary: #ffffff;
+  --symo-secondary-container: #793cfe;
+  --symo-on-secondary-container: #f1e8ff;
+  --symo-secondary-fixed: #e9ddff;
+  --symo-secondary-fixed-dim: #cfbdff;
+  --symo-on-secondary-fixed: #22005d;
+  --symo-on-secondary-fixed-variant: #5300cc;
+
+  /* Paleta Terciária (Bright Teal) */
+  --symo-tertiary: #004d4d;
+  --symo-tertiary-brand: #3bd7d7;
+  --symo-on-tertiary: #ffffff;
+  --symo-tertiary-container: #006767;
+  --symo-on-tertiary-container: #55e9e9;
+  --symo-tertiary-fixed: #66f7f7;
+  --symo-tertiary-fixed-dim: #41dbdb;
+  --symo-on-tertiary-fixed: #002020;
+  --symo-on-tertiary-fixed-variant: #004f50;
+
+  /* Feedback / Erro Semântico */
+  --symo-error: #ba1a1a;
+  --symo-on-error: #ffffff;
+  --symo-error-container: #ffdad6;
+  --symo-on-error-container: #93000a;
+
+  /* Neutros Balanceados */
+  --symo-background: #faf9f9;
+  --symo-on-background: #1a1c1c;
+  --symo-neutral-100: #f4f3f3;
+  --symo-neutral-200: #e9e8e8;
+  --symo-neutral-300: #ccc3da;
+  --symo-neutral-600: #9f9f9f;
+  --symo-neutral-900: #1a1c1c;
+
+  /* Espaçamentos e Dimensões */
+  --symo-container-max: 1440px;
+  --symo-gutter: 1.5rem;
+  --symo-sidebar-width: 280px;
+  --symo-sidebar-collapsed-width: 64px;
+
+  /* Raio de Arredondamento */
+  --symo-rounded-sm: 0.25rem; /* 4px */
+  --symo-rounded-default: 0.5rem; /* 8px */
+  --symo-rounded-md: 0.75rem; /* 12px */
+  --symo-rounded-lg: 1rem; /* 16px */
+  --symo-rounded-xl: 1.5rem; /* 24px */
+  --symo-rounded-full: 9999px;
+
+  /* Sombras Tonais */
+  --symo-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --symo-shadow-deep: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* Tipografia Base e Numerais Tabulares */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--symo-background);
+  color: var(--symo-on-background);
+  margin: 0;
+  padding: 0;
+}
+
+/* Forçar alinhamento perfeito de valores numéricos e monetários */
+.tabular-nums,
+.table-finance td,
+.kpi-value,
+.currency-amount {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+}
+
+/* Rótulos e Cabeçalhos em Caixa Alta */
+.label-caps {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--symo-outline);
+}
+
+/* Estilos de Botão do Symo */
+.btn-symo-primary {
+  background-color: var(--symo-primary-brand);
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: var(--symo-rounded-default);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-symo-primary:hover {
+  background-color: var(--symo-primary);
+  color: #ffffff;
+}
+
+.btn-symo-secondary {
+  background-color: #ffffff;
+  color: var(--symo-primary-brand);
+  border: 1px solid var(--symo-neutral-300);
+  border-radius: var(--symo-rounded-default);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-symo-secondary:hover {
+  background-color: var(--symo-surface-container-low);
+  border-color: var(--symo-primary-brand);
+  color: var(--symo-primary-brand);
+}
+
+/* Cards e Widgets com Elevação Tonal */
+.symo-card {
+  background-color: var(--symo-surface-container-lowest);
+  border: 1px solid var(--symo-neutral-200);
+  border-radius: var(--symo-rounded-default);
+  box-shadow: var(--symo-shadow-soft);
+}
+
+.symo-modal-content {
+  background-color: var(--symo-surface-container-lowest);
+  border: 1px solid var(--symo-neutral-200);
+  border-radius: var(--symo-rounded-lg);
+  box-shadow: var(--symo-shadow-deep);
+}
+
+/* Pílula de Navegação Ativa no Sidebar */
+.symo-nav-item.active {
+  position: relative;
+  background-color: var(--symo-surface-container-high);
+  color: var(--symo-primary-brand);
+  font-weight: 600;
+}
+
+.symo-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--symo-primary-brand);
+  border-radius: 0 4px 4px 0;
+}
+
