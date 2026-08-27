@@ -48,19 +48,19 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ### Fase 2 — Banco de Dados, Migrations e Carga Inicial (Seeds)
 - [x] Implementação de `config/database.php` (PDO Singleton com auto-criação de schema `utf8mb4_unicode_ci`).
-- [x] Criação de migrations estruturais de 001 a 011 em `database/migrations/`:
-  - `001_create_users_table.php` (tabela de usuários com índices e roles)
-  - `002_create_accounts_table.php` (contas financeiras e saldos)
-  - `003_create_categories_table.php` (categorias de receitas/despesas)
-  - `004_create_payment_methods_table.php` (meios de pagamento)
-  - `005_create_transactions_table.php` (transações e índices de performance)
-  - `006_create_transfers_table.php` (transferências entre contas)
-  - `007_create_credit_cards_and_invoices_table.php` (cartões e faturas)
-  - `008_create_audit_logs_table.php` (trilha de auditoria JSON)
-  - `009_create_security_logs_table.php` (logs de segurança e error_logs)
-  - `010_create_settings_table.php` (configurações do sistema)
-  - `011_create_migrations_table.php` (controle de histórico de migrações)
-- [x] Implementação de `migrate.php` CLI com suporte a `--seed`, `--status`, `--fresh` e lotes (`batch`).
+- [x] Criação de migrations estruturais de 001 a 011 em `database/migrations/` em português:
+  - `001_criar_tabela_usuarios.php` (tabela de usuários com índices e perfis)
+  - `002_criar_tabela_contas.php` (contas financeiras e saldos)
+  - `003_criar_tabela_categorias.php` (categorias de receitas/despesas)
+  - `004_criar_tabela_meios_pagamento.php` (meios de pagamento)
+  - `005_criar_tabela_transacoes.php` (transações e índices de performance)
+  - `006_criar_tabela_transferencias.php` (transferências entre contas)
+  - `007_criar_tabelas_cartoes_e_faturas.php` (cartões e faturas)
+  - `008_criar_tabela_auditoria_logs.php` (trilha de auditoria JSON)
+  - `009_criar_tabelas_seguranca_e_erros_logs.php` (logs de segurança e erros)
+  - `010_criar_tabela_configuracoes.php` (configurações do sistema)
+  - `011_criar_tabela_migracoes.php` (controle de histórico de migrações)
+- [x] Implementação de `migrate.php` CLI com suporte a `--seed`, `--status`, `--fresh` e lotes (`lote`).
 - [x] Implementação do seed de dados essenciais em `database/seeds/initial_data.php` (Admin, Operador, Categorias padrão, Meios de pagamento e Configurações globais).
 - [x] Testes de execução: criação de tabelas, integridade de FKs, anti-duplicação e seeds validados.
 

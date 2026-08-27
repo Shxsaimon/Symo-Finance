@@ -60,7 +60,6 @@ class Database
             ];
 
             if ($createDbIfNotExists) {
-                // Conecta sem especificar o banco de dados para garantir que o schema exista
                 $dsnServer = "mysql:host={$host};port={$port};charset={$charset}";
                 $tempPdo = new PDO($dsnServer, $username, $password, $options);
                 $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbname}` CHARACTER SET {$charset} COLLATE utf8mb4_unicode_ci");

@@ -532,211 +532,220 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 11.1. Especificação das Tabelas e Campos
 
-#### Tabela `users`
+#### Tabela `usuarios`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `name`: VARCHAR(120) NOT NULL
+* `nome`: VARCHAR(120) NOT NULL
 * `email`: VARCHAR(150) NOT NULL UNIQUE
-* `password`: VARCHAR(255) NOT NULL
-* `role`: ENUM('admin', 'operador') NOT NULL DEFAULT 'operador'
+* `senha`: VARCHAR(255) NOT NULL
+* `perfil`: ENUM('admin', 'operador') NOT NULL DEFAULT 'operador'
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
 * `avatar`: VARCHAR(255) NULL
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
-* *Índices:* `idx_users_email (email)`, `idx_users_status (status)`, `idx_users_deleted_at (deleted_at)`
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
+* *Índices:* `idx_usuarios_email (email)`, `idx_usuarios_status (status)`, `idx_usuarios_excluido_em (excluido_em)`
 
-#### Tabela `accounts`
+#### Tabela `contas`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `name`: VARCHAR(100) NOT NULL
-* `bank_name`: VARCHAR(100) NULL
-* `type`: ENUM('corrente', 'poupanca', 'investimento', 'dinheiro', 'outros') NOT NULL DEFAULT 'corrente'
-* `initial_balance`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
-* `current_balance`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
-* `color`: VARCHAR(7) NOT NULL DEFAULT '#6F02FF'
+* `nome`: VARCHAR(100) NOT NULL
+* `instituicao`: VARCHAR(100) NULL
+* `tipo`: ENUM('corrente', 'poupanca', 'investimento', 'dinheiro', 'outros') NOT NULL DEFAULT 'corrente'
+* `saldo_inicial`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
+* `saldo_atual`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
+* `cor`: VARCHAR(7) NOT NULL DEFAULT '#6F02FF'
 * `status`: ENUM('ativa', 'inativa') NOT NULL DEFAULT 'ativa'
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
-* *Índices:* `idx_accounts_status (status)`, `idx_accounts_deleted_at (deleted_at)`
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
+* *Índices:* `idx_contas_status (status)`, `idx_contas_excluido_em (excluido_em)`
 
-#### Tabela `categories`
+#### Tabela `categorias`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `name`: VARCHAR(100) NOT NULL
-* `type`: ENUM('receita', 'despesa') NOT NULL
-* `icon`: VARCHAR(50) NOT NULL DEFAULT 'bi-tag'
-* `color`: VARCHAR(7) NOT NULL DEFAULT '#793CFE'
+* `nome`: VARCHAR(100) NOT NULL
+* `tipo`: ENUM('receita', 'despesa') NOT NULL
+* `icone`: VARCHAR(50) NOT NULL DEFAULT 'bi-tag'
+* `cor`: VARCHAR(7) NOT NULL DEFAULT '#793CFE'
 * `status`: ENUM('ativa', 'inativa') NOT NULL DEFAULT 'ativa'
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
-* *Índices:* `idx_categories_type (type)`, `idx_categories_status (status)`, `idx_categories_deleted_at (deleted_at)`
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
+* *Índices:* `idx_categorias_tipo (tipo)`, `idx_categorias_status (status)`, `idx_categorias_excluido_em (excluido_em)`
 
-#### Tabela `payment_methods`
+#### Tabela `meios_pagamento`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `name`: VARCHAR(80) NOT NULL
-* `is_credit`: TINYINT(1) NOT NULL DEFAULT 0
+* `nome`: VARCHAR(80) NOT NULL
+* `eh_credito`: TINYINT(1) NOT NULL DEFAULT 0
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
-* *Índices:* `idx_payment_methods_status (status)`, `idx_payment_methods_deleted_at (deleted_at)`
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
+* *Índices:* `idx_meios_pagamento_status (status)`, `idx_meios_pagamento_excluido_em (excluido_em)`
 
-#### Tabela `credit_cards`
+#### Tabela `cartoes_credito`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `name`: VARCHAR(100) NOT NULL
-* `credit_limit`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
-* `closing_day`: TINYINT UNSIGNED NOT NULL
-* `due_day`: TINYINT UNSIGNED NOT NULL
-* `default_account_id`: INT UNSIGNED NULL
-* `color`: VARCHAR(7) NOT NULL DEFAULT '#3BD7D7'
+* `nome`: VARCHAR(100) NOT NULL
+* `limite_credito`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
+* `dia_fechamento`: TINYINT UNSIGNED NOT NULL
+* `dia_vencimento`: TINYINT UNSIGNED NOT NULL
+* `conta_padrao_id`: INT UNSIGNED NULL
+* `cor`: VARCHAR(7) NOT NULL DEFAULT '#3BD7D7'
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
-* *Foreign Keys:* `fk_credit_cards_account (default_account_id) REFERENCES accounts(id) ON DELETE SET NULL`
-* *Índices:* `idx_credit_cards_status (status)`, `idx_credit_cards_deleted_at (deleted_at)`
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
+* *Foreign Keys:* `fk_cartoes_conta_padrao (conta_padrao_id) REFERENCES contas(id) ON DELETE SET NULL`
+* *Índices:* `idx_cartoes_status (status)`, `idx_cartoes_excluido_em (excluido_em)`
 
-#### Tabela `credit_card_invoices`
+#### Tabela `faturas_cartao`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `credit_card_id`: INT UNSIGNED NOT NULL
-* `reference_month`: TINYINT UNSIGNED NOT NULL
-* `reference_year`: SMALLINT UNSIGNED NOT NULL
-* `closing_date`: DATE NOT NULL
-* `due_date`: DATE NOT NULL
-* `total_amount`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
+* `cartao_credito_id`: INT UNSIGNED NOT NULL
+* `mes_referencia`: TINYINT UNSIGNED NOT NULL
+* `ano_referencia`: SMALLINT UNSIGNED NOT NULL
+* `data_fechamento`: DATE NOT NULL
+* `data_vencimento`: DATE NOT NULL
+* `valor_total`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
 * `status`: ENUM('aberta', 'fechada', 'paga') NOT NULL DEFAULT 'aberta'
-* `paid_at`: DATETIME NULL
-* `payment_account_id`: INT UNSIGNED NULL
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `pago_em`: DATETIME NULL
+* `conta_pagamento_id`: INT UNSIGNED NULL
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 * *Foreign Keys:*
-* `fk_invoices_card (credit_card_id) REFERENCES credit_cards(id) ON DELETE RESTRICT`
-* `fk_invoices_account (payment_account_id) REFERENCES accounts(id) ON DELETE SET NULL`
+* `fk_faturas_cartao (cartao_credito_id) REFERENCES cartoes_credito(id) ON DELETE RESTRICT`
+* `fk_faturas_conta_pagamento (conta_pagamento_id) REFERENCES contas(id) ON DELETE SET NULL`
+* *Índices:* `idx_faturas_periodo (cartao_credito_id, ano_referencia, mes_referencia)`, `idx_faturas_status (status)`
 
-
-* *Índices:* `idx_invoices_card_period (credit_card_id, reference_year, reference_month)`, `idx_invoices_status (status)`
-
-#### Tabela `transactions`
+#### Tabela `transacoes`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `user_id`: INT UNSIGNED NOT NULL
-* `type`: ENUM('receita', 'despesa') NOT NULL
-* `description`: VARCHAR(255) NOT NULL
-* `amount`: DECIMAL(15,2) NOT NULL
-* `transaction_date`: DATE NOT NULL
-* `due_date`: DATE NOT NULL
-* `payment_date`: DATE NULL
+* `usuario_id`: INT UNSIGNED NOT NULL
+* `tipo`: ENUM('receita', 'despesa') NOT NULL
+* `descricao`: VARCHAR(255) NOT NULL
+* `valor`: DECIMAL(15,2) NOT NULL
+* `data_transacao`: DATE NOT NULL
+* `data_vencimento`: DATE NOT NULL
+* `data_pagamento`: DATE NULL
 * `status`: ENUM('pendente', 'pago', 'recebido') NOT NULL DEFAULT 'pendente'
-* `account_id`: INT UNSIGNED NULL
-* `category_id`: INT UNSIGNED NOT NULL
-* `payment_method_id`: INT UNSIGNED NOT NULL
-* `credit_card_id`: INT UNSIGNED NULL
-* `invoice_id`: INT UNSIGNED NULL
-* `installment_group_id`: VARCHAR(64) NULL
-* `installment_number`: TINYINT UNSIGNED NULL DEFAULT 1
-* `installment_total`: TINYINT UNSIGNED NULL DEFAULT 1
-* `notes`: TEXT NULL
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
+* `conta_id`: INT UNSIGNED NULL
+* `categoria_id`: INT UNSIGNED NOT NULL
+* `meio_pagamento_id`: INT UNSIGNED NOT NULL
+* `cartao_credito_id`: INT UNSIGNED NULL
+* `fatura_id`: INT UNSIGNED NULL
+* `grupo_parcelamento_id`: VARCHAR(64) NULL
+* `numero_parcela`: TINYINT UNSIGNED NULL DEFAULT 1
+* `total_parcelas`: TINYINT UNSIGNED NULL DEFAULT 1
+* `observacoes`: TEXT NULL
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
 * *Foreign Keys:*
-* `fk_trans_user (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-* `fk_trans_account (account_id) REFERENCES accounts(id) ON DELETE SET NULL`
-* `fk_trans_category (category_id) REFERENCES categories(id) ON DELETE RESTRICT`
-* `fk_trans_payment_method (payment_method_id) REFERENCES payment_methods(id) ON DELETE RESTRICT`
-* `fk_trans_credit_card (credit_card_id) REFERENCES credit_cards(id) ON DELETE SET NULL`
-* `fk_trans_invoice (invoice_id) REFERENCES credit_card_invoices(id) ON DELETE SET NULL`
-
-
+* `fk_trans_usuario (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT`
+* `fk_trans_conta (conta_id) REFERENCES contas(id) ON DELETE SET NULL`
+* `fk_trans_categoria (categoria_id) REFERENCES categorias(id) ON DELETE RESTRICT`
+* `fk_trans_meio_pagamento (meio_pagamento_id) REFERENCES meios_pagamento(id) ON DELETE RESTRICT`
+* `fk_trans_cartao_credito (cartao_credito_id) REFERENCES cartoes_credito(id) ON DELETE SET NULL`
+* `fk_trans_fatura (fatura_id) REFERENCES faturas_cartao(id) ON DELETE SET NULL`
 * *Índices de Alto Desempenho:*
-* `idx_trans_date (transaction_date)`
-* `idx_trans_due_date (due_date)`
+* `idx_trans_data_transacao (data_transacao)`
+* `idx_trans_data_vencimento (data_vencimento)`
 * `idx_trans_status (status)`
-* `idx_trans_type (type)`
-* `idx_trans_account (account_id)`
-* `idx_trans_category (category_id)`
-* `idx_trans_installment (installment_group_id)`
-* `idx_trans_deleted_at (deleted_at)`
-* `idx_trans_dashboard_composite (deleted_at, status, due_date, type)`
+* `idx_trans_tipo (tipo)`
+* `idx_trans_conta_id (conta_id)`
+* `idx_trans_categoria_id (categoria_id)`
+* `idx_trans_cartao_credito_id (cartao_credito_id)`
+* `idx_trans_fatura_id (fatura_id)`
+* `idx_trans_grupo_parcelamento (grupo_parcelamento_id)`
+* `idx_trans_excluido_em (excluido_em)`
+* `idx_trans_dashboard_composto (excluido_em, status, data_vencimento, tipo)`
 
-
-
-#### Tabela `transfers`
+#### Tabela `transferencias`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `user_id`: INT UNSIGNED NOT NULL
-* `source_account_id`: INT UNSIGNED NOT NULL
-* `destination_account_id`: INT UNSIGNED NOT NULL
-* `amount`: DECIMAL(15,2) NOT NULL
-* `transfer_date`: DATE NOT NULL
-* `notes`: TEXT NULL
-* `source_transaction_id`: INT UNSIGNED NULL
-* `destination_transaction_id`: INT UNSIGNED NULL
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* `deleted_at`: DATETIME NULL
-* `deleted_by`: INT UNSIGNED NULL
+* `usuario_id`: INT UNSIGNED NOT NULL
+* `conta_origem_id`: INT UNSIGNED NOT NULL
+* `conta_destino_id`: INT UNSIGNED NOT NULL
+* `valor`: DECIMAL(15,2) NOT NULL
+* `data_transferencia`: DATE NOT NULL
+* `observacoes`: TEXT NULL
+* `transacao_origem_id`: INT UNSIGNED NULL
+* `transacao_destino_id`: INT UNSIGNED NULL
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL
 * *Foreign Keys:*
-* `fk_transf_user (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-* `fk_transf_src (source_account_id) REFERENCES accounts(id) ON DELETE RESTRICT`
-* `fk_transf_dst (destination_account_id) REFERENCES accounts(id) ON DELETE RESTRICT`
+* `fk_transf_usuario (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT`
+* `fk_transf_origem (conta_origem_id) REFERENCES contas(id) ON DELETE RESTRICT`
+* `fk_transf_destino (conta_destino_id) REFERENCES contas(id) ON DELETE RESTRICT`
+* *Índices:* `idx_transf_data_transferencia (data_transferencia)`, `idx_transf_excluido_em (excluido_em)`
 
-
-* *Índices:* `idx_transfers_date (transfer_date)`, `idx_transfers_deleted_at (deleted_at)`
-
-#### Tabela `audit_logs`
+#### Tabela `auditoria_logs`
 
 * `id`: BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `user_id`: INT UNSIGNED NULL
-* `table_name`: VARCHAR(64) NOT NULL
-* `record_id`: INT UNSIGNED NOT NULL
-* `action`: ENUM('INSERT', 'UPDATE', 'SOFT_DELETE', 'RESTORE', 'PURGE') NOT NULL
-* `old_values`: JSON NULL
-* `new_values`: JSON NULL
-* `ip_address`: VARCHAR(45) NOT NULL
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* *Foreign Keys:* `fk_audit_user (user_id) REFERENCES users(id) ON DELETE SET NULL`
-* *Índices:* `idx_audit_table_record (table_name, record_id)`, `idx_audit_created_at (created_at)`
+* `usuario_id`: INT UNSIGNED NULL
+* `tabela`: VARCHAR(64) NOT NULL
+* `registro_id`: INT UNSIGNED NOT NULL
+* `acao`: ENUM('INSERT', 'UPDATE', 'SOFT_DELETE', 'RESTORE', 'PURGE') NOT NULL
+* `valores_antigos`: JSON NULL
+* `valores_novos`: JSON NULL
+* `endereco_ip`: VARCHAR(45) NOT NULL
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* *Foreign Keys:* `fk_auditoria_usuario (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL`
+* *Índices:* `idx_auditoria_tabela_registro (tabela, registro_id)`, `idx_auditoria_criado_em (criado_em)`
 
-#### Tabela `security_logs`
+#### Tabela `seguranca_logs`
 
 * `id`: BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `event`: VARCHAR(80) NOT NULL
+* `evento`: VARCHAR(80) NOT NULL
 * `email`: VARCHAR(150) NULL
-* `ip_address`: VARCHAR(45) NOT NULL
-* `user_agent`: VARCHAR(255) NULL
-* `context`: JSON NULL
-* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-* *Índices:* `idx_sec_event (event)`, `idx_sec_ip (ip_address)`, `idx_sec_created_at (created_at)`
+* `endereco_ip`: VARCHAR(45) NOT NULL
+* `agente_usuario`: VARCHAR(255) NULL
+* `contexto`: JSON NULL
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* *Índices:* `idx_seg_evento (evento)`, `idx_seg_ip (endereco_ip)`, `idx_seg_criado_em (criado_em)`
 
-#### Tabela `settings`
+#### Tabela `erros_logs`
+
+* `id`: BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `mensagem`: TEXT NOT NULL
+* `codigo`: VARCHAR(50) NULL
+* `arquivo`: VARCHAR(255) NULL
+* `linha`: INT UNSIGNED NULL
+* `rastreamento`: TEXT NULL
+* `url`: VARCHAR(255) NULL
+* `metodo`: VARCHAR(10) NULL
+* `endereco_ip`: VARCHAR(45) NOT NULL
+* `usuario_id`: INT UNSIGNED NULL
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* *Índices:* `idx_err_criado_em (criado_em)`, `idx_err_usuario_id (usuario_id)`
+
+#### Tabela `configuracoes`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `setting_key`: VARCHAR(64) NOT NULL UNIQUE
-* `setting_value`: TEXT NULL
-* `type`: ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string'
-* `description`: VARCHAR(255) NULL
-* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* *Índice:* `idx_settings_key (setting_key)`
+* `chave`: VARCHAR(64) NOT NULL UNIQUE
+* `valor`: TEXT NULL
+* `tipo`: ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string'
+* `descricao`: VARCHAR(255) NULL
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Índice:* `idx_configuracoes_chave (chave)`
 
-#### Tabela `migrations`
+#### Tabela `migracoes`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `migration`: VARCHAR(255) NOT NULL UNIQUE
-* `batch`: INT UNSIGNED NOT NULL
-* `executed_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `migracao`: VARCHAR(255) NOT NULL UNIQUE
+* `lote`: INT UNSIGNED NOT NULL
+* `executado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 
 ---
 

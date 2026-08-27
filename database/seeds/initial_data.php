@@ -13,19 +13,19 @@ return new class {
     public function run(PDO $pdo): void
     {
         // 1. Usuários Padrão
-        $stmtUser = $pdo->prepare("SELECT id FROM `users` WHERE `email` = :email");
+        $stmtUser = $pdo->prepare("SELECT id FROM `usuarios` WHERE `email` = :email");
         
         // Admin
         $stmtUser->execute(['email' => 'admin@symo.local']);
         if (!$stmtUser->fetch()) {
             $passAdmin = password_hash('Admin@123456', PASSWORD_BCRYPT, ['cost' => 12]);
-            $insUser = $pdo->prepare("INSERT INTO `users` (`name`, `email`, `password`, `role`, `status`) VALUES (:name, :email, :password, :role, :status)");
+            $insUser = $pdo->prepare("INSERT INTO `usuarios` (`nome`, `email`, `senha`, `perfil`, `status`) VALUES (:nome, :email, :senha, :perfil, :status)");
             $insUser->execute([
-                'name'     => 'Administrador Symo',
-                'email'    => 'admin@symo.local',
-                'password' => $passAdmin,
-                'role'     => 'admin',
-                'status'   => 'ativo'
+                'nome'    => 'Administrador Symo',
+                'email'   => 'admin@symo.local',
+                'senha'   => $passAdmin,
+                'perfil'  => 'admin',
+                'status'  => 'ativo'
             ]);
             echo "  [+] Usuário Administrador criado: admin@symo.local (Senha: Admin@123456)\n";
         }
@@ -34,13 +34,13 @@ return new class {
         $stmtUser->execute(['email' => 'operador@symo.local']);
         if (!$stmtUser->fetch()) {
             $passOperador = password_hash('Operador@123456', PASSWORD_BCRYPT, ['cost' => 12]);
-            $insUser = $pdo->prepare("INSERT INTO `users` (`name`, `email`, `password`, `role`, `status`) VALUES (:name, :email, :password, :role, :status)");
+            $insUser = $pdo->prepare("INSERT INTO `usuarios` (`nome`, `email`, `senha`, `perfil`, `status`) VALUES (:nome, :email, :senha, :perfil, :status)");
             $insUser->execute([
-                'name'     => 'Operador Symo',
-                'email'    => 'operador@symo.local',
-                'password' => $passOperador,
-                'role'     => 'operador',
-                'status'   => 'ativo'
+                'nome'    => 'Operador Symo',
+                'email'   => 'operador@symo.local',
+                'senha'   => $passOperador,
+                'perfil'  => 'operador',
+                'status'  => 'ativo'
             ]);
             echo "  [+] Usuário Operador criado: operador@symo.local (Senha: Operador@123456)\n";
         }
@@ -48,27 +48,27 @@ return new class {
         // 2. Categorias Padrão
         $categories = [
             // Receitas
-            ['name' => 'Salário', 'type' => 'receita', 'icon' => 'bi-cash-stack', 'color' => '#3BD7D7'],
-            ['name' => 'Rendimentos e Investimentos', 'type' => 'receita', 'icon' => 'bi-graph-up-arrow', 'color' => '#3BD7D7'],
-            ['name' => 'Serviços e Freelance', 'type' => 'receita', 'icon' => 'bi-briefcase', 'color' => '#3BD7D7'],
-            ['name' => 'Outras Receitas', 'type' => 'receita', 'icon' => 'bi-plus-circle', 'color' => '#3BD7D7'],
+            ['nome' => 'Salário', 'tipo' => 'receita', 'icone' => 'bi-cash-stack', 'cor' => '#3BD7D7'],
+            ['nome' => 'Rendimentos e Investimentos', 'tipo' => 'receita', 'icone' => 'bi-graph-up-arrow', 'cor' => '#3BD7D7'],
+            ['nome' => 'Serviços e Freelance', 'tipo' => 'receita', 'icone' => 'bi-briefcase', 'cor' => '#3BD7D7'],
+            ['nome' => 'Outras Receitas', 'tipo' => 'receita', 'icone' => 'bi-plus-circle', 'cor' => '#3BD7D7'],
             // Despesas
-            ['name' => 'Alimentação e Mercado', 'type' => 'despesa', 'icon' => 'bi-cart', 'color' => '#6F02FF'],
-            ['name' => 'Moradia e Contas', 'type' => 'despesa', 'icon' => 'bi-house-door', 'color' => '#6F02FF'],
-            ['name' => 'Transporte e Combustível', 'type' => 'despesa', 'icon' => 'bi-car-front', 'color' => '#6F02FF'],
-            ['name' => 'Saúde e Farmácia', 'type' => 'despesa', 'icon' => 'bi-heart-pulse', 'color' => '#793CFE'],
-            ['name' => 'Educação e Cursos', 'type' => 'despesa', 'icon' => 'bi-book', 'color' => '#793CFE'],
-            ['name' => 'Lazer e Viagens', 'type' => 'despesa', 'icon' => 'bi-controller', 'color' => '#793CFE'],
-            ['name' => 'Equipamentos e Tecnologia', 'type' => 'despesa', 'icon' => 'bi-laptop', 'color' => '#793CFE'],
-            ['name' => 'Assinaturas e Serviços', 'type' => 'despesa', 'icon' => 'bi-credit-card-2-front', 'color' => '#793CFE'],
-            ['name' => 'Outras Despesas', 'type' => 'despesa', 'icon' => 'bi-dash-circle', 'color' => '#6F02FF'],
+            ['nome' => 'Alimentação e Mercado', 'tipo' => 'despesa', 'icone' => 'bi-cart', 'cor' => '#6F02FF'],
+            ['nome' => 'Moradia e Contas', 'tipo' => 'despesa', 'icone' => 'bi-house-door', 'cor' => '#6F02FF'],
+            ['nome' => 'Transporte e Combustível', 'tipo' => 'despesa', 'icone' => 'bi-car-front', 'cor' => '#6F02FF'],
+            ['nome' => 'Saúde e Farmácia', 'tipo' => 'despesa', 'icone' => 'bi-heart-pulse', 'cor' => '#793CFE'],
+            ['nome' => 'Educação e Cursos', 'tipo' => 'despesa', 'icone' => 'bi-book', 'cor' => '#793CFE'],
+            ['nome' => 'Lazer e Viagens', 'tipo' => 'despesa', 'icone' => 'bi-controller', 'cor' => '#793CFE'],
+            ['nome' => 'Equipamentos e Tecnologia', 'tipo' => 'despesa', 'icone' => 'bi-laptop', 'cor' => '#793CFE'],
+            ['nome' => 'Assinaturas e Serviços', 'tipo' => 'despesa', 'icone' => 'bi-credit-card-2-front', 'cor' => '#793CFE'],
+            ['nome' => 'Outras Despesas', 'tipo' => 'despesa', 'icone' => 'bi-dash-circle', 'cor' => '#6F02FF'],
         ];
 
-        $stmtCat = $pdo->prepare("SELECT id FROM `categories` WHERE `name` = :name AND `type` = :type");
-        $insCat = $pdo->prepare("INSERT INTO `categories` (`name`, `type`, `icon`, `color`, `status`) VALUES (:name, :type, :icon, :color, 'ativa')");
+        $stmtCat = $pdo->prepare("SELECT id FROM `categorias` WHERE `nome` = :nome AND `tipo` = :tipo");
+        $insCat = $pdo->prepare("INSERT INTO `categorias` (`nome`, `tipo`, `icone`, `cor`, `status`) VALUES (:nome, :tipo, :icone, :cor, 'ativa')");
         
         foreach ($categories as $cat) {
-            $stmtCat->execute(['name' => $cat['name'], 'type' => $cat['type']]);
+            $stmtCat->execute(['nome' => $cat['nome'], 'tipo' => $cat['tipo']]);
             if (!$stmtCat->fetch()) {
                 $insCat->execute($cat);
             }
@@ -77,40 +77,40 @@ return new class {
 
         // 3. Meios de Pagamento Padrão
         $paymentMethods = [
-            ['name' => 'Dinheiro', 'is_credit' => 0],
-            ['name' => 'Pix', 'is_credit' => 0],
-            ['name' => 'Cartão de Débito', 'is_credit' => 0],
-            ['name' => 'Cartão de Crédito', 'is_credit' => 1],
-            ['name' => 'Boleto Bancário', 'is_credit' => 0],
-            ['name' => 'Transferência Bancária', 'is_credit' => 0],
+            ['nome' => 'Dinheiro', 'eh_credito' => 0],
+            ['nome' => 'Pix', 'eh_credito' => 0],
+            ['nome' => 'Cartão de Débito', 'eh_credito' => 0],
+            ['nome' => 'Cartão de Crédito', 'eh_credito' => 1],
+            ['nome' => 'Boleto Bancário', 'eh_credito' => 0],
+            ['nome' => 'Transferência Bancária', 'eh_credito' => 0],
         ];
 
-        $stmtPm = $pdo->prepare("SELECT id FROM `payment_methods` WHERE `name` = :name");
-        $insPm = $pdo->prepare("INSERT INTO `payment_methods` (`name`, `is_credit`, `status`) VALUES (:name, :is_credit, 'ativo')");
+        $stmtPm = $pdo->prepare("SELECT id FROM `meios_pagamento` WHERE `nome` = :nome");
+        $insPm = $pdo->prepare("INSERT INTO `meios_pagamento` (`nome`, `eh_credito`, `status`) VALUES (:nome, :eh_credito, 'ativo')");
 
         foreach ($paymentMethods as $pm) {
-            $stmtPm->execute(['name' => $pm['name']]);
+            $stmtPm->execute(['nome' => $pm['nome']]);
             if (!$stmtPm->fetch()) {
                 $insPm->execute($pm);
             }
         }
         echo "  [+] Meios de pagamento padrão cadastrados com sucesso.\n";
 
-        // 4. Configurações Globais Padrão (Settings)
+        // 4. Configurações Globais Padrão (configuracoes)
         $settings = [
-            ['setting_key' => 'app_name', 'setting_value' => 'Symo', 'type' => 'string', 'description' => 'Nome da Aplicação ou Empresa'],
-            ['setting_key' => 'currency_symbol', 'setting_value' => 'R$', 'type' => 'string', 'description' => 'Símbolo Monetário'],
-            ['setting_key' => 'decimal_separator', 'setting_value' => ',', 'type' => 'string', 'description' => 'Separador Decimal'],
-            ['setting_key' => 'thousands_separator', 'setting_value' => '.', 'type' => 'string', 'description' => 'Separador de Milhar'],
-            ['setting_key' => 'records_per_page', 'setting_value' => '25', 'type' => 'integer', 'description' => 'Quantidade padrão de registros por página'],
-            ['setting_key' => 'app_logo', 'setting_value' => null, 'type' => 'string', 'description' => 'Caminho do Logotipo da Aplicação'],
+            ['chave' => 'nome_aplicacao', 'valor' => 'Symo', 'tipo' => 'string', 'descricao' => 'Nome da Aplicação ou Empresa'],
+            ['chave' => 'simbolo_moeda', 'valor' => 'R$', 'tipo' => 'string', 'descricao' => 'Símbolo Monetário'],
+            ['chave' => 'separador_decimal', 'valor' => ',', 'tipo' => 'string', 'descricao' => 'Separador Decimal'],
+            ['chave' => 'separador_milhar', 'valor' => '.', 'tipo' => 'string', 'descricao' => 'Separador de Milhar'],
+            ['chave' => 'registros_por_pagina', 'valor' => '25', 'tipo' => 'integer', 'descricao' => 'Quantidade padrão de registros por página'],
+            ['chave' => 'logotipo_aplicacao', 'valor' => null, 'tipo' => 'string', 'descricao' => 'Caminho do Logotipo da Aplicação'],
         ];
 
-        $stmtSet = $pdo->prepare("SELECT id FROM `settings` WHERE `setting_key` = :setting_key");
-        $insSet = $pdo->prepare("INSERT INTO `settings` (`setting_key`, `setting_value`, `type`, `description`) VALUES (:setting_key, :setting_value, :type, :description)");
+        $stmtSet = $pdo->prepare("SELECT id FROM `configuracoes` WHERE `chave` = :chave");
+        $insSet = $pdo->prepare("INSERT INTO `configuracoes` (`chave`, `valor`, `tipo`, `descricao`) VALUES (:chave, :valor, :tipo, :descricao)");
 
         foreach ($settings as $st) {
-            $stmtSet->execute(['setting_key' => $st['setting_key']]);
+            $stmtSet->execute(['chave' => $st['chave']]);
             if (!$stmtSet->fetch()) {
                 $insSet->execute($st);
             }

@@ -47,22 +47,22 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 2 — Banco de Dados, Migrations e Carga Inicial (Seeds)
 - **Objetivo:** Implementar a fábrica de conexão PDO Singleton, o sistema versionado de migrations com controle anti-duplicação e a carga inicial de dados.
 - **Checklist de Tarefas:**
-  - [x] Criar `config/database.php` com padrão Singleton via PDO, UTF-8 (`utf8mb4`) e tratamento de erros.
-  - [x] Criar tabela de controle `migrations`.
+  - [ ] Criar `config/database.php` com padrão Singleton via PDO, UTF-8 (`utf8mb4`) e tratamento de erros.
+  - [ ] Criar tabela de controle `migrations`.
   - [x] Criar as migrations estruturais em `database/migrations/`:
-    - `001_create_users_table.php`
-    - `002_create_accounts_table.php`
-    - `003_create_categories_table.php`
-    - `004_create_payment_methods_table.php`
-    - `005_create_transactions_table.php`
-    - `006_create_transfers_table.php`
-    - `007_create_credit_cards_and_invoices_table.php`
-    - `008_create_audit_logs_table.php`
-    - `009_create_security_logs_table.php`
-    - `010_create_settings_table.php`
-    - `011_create_migrations_table.php`
-  - [x] Criar script CLI `migrate.php` para execução segura de migrations no terminal.
-  - [x] Criar seed inicial em `database/seeds/initial_data.php` (usuário admin padrão e categorias/meios iniciais).
+    - `001_criar_tabela_usuarios.php`
+    - `002_criar_tabela_contas.php`
+    - `003_criar_tabela_categorias.php`
+    - `004_criar_tabela_meios_pagamento.php`
+    - `005_criar_tabela_transacoes.php`
+    - `006_criar_tabela_transferencias.php`
+    - `007_criar_tabelas_cartoes_e_faturas.php`
+    - `008_criar_tabela_auditoria_logs.php`
+    - `009_criar_tabelas_seguranca_e_erros_logs.php`
+    - `010_criar_tabela_configuracoes.php`
+    - `011_criar_tabela_migracoes.php`
+  - [ ] Criar script CLI `migrate.php` para execução segura de migrations no terminal.
+  - [ ] Criar seed inicial em `database/seeds/initial_data.php` (usuário admin padrão e categorias/meios iniciais).
 - **Critérios de Pronto:**
   - Execução de `php migrate.php` cria todas as 11 tabelas com chaves estrangeiras e índices sem erros.
   - Segunda execução consecutiva do script detecta migrations já aplicadas e não as duplica.

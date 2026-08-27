@@ -2,13 +2,13 @@
 declare(strict_types=1);
 
 /**
- * Symo — Gerenciador de Migrations e Seeds (CLI)
+ * Symo — Gerenciador de Migrações e Seeds (CLI)
  *
  * Uso:
- *   php migrate.php          -> Executa migrations pendentes e seeds iniciais se for primeira execução
+ *   php migrate.php          -> Executa migrações pendentes e seeds iniciais se for primeira execução
  *   php migrate.php --seed   -> Executa seeds de dados iniciais
- *   php migrate.php --status -> Exibe status das migrations
- *   php migrate.php --fresh  -> Recria o banco de dados do zero e roda migrations + seeds
+ *   php migrate.php --status -> Exibe status das migrações
+ *   php migrate.php --fresh  -> Recria o banco de dados do zero e roda migrações + seeds
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -32,14 +32,14 @@ try {
     exit(1);
 }
 
-// Garante que a tabela de migrations exista
-$pdo->exec("CREATE TABLE IF NOT EXISTS `migrations` (
+// Garante que a tabela de migrações exista
+$pdo->exec("CREATE TABLE IF NOT EXISTS `migracoes` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `migration` VARCHAR(255) NOT NULL UNIQUE,
-    `batch` INT UNSIGNED NOT NULL,
-    `executed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_migrations_migration` (`migration`),
-    INDEX `idx_migrations_batch` (`batch`)
+    `migracao` VARCHAR(255) NOT NULL UNIQUE,
+    `lote` INT UNSIGNED NOT NULL,
+    `executado_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_migracoes_migracao` (`migracao`),
+    INDEX `idx_migracoes_lote` (`lote`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
 $args = $argv ?? [];
@@ -58,13 +58,13 @@ if ($isFresh) {
     Database::resetConnection();
     $pdo = Database::getConnection(false);
 
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `migrations` (
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `migracoes` (
         `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        `migration` VARCHAR(255) NOT NULL UNIQUE,
-        `batch` INT UNSIGNED NOT NULL,
-        `executed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX `idx_migrations_migration` (`migration`),
-        INDEX `idx_migrations_batch` (`batch`)
+        `migracao` VARCHAR(255) NOT NULL UNIQUE,
+        `lote` INT UNSIGNED NOT NULL,
+        `executado_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX `idx_migracoes_migracao` (`migracao`),
+        INDEX `idx_migracoes_lote` (`lote`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
     echo "[OK] Banco de dados recriado.\n\n";
 }
@@ -88,16 +88,16 @@ if ($onlySeed) {
     exit(0);
 }
 
-// 1. Obter histórico de migrations já executadas
-$executed = $pdo->query("SELECT `migration` FROM `migrations`")->fetchAll(PDO::FETCH_COLUMN);
+// 1. Obter histórico de migrações já executadas
+$executed = $pdo->query("SELECT `migracao` FROM `migracoes`")->fetchAll(PDO::FETCH_COLUMN);
 
-// 2. Localizar arquivos de migration no diretório
+// 2. Localizar arquivos de migração no diretório
 $migrationsDir = __DIR__ . '/database/migrations';
 $files = glob($migrationsDir . '/*.php');
 sort($files);
 
 if ($isStatus) {
-    echo "Status das Migrations:\n";
+    echo "Status das Migrações:\n";
     echo str_repeat('-', 60) . "\n";
     foreach ($files as $file) {
         $name = basename($file, '.php');
@@ -108,12 +108,12 @@ if ($isStatus) {
     exit(0);
 }
 
-// Determina o próximo número de batch
-$currentBatch = (int) $pdo->query("SELECT MAX(`batch`) FROM `migrations`")->fetchColumn();
+// Determina o próximo número de lote
+$currentBatch = (int) $pdo->query("SELECT MAX(`lote`) FROM `migracoes`")->fetchColumn();
 $nextBatch = $currentBatch + 1;
 
 $appliedCount = 0;
-echo "[*] Verificando migrations pendentes...\n";
+echo "[*] Verificando migrações pendentes...\n";
 
 foreach ($files as $file) {
     $name = basename($file, '.php');
@@ -129,31 +129,38 @@ foreach ($files as $file) {
         try {
             $migration->up($pdo);
 
-            $stmt = $pdo->prepare("INSERT INTO `migrations` (`migration`, `batch`) VALUES (:migration, :batch)");
+            $stmt = $pdo->prepare("INSERT INTO `migracoes` (`migracao`, `lote`) VALUES (:migracao, :lote)");
             $stmt->execute([
-                'migration' => $name,
-                'batch'     => $nextBatch
+                'migracao' => $name,
+                'lote'     => $nextBatch
             ]);
 
             echo "[OK]\n";
             $appliedCount++;
         } catch (Throwable $e) {
             echo "[FALHA]\n";
-            echo "\n[ERRO CRÍTICO] Falha ao executar migration '{$name}': " . $e->getMessage() . "\n";
+            echo "\n[ERRO CRÍTICO] Falha ao executar migração '{$name}': " . $e->getMessage() . "\n";
             exit(1);
         }
     }
 }
 
 if ($appliedCount === 0) {
-    echo "  [i] Nenhuma migration pendente encontrada. Banco de dados está atualizado.\n";
+    echo "  [i] Nenhuma migração pendente encontrada. Banco de dados está atualizado.\n";
 } else {
-    echo "\n[OK] {$appliedCount} migration(s) aplicada(s) com sucesso no Lote {$nextBatch}!\n";
+    echo "\n[OK] {$appliedCount} migração(ões) aplicada(s) com sucesso no Lote {$nextBatch}!\n";
 }
 
-// Executa seeds automaticamente se for o primeiro lote de migrations ou se solicitado
-$totalUsers = (int) $pdo->query("SELECT COUNT(*) FROM `users`")->fetchColumn();
-if ($totalUsers === 0 || in_array('--seed', $args, true)) {
+// Executa seeds automaticamente se for o primeiro lote de migrações ou se solicitado
+$usuariosExistem = false;
+try {
+    $totalUsuarios = (int) $pdo->query("SELECT COUNT(*) FROM `usuarios`")->fetchColumn();
+    $usuariosExistem = ($totalUsuarios > 0);
+} catch (Throwable $e) {
+    $usuariosExistem = false;
+}
+
+if (!$usuariosExistem || in_array('--seed', $args, true)) {
     runSeeds($pdo);
 }
 
