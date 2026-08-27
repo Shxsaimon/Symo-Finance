@@ -74,13 +74,13 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 3 — Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs)
 - **Objetivo:** Estabelecer a infraestrutura de código backend: roteador HTTP, controllers/models base, helpers utilitários e sistema de log com contingência em arquivo.
 - **Checklist de Tarefas:**
-  - [ ] Implementar classe base `Controller` e `Model`.
-  - [ ] Implementar roteador com suporte a rotas GET/POST, middlewares de autenticação e RBAC.
-  - [ ] Criar `app/Helpers/LoggerHelper.php` com suporte a logs em BD (`error_logs`/`security_logs`) e fallback automático para `storage/logs/error.log` e `storage/logs/security.log`.
-  - [ ] Criar `app/Helpers/CsrfHelper.php` para geração e validação de tokens anti-CSRF.
-  - [ ] Criar `app/Helpers/FlashHelper.php` para mensagens de feedback temporárias na sessão.
-  - [ ] Criar `app/Helpers/FormatHelper.php` para moeda (`R$`), datas brasileiras e numerais tabulares.
-  - [ ] Criar páginas de erro amigáveis em `app/Views/errors/` (403, 404, 500).
+  - [x] Implementar classe base `Controller` e `Model`.
+  - [x] Implementar roteador com suporte a rotas GET/POST, middlewares de autenticação e RBAC.
+  - [x] Criar `app/Helpers/LoggerHelper.php` com suporte a logs em BD (`erros_logs`/`seguranca_logs`) e fallback automático para `storage/logs/error.log` e `storage/logs/security.log`.
+  - [x] Criar `app/Helpers/CsrfHelper.php` para geração e validação de tokens anti-CSRF.
+  - [x] Criar `app/Helpers/FlashHelper.php` para mensagens de feedback temporárias na sessão.
+  - [x] Criar `app/Helpers/FormatHelper.php` para moeda (`R$`), datas brasileiras e numerais tabulares.
+  - [x] Criar páginas de erro amigáveis em `app/Views/errors/` (403, 404, 500) e layout base `main.php`.
 - **Critérios de Pronto:**
   - Rotas desconhecidas acionam a tela 404.
   - Exceções não tratadas acionam a tela 500 sem vazar dados sensíveis, gravando em banco ou no arquivo de contingência `storage/logs/error.log`.

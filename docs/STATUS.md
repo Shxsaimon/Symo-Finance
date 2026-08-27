@@ -7,8 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 27/08/2026
-- **Fase Atual:** Fase 2 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 3 — Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs)
+- **Fase Atual:** Fase 3 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 4 — Autenticação, Sessão e Controle de Acesso Base (RBAC)
 
 ---
 
@@ -18,7 +18,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | :--- | :--- | :--- |
 | **Fase 1** | Infraestrutura, Estrutura Base e Segurança de Acesso aos Arquivos | Concluída |
 | **Fase 2** | Banco de Dados, Migrations e Carga Inicial (Seeds) | Concluída |
-| **Fase 3** | Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs) | Pendente |
+| **Fase 3** | Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs) | Concluída |
 | **Fase 4** | Autenticação, Sessão e Controle de Acesso Base (RBAC) | Pendente |
 | **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Pendente |
 | **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Pendente |
@@ -65,11 +65,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Testes de execução: criação de tabelas, integridade de FKs, anti-duplicação e seeds validados.
 
 ### Fase 3 — Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs)
-- [ ] Implementação de classes base de Controller e Model.
-- [ ] Implementação do roteador HTTP e manipulador de rotas.
-- [ ] Implementação de `LoggerHelper.php` com suporte a fallback em `storage/logs/error.log`.
-- [ ] Implementação de `CsrfHelper.php`, `FlashHelper.php` e `FormatHelper.php`.
-- [ ] Criação das views de erro amigáveis (403, 404, 500).
+- [x] Implementação de classes base `Controller.php` e `Model.php`.
+- [x] Implementação do roteador HTTP `Router.php` com suporte a GET/POST, parâmetros de URL e 404.
+- [x] Implementação de `LoggerHelper.php` com gravação nas tabelas `erros_logs`/`seguranca_logs` e fallback automático para `storage/logs/error.log` e `storage/logs/security.log`.
+- [x] Implementação de `CsrfHelper.php`, `FlashHelper.php` e `FormatHelper.php`.
+- [x] Criação das views de erro amigáveis (`403.php`, `404.php`, `500.php`) e layout base `main.php`.
+- [x] Atualização do `index.php` com autoloader PSR-like, inicialização de sessão segura, captura global de exceções e endpoint de diagnóstico `/api/health`.
+- [x] Bateria de 21 testes automatizados executada e 100% aprovada.
 
 ### Fase 4 — Autenticação, Sessão e Controle de Acesso Base (RBAC)
 - [ ] Implementação de `AuthHelper.php` e modelo `User.php`.
