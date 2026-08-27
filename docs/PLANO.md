@@ -47,9 +47,9 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 2 — Banco de Dados, Migrations e Carga Inicial (Seeds)
 - **Objetivo:** Implementar a fábrica de conexão PDO Singleton, o sistema versionado de migrations com controle anti-duplicação e a carga inicial de dados.
 - **Checklist de Tarefas:**
-  - [ ] Criar `config/database.php` com padrão Singleton via PDO, UTF-8 (`utf8mb4`) e tratamento de erros.
-  - [ ] Criar tabela de controle `migrations`.
-  - [ ] Criar as migrations estruturais em `database/migrations/`:
+  - [x] Criar `config/database.php` com padrão Singleton via PDO, UTF-8 (`utf8mb4`) e tratamento de erros.
+  - [x] Criar tabela de controle `migrations`.
+  - [x] Criar as migrations estruturais em `database/migrations/`:
     - `001_create_users_table.php`
     - `002_create_accounts_table.php`
     - `003_create_categories_table.php`
@@ -61,8 +61,8 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
     - `009_create_security_logs_table.php`
     - `010_create_settings_table.php`
     - `011_create_migrations_table.php`
-  - [ ] Criar script CLI `migrate.php` para execução segura de migrations no terminal.
-  - [ ] Criar seed inicial em `database/seeds/initial_data.php` (usuário admin padrão e categorias/meios iniciais).
+  - [x] Criar script CLI `migrate.php` para execução segura de migrations no terminal.
+  - [x] Criar seed inicial em `database/seeds/initial_data.php` (usuário admin padrão e categorias/meios iniciais).
 - **Critérios de Pronto:**
   - Execução de `php migrate.php` cria todas as 11 tabelas com chaves estrangeiras e índices sem erros.
   - Segunda execução consecutiva do script detecta migrations já aplicadas e não as duplica.
