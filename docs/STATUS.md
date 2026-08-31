@@ -6,9 +6,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 27/08/2026
-- **Fase Atual:** Fase 3 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 4 — Autenticação, Sessão e Controle de Acesso Base (RBAC)
+- **Data da Última Atualização:** 31/08/2026
+- **Fase Atual:** Fase 4 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 5 — Layout Mestre, Design System (Symo) e Componentes Visuais
 
 ---
 
@@ -19,7 +19,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 1** | Infraestrutura, Estrutura Base e Segurança de Acesso aos Arquivos | Concluída |
 | **Fase 2** | Banco de Dados, Migrations e Carga Inicial (Seeds) | Concluída |
 | **Fase 3** | Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs) | Concluída |
-| **Fase 4** | Autenticação, Sessão e Controle de Acesso Base (RBAC) | Pendente |
+| **Fase 4** | Autenticação, Sessão e Controle de Acesso Base (RBAC) | Concluída |
 | **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Pendente |
 | **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Pendente |
 | **Fase 7** | Módulo de Cartões de Crédito e Faturas | Pendente |
@@ -74,10 +74,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 21 testes automatizados executada e 100% aprovada.
 
 ### Fase 4 — Autenticação, Sessão e Controle de Acesso Base (RBAC)
-- [ ] Implementação de `AuthHelper.php` e modelo `User.php`.
-- [ ] Implementação de `AuthController.php`.
-- [ ] Criação de views de login e recuperação de senha.
-- [ ] Implementação do bloqueio temporário por brute force.
+- [x] Implementação de `AuthHelper.php` com login, logout, `requireLogin`, `requireRole`, expiração de inatividade (60 min), regeneração de ID de sessão e mitigação de força bruta.
+- [x] Implementação de `User.php` com busca segura por e-mail, verificação de BCRYPT e auditoria.
+- [x] Implementação de `AuthController.php` (`showLogin`, `authenticate`, `logout`, `showForgotPassword`).
+- [x] Criação do layout `app/Views/layouts/auth.php` e views `app/Views/auth/login.php` e `app/Views/auth/forgot-password.php` com suporte ao Design System Symo.
+- [x] Implementação da proteção contra força bruta (5 tentativas consecutivas em 15 minutos registradas no `seguranca_logs`).
+- [x] Registro das rotas de autenticação, rota protegida `/dashboard` e rota administrativa de demonstração RBAC `/admin/teste-rbac`.
+- [x] Bateria de 26 testes automatizados e testes de integração HTTP executados e aprovados.
 
 ### Fase 5 — Layout Mestre, Design System (Symo) e Componentes Visuais
 - [ ] Configuração de assets locais (Bootstrap 5, Icons, Chart.js).

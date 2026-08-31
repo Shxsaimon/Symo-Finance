@@ -20,7 +20,7 @@ class CsrfHelper
      */
     public static function generateToken(): string
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 
@@ -37,7 +37,7 @@ class CsrfHelper
      */
     public static function getToken(): string
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 
@@ -56,7 +56,7 @@ class CsrfHelper
      */
     public static function validateToken(?string $token): bool
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 

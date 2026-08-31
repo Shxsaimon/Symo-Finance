@@ -119,104 +119,173 @@ register_shutdown_function(function () use ($config): void {
     }
 });
 
-// 8. Definição das Rotas Fundamentais do Core
-Router::get('/', function () use ($config): void {
+// 8. Checagem Global de Inatividade de Sessão (60 minutos)
+AuthHelper::checkSessionTimeout();
+
+// 9. Definição das Rotas da Aplicação
+
+// Rota raiz (redireciona para /dashboard se autenticado ou /login)
+Router::get('/', function (): void {
+    if (AuthHelper::check()) {
+        header('Location: ' . BASE_URL . '/dashboard');
+    } else {
+        header('Location: ' . BASE_URL . '/login');
+    }
+    exit;
+});
+
+// Rotas de Autenticação e Gestão de Acesso
+Router::get('/login', [AuthController::class, 'showLogin']);
+Router::post('/login', [AuthController::class, 'authenticate']);
+Router::get('/logout', [AuthController::class, 'logout']);
+Router::post('/logout', [AuthController::class, 'logout']);
+Router::get('/esqueci-senha', [AuthController::class, 'showForgotPassword']);
+
+// Rota de Dashboard (Protegida por Autenticação)
+Router::get('/dashboard', function () use ($config): void {
+    AuthHelper::requireLogin();
+    $user = AuthHelper::user();
     ?>
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><?= htmlspecialchars($config['app']['name'], ENT_QUOTES, 'UTF-8') ?> — Núcleo MVC Ativo</title>
+        <title>Dashboard — <?= htmlspecialchars($config['app']['name'], ENT_QUOTES, 'UTF-8') ?></title>
         <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/custom.css">
         <style>
             body {
                 background-color: var(--symo-surface, #faf9f9);
                 color: var(--symo-on-surface, #1a1c1c);
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 0;
+                padding: 2rem 1rem;
+                min-height: 100vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                min-height: 100vh;
-                margin: 0;
-                padding: 1.5rem;
                 box-sizing: border-box;
             }
-            .hero-box {
+            .dashboard-card {
                 background: #ffffff;
                 border: 1px solid #e3e2e2;
                 border-radius: 1rem;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-                max-width: 640px;
+                max-width: 680px;
                 width: 100%;
                 padding: 2.5rem 2rem;
                 text-align: center;
             }
-            .badge-symo {
+            .role-badge {
                 display: inline-block;
-                padding: 6px 16px;
-                font-size: 13px;
-                font-weight: 600;
+                padding: 4px 12px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                text-transform: uppercase;
                 border-radius: 9999px;
                 background-color: var(--symo-primary-fixed, #e9ddff);
                 color: var(--symo-on-primary-fixed, #23005c);
-                margin-bottom: 16px;
+                margin-bottom: 1rem;
             }
-            .btn-action {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                background-color: var(--symo-primary-brand, #6f02ff);
-                color: #ffffff;
-                font-weight: 600;
-                font-size: 0.95rem;
-                text-decoration: none;
-                padding: 0.75rem 1.75rem;
-                border-radius: 0.5rem;
-                margin-top: 1.5rem;
-            }
-            .btn-action:hover {
-                background-color: #5300c4;
-            }
-            .core-features {
+            .user-info {
                 text-align: left;
                 background: #f4f3f3;
                 border-radius: 0.5rem;
-                padding: 1rem 1.5rem;
-                margin-top: 1.5rem;
+                padding: 1.25rem;
+                margin: 1.5rem 0;
                 font-size: 0.9rem;
                 color: #4a4457;
             }
-            .core-features ul {
-                margin: 0.5rem 0 0 0;
-                padding-left: 1.25rem;
+            .user-info p {
+                margin: 0.35rem 0;
             }
-            .core-features li {
-                margin-bottom: 0.35rem;
+            .btn-group {
+                display: flex;
+                gap: 0.75rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .btn-primary-action {
+                background-color: var(--symo-primary-brand, #6f02ff);
+                color: #ffffff;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 0.95rem;
+                padding: 0.75rem 1.5rem;
+                border-radius: 0.5rem;
+                transition: background-color 0.2s;
+            }
+            .btn-primary-action:hover {
+                background-color: #5300c4;
+            }
+            .btn-secondary-action {
+                background-color: #e9e8e8;
+                color: #1a1c1c;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 0.95rem;
+                padding: 0.75rem 1.5rem;
+                border-radius: 0.5rem;
+                transition: background-color 0.2s;
+            }
+            .btn-secondary-action:hover {
+                background-color: #dadada;
             }
         </style>
     </head>
     <body>
-        <div class="hero-box">
-            <span class="badge-symo">Fase 3 Concluída com Sucesso</span>
-            <h1 style="color: var(--symo-primary-brand, #6f02ff); margin: 0 0 0.5rem 0; font-weight: 700;">Symo Financeiro</h1>
-            <p style="color: var(--symo-outline, #7b7489); font-size: 1rem; line-height: 1.5; margin: 0;">
-                Núcleo da aplicação (Core MVC, Helpers, Roteador e Sistema de Logs) operacional.
+        <div class="dashboard-card">
+            <?= FlashHelper::render() ?>
+            <span class="role-badge">Perfil: <?= htmlspecialchars($user['perfil'], ENT_QUOTES, 'UTF-8') ?></span>
+            <h1 style="color: var(--symo-primary-brand, #6f02ff); margin: 0 0 0.5rem 0; font-size: 1.75rem; font-weight: 700;">
+                Painel do Symo
+            </h1>
+            <p style="color: var(--symo-outline, #7b7489); margin: 0; font-size: 0.95rem;">
+                Autenticação estabelecida com sucesso e controle de sessão ativo.
             </p>
-            
-            <div class="core-features">
-                <strong>Componentes do Núcleo Ativos:</strong>
-                <ul>
-                    <li>✓ <code>Router</code> com suporte a GET/POST, parâmetros dinâmicos e 404</li>
-                    <li>✓ <code>Controller</code> e <code>Model</code> base com PDO Singleton e Auditoria</li>
-                    <li>✓ <code>LoggerHelper</code> com logs no BD e contingência em arquivo</li>
-                    <li>✓ <code>CsrfHelper</code>, <code>FlashHelper</code> e <code>FormatHelper</code></li>
-                    <li>✓ Telas de erro amigáveis (403, 404, 500)</li>
-                </ul>
+
+            <div class="user-info">
+                <p><strong>Usuário:</strong> <?= htmlspecialchars($user['nome'], ENT_QUOTES, 'UTF-8') ?></p>
+                <p><strong>E-mail:</strong> <?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></p>
+                <p><strong>ID da Sessão:</strong> <?= session_id() ?></p>
+                <p><strong>Expiração de Inatividade:</strong> 60 minutos</p>
             </div>
 
-            <a href="<?= BASE_URL ?>/api/health" class="btn-action">
-                Verificar Diagnóstico do Sistema (Health Check)
+            <div class="btn-group">
+                <a href="<?= BASE_URL ?>/admin/teste-rbac" class="btn-secondary-action">
+                    Testar Permissão Admin (RBAC)
+                </a>
+                <a href="<?= BASE_URL ?>/logout" class="btn-primary-action">
+                    Sair da Conta (Logout)
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+});
+
+// Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
+Router::get('/admin/teste-rbac', function (): void {
+    AuthHelper::requireRole('admin');
+    ?>
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Área Restrita do Administrador — Symo</title>
+        <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/custom.css">
+    </head>
+    <body style="background-color: var(--symo-surface); font-family: Inter, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0;">
+        <div style="background: white; border: 1px solid #e3e2e2; border-radius: 1rem; padding: 2.5rem; max-width: 540px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🛡️</div>
+            <h1 style="color: #6f02ff; font-size: 1.5rem; margin: 0 0 0.5rem 0;">Acesso Autorizado (Admin RBAC)</h1>
+            <p style="color: #7b7489; font-size: 0.95rem; margin-bottom: 1.5rem;">
+                Você possui permissões administrativas completas conforme a matriz RBAC do FSD.
+            </p>
+            <a href="<?= BASE_URL ?>/dashboard" style="background: #6f02ff; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600;">
+                Voltar ao Painel
             </a>
         </div>
     </body>
@@ -250,13 +319,19 @@ Router::get('/api/health', function (): void {
             'router'  => 'operational',
             'session' => session_status() === PHP_SESSION_ACTIVE ? 'active' : 'inactive',
             'csrf'    => !empty(CsrfHelper::getToken()) ? 'ready' : 'error',
+        ],
+        'auth' => [
+            'authenticated' => AuthHelper::check(),
+            'user'          => AuthHelper::user(),
         ]
     ];
 
-    header('Content-Type: application/json; charset=utf-8');
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
     echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit;
 });
 
-// 9. Despacho da Requisição
+// 10. Despacho da Requisição
 Router::dispatch();

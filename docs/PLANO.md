@@ -92,16 +92,16 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 4 — Autenticação, Sessão e Controle de Acesso Base (RBAC)
 - **Objetivo:** Implementar o fluxo seguro de login, logout, bloqueio contra força bruta, expiração de 60 minutos e verificação de perfil de acesso.
 - **Checklist de Tarefas:**
-  - [ ] Criar `app/Helpers/AuthHelper.php` (login, logout, `requireLogin`, `requireRole`, timeout de 60 min, regeneração de ID de sessão).
-  - [ ] Criar `app/Models/User.php` com métodos de autenticação, verificação de hash BCRYPT e atualização de último acesso.
-  - [ ] Criar `app/Controllers/AuthController.php` (`login`, `authenticate`, `logout`, `forgotPassword`).
-  - [ ] Criar telas de autenticação em `app/Views/auth/login.php` e `app/Views/auth/forgot-password.php` seguindo o design do Symo.
-  - [ ] Implementar proteção contra ataques de força bruta (5 tentativas falhas = bloqueio temporário de 15 minutos por IP/E-mail registrado no `security_logs`).
+  - [x] Criar `app/Helpers/AuthHelper.php` (login, logout, `requireLogin`, `requireRole`, timeout de 60 min, regeneração de ID de sessão e mitigação de brute force).
+  - [x] Criar `app/Models/User.php` com métodos de autenticação, verificação de hash BCRYPT e atualização de último acesso.
+  - [x] Criar `app/Controllers/AuthController.php` (`showLogin`, `authenticate`, `logout`, `showForgotPassword`).
+  - [x] Criar telas de autenticação em `app/Views/auth/login.php` e `app/Views/auth/forgot-password.php` e layout `app/Views/layouts/auth.php` seguindo o design do Symo.
+  - [x] Implementar proteção contra ataques de força bruta (5 tentativas falhas = bloqueio temporário de 15 minutos por IP/E-mail registrado no `seguranca_logs`).
 - **Critérios de Pronto:**
   - Login funcional com credenciais válidas; mensagens genéricas para credenciais inválidas.
-  - Bloqueio automático após 5 tentativas incorretas registrado no `security_logs`.
+  - Bloqueio automático após 5 tentativas incorretas registrado no `seguranca_logs`.
   - Expiração automática após 60 minutos de inatividade com redirecionamento para login.
-- **Arquivos/Pastas Envolvidos:** `app/Helpers/AuthHelper.php`, `app/Models/User.php`, `app/Controllers/AuthController.php`, `app/Views/auth/`.
+- **Arquivos/Pastas Envolvidos:** `app/Helpers/AuthHelper.php`, `app/Models/User.php`, `app/Controllers/AuthController.php`, `app/Views/auth/`, `app/Views/layouts/`, `index.php`.
 - **Dependências:** Fases 1, 2 e 3 concluídas.
 
 ---

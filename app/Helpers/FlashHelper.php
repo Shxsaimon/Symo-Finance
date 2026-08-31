@@ -22,7 +22,7 @@ class FlashHelper
      */
     public static function set(string $type, string $message): void
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 
@@ -41,7 +41,7 @@ class FlashHelper
      */
     public static function get(string $type): ?string
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 
@@ -64,7 +64,7 @@ class FlashHelper
      */
     public static function has(string $type): bool
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 
@@ -78,7 +78,7 @@ class FlashHelper
      */
     public static function all(): array
     {
-        if (session_status() === PHP_SESSION_NONE) {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             session_start();
         }
 
