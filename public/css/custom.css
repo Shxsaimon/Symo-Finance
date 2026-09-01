@@ -1,6 +1,6 @@
 /**
  * Symo Design System — CSS Tokens & Theme Variables
- * Baseado estritamente em docs/DESIGN.md
+ * Baseado estritamente em docs/DESIGN.md e docs/FSD.md
  */
 
 :root {
@@ -66,6 +66,10 @@
   --symo-error-container: #ffdad6;
   --symo-on-error-container: #93000a;
 
+  /* Feedback / Sucesso Semântico */
+  --symo-success: #047857;
+  --symo-success-container: #d1fae5;
+
   /* Neutros Balanceados */
   --symo-background: #faf9f9;
   --symo-on-background: #1a1c1c;
@@ -79,7 +83,6 @@
   --symo-container-max: 1440px;
   --symo-gutter: 1.5rem;
   --symo-sidebar-width: 280px;
-  --symo-sidebar-collapsed-width: 64px;
 
   /* Raio de Arredondamento */
   --symo-rounded-sm: 0.25rem; /* 4px */
@@ -91,7 +94,7 @@
 
   /* Sombras Tonais */
   --symo-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --symo-shadow-deep: 0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --symo-shadow-deep: 0 12px 32px rgba(111, 2, 255, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 /* Tipografia Base e Numerais Tabulares */
@@ -101,9 +104,10 @@ body {
   color: var(--symo-on-background);
   margin: 0;
   padding: 0;
+  min-height: 100vh;
 }
 
-/* Forçar alinhamento perfeito de valores numéricos e monetários */
+/* Alinhamento de Numerais Tabulares em Tabelas e Valores */
 .tabular-nums,
 .table-finance td,
 .kpi-value,
@@ -115,21 +119,251 @@ body {
 
 /* Rótulos e Cabeçalhos em Caixa Alta */
 .label-caps {
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--symo-outline);
 }
 
-/* Estilos de Botão do Symo */
+/* Layout Estrutural Principal (Sidebar + Conteúdo) */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--symo-background);
+}
+
+/* Sidebar Corporativa (280px fixa no desktop) */
+.sidebar-symo {
+  width: var(--symo-sidebar-width);
+  background: linear-gradient(180deg, #4a2ec2 0%, #260058 100%);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 1020;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.06);
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+}
+
+.sidebar-brand img {
+  height: 38px;
+  width: auto;
+}
+
+.sidebar-menu {
+  padding: 1rem 0;
+  flex-grow: 1;
+}
+
+.sidebar-section-title {
+  padding: 0.85rem 1.5rem 0.35rem 1.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 1.5rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 0.925rem;
+  font-weight: 500;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.sidebar-nav-link i {
+  font-size: 1.15rem;
+  width: 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.65);
+  transition: color 0.2s ease;
+}
+
+.sidebar-nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-nav-link:hover i {
+  color: var(--symo-tertiary-brand);
+}
+
+/* Indicador Ativo com Pílula Electric Violet de 4px na Borda Esquerda */
+.sidebar-nav-link.active {
+  color: #ffffff;
+  background-color: rgba(121, 60, 254, 0.2);
+  font-weight: 700;
+}
+
+.sidebar-nav-link.active i {
+  color: var(--symo-tertiary-brand);
+}
+
+.sidebar-nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--symo-tertiary-brand);
+  border-radius: 0 4px 4px 0;
+}
+
+.sidebar-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.sidebar-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--symo-primary-brand);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.sidebar-user-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.sidebar-user-role {
+  font-size: 0.725rem;
+  color: var(--symo-tertiary-brand);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Área de Conteúdo Principal e Barra Superior */
+.main-wrapper {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--symo-background);
+}
+
+/* Navbar Superior do Symo */
+.navbar-symo {
+  height: 70px;
+  background-color: var(--symo-surface-container-lowest);
+  border-bottom: 1px solid var(--symo-neutral-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1010;
+}
+
+.navbar-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--symo-on-surface);
+  margin: 0;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Container de Conteúdo */
+.content-area {
+  flex-grow: 1;
+  padding: 2rem;
+  max-width: var(--symo-container-max);
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Cards do Symo */
+.symo-card {
+  background-color: var(--symo-surface-container-lowest);
+  border: 1px solid var(--symo-neutral-200);
+  border-radius: var(--symo-rounded-default);
+  box-shadow: var(--symo-shadow-soft);
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.symo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--symo-neutral-100);
+}
+
+.symo-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--symo-on-surface);
+  margin: 0;
+}
+
+/* Botões do Tema Symo */
 .btn-symo-primary {
   background-color: var(--symo-primary-brand);
   color: #ffffff;
   border: 1px solid transparent;
   border-radius: var(--symo-rounded-default);
-  font-weight: 500;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   transition: all 0.2s ease-in-out;
 }
 
@@ -143,7 +377,11 @@ body {
   color: var(--symo-primary-brand);
   border: 1px solid var(--symo-neutral-300);
   border-radius: var(--symo-rounded-default);
-  font-weight: 500;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   transition: all 0.2s ease-in-out;
 }
 
@@ -153,37 +391,36 @@ body {
   color: var(--symo-primary-brand);
 }
 
-/* Cards e Widgets com Elevação Tonal */
-.symo-card {
-  background-color: var(--symo-surface-container-lowest);
-  border: 1px solid var(--symo-neutral-200);
-  border-radius: var(--symo-rounded-default);
-  box-shadow: var(--symo-shadow-soft);
+/* Badges de Perfil e Status */
+.badge-role-admin {
+  background-color: var(--symo-primary-fixed);
+  color: var(--symo-on-primary-fixed);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--symo-rounded-full);
+  text-transform: uppercase;
 }
 
-.symo-modal-content {
-  background-color: var(--symo-surface-container-lowest);
-  border: 1px solid var(--symo-neutral-200);
-  border-radius: var(--symo-rounded-lg);
-  box-shadow: var(--symo-shadow-deep);
-}
-
-/* Pílula de Navegação Ativa no Sidebar */
-.symo-nav-item.active {
-  position: relative;
+.badge-role-operador {
   background-color: var(--symo-surface-container-high);
-  color: var(--symo-primary-brand);
-  font-weight: 600;
+  color: var(--symo-on-surface-variant);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--symo-rounded-full);
+  text-transform: uppercase;
 }
 
-.symo-nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: var(--symo-primary-brand);
-  border-radius: 0 4px 4px 0;
+/* Responsividade Mobile e Tablet */
+@media (max-width: 991.98px) {
+  .sidebar-symo {
+    display: none;
+  }
+  .navbar-symo {
+    padding: 0 1rem;
+  }
+  .content-area {
+    padding: 1.25rem 1rem;
+  }
 }
-

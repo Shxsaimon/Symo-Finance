@@ -7,7 +7,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  * Symo — Layout de Telas de Autenticação
  *
  * Estrutura visual centralizada, minimalista e focada em conversão e segurança,
- * seguindo estritamente as diretrizes do Design System do Symo.
+ * utilizando exclusivamente assets locais do Design System Symo.
  */
 $pageTitle = $title ?? 'Autenticação — Symo';
 $appName   = 'Symo';
@@ -18,7 +18,15 @@ $appName   = 'Symo';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+    
+    <!-- Assets Locais -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/custom.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/public/img/logo.svg">
+
     <style>
         body {
             background-color: var(--symo-surface, #faf9f9);
@@ -41,35 +49,16 @@ $appName   = 'Symo';
             text-align: center;
             margin-bottom: 2rem;
         }
-        .auth-brand-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            border-radius: 9999px;
-            background-color: var(--symo-primary-fixed, #e9ddff);
-            color: var(--symo-on-primary-fixed, #23005c);
+        .auth-brand img {
+            height: 48px;
             margin-bottom: 0.75rem;
-        }
-        .auth-brand-title {
-            font-size: 1.85rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            color: var(--symo-primary-brand, #6f02ff);
-            margin: 0 0 0.25rem 0;
-        }
-        .auth-brand-subtitle {
-            font-size: 0.95rem;
-            color: var(--symo-outline, #7b7489);
-            margin: 0;
+            filter: drop-shadow(0 4px 12px rgba(111, 2, 255, 0.2));
         }
         .auth-card {
             background: #ffffff;
             border: 1px solid #e3e2e2;
             border-radius: 1rem;
-            box-shadow: 0 10px 30px rgba(111, 2, 255, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 10px 30px rgba(111, 2, 255, 0.05), 0 2px 8px rgba(0, 0, 0, 0.04);
             padding: 2.25rem 2rem;
             box-sizing: border-box;
         }
@@ -79,22 +68,19 @@ $appName   = 'Symo';
             font-size: 0.85rem;
             color: var(--symo-outline, #7b7489);
         }
-        .auth-footer a {
-            color: var(--symo-primary-brand, #6f02ff);
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .auth-footer a:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
     <div class="auth-wrapper">
         <div class="auth-brand">
-            <span class="auth-brand-badge">Gestão Financeira</span>
-            <h1 class="auth-brand-title"><?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?></h1>
-            <p class="auth-brand-subtitle">Controle pessoal e compartilhado</p>
+            <a href="<?= BASE_URL ?>/login" class="d-inline-block text-decoration-none">
+                <div style="background: linear-gradient(135deg, #4a2ec2 0%, #260058 100%); padding: 10px 20px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(74, 46, 194, 0.25);">
+                    <img src="<?= BASE_URL ?>/public/img/logo.svg" alt="Symo Financeiro" style="margin: 0; height: 32px;">
+                </div>
+            </a>
+            <p style="color: var(--symo-outline); margin: 0.75rem 0 0 0; font-size: 0.9rem;">
+                Gestão Financeira Pessoal e Compartilhada
+            </p>
         </div>
 
         <div class="auth-card">
@@ -103,8 +89,12 @@ $appName   = 'Symo';
         </div>
 
         <div class="auth-footer">
-            &copy; <?= date('Y') ?> <?= htmlspecialchars($appName, ENT_QUOTES, 'UTF-8') ?>. Ambiente Seguro e Criptografado.
+            &copy; <?= date('Y') ?> Symo. Ambiente Seguro e Criptografado.
         </div>
     </div>
+
+    <!-- Scripts Locais -->
+    <script src="<?= BASE_URL ?>/public/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= BASE_URL ?>/public/js/app.js"></script>
 </body>
 </html>

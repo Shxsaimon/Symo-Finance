@@ -6,9 +6,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 31/08/2026
-- **Fase Atual:** Fase 4 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 5 — Layout Mestre, Design System (Symo) e Componentes Visuais
+- **Data da Última Atualização:** 01/09/2026
+- **Fase Atual:** Fase 5 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 6 — Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento)
 
 ---
 
@@ -20,7 +20,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 2** | Banco de Dados, Migrations e Carga Inicial (Seeds) | Concluída |
 | **Fase 3** | Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs) | Concluída |
 | **Fase 4** | Autenticação, Sessão e Controle de Acesso Base (RBAC) | Concluída |
-| **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Pendente |
+| **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Concluída |
 | **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Pendente |
 | **Fase 7** | Módulo de Cartões de Crédito e Faturas | Pendente |
 | **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Pendente |
@@ -83,11 +83,17 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 26 testes automatizados e testes de integração HTTP executados e aprovados.
 
 ### Fase 5 — Layout Mestre, Design System (Symo) e Componentes Visuais
-- [ ] Configuração de assets locais (Bootstrap 5, Icons, Chart.js).
-- [ ] Criação de layouts mestres (`main.php`, `navbar.php`, `sidebar.php`, `auth.php`).
-- [ ] Testes de responsividade e alinhamento visual com `docs/DESIGN.md`.
+- [x] Disponibilização e autonomia de assets locais (Bootstrap 5.3, Bootstrap Icons, Fontes WOFF2/WOFF, Chart.js 4.4 e app.js em `public/`).
+- [x] Implementação do logotipo vetorial `public/img/logo.svg` nas cores corporativas (Electric Violet `#6F02FF`, Deep Lavender `#793CFE` e Bright Teal `#3BD7D7`).
+- [x] Atualização dos design tokens e regras de layout corporativo em `public/css/custom.css` (numerais tabulares, cards tonais, sombras e pílula de 4px).
+- [x] Criação de `app/Views/layouts/sidebar.php` (sidebar fixa de 280px em desktop com segregação RBAC para perfil `admin`).
+- [x] Criação de `app/Views/layouts/navbar.php` (navbar superior fixa, botão offcanvas para mobile, badge de perfil e menu dropdown).
+- [x] Implementação de layout mestre `app/Views/layouts/main.php` integrando container fluído max 1440px, mensagens flash e scripts locais.
+- [x] Criação de `app/Controllers/DashboardController.php` e view `app/Views/dashboard/index.php`.
+- [x] Bateria de 39 testes automatizados validada com 100% de aprovação.
 
 ### Fase 6 — Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento)
+- [ ] Implementação de `app/Models/Account.php`, `app/Models/Category.php`, `app/Models/PaymentMethod.php`.
 - [ ] Implementação de `AccountController.php` e model `Account.php`.
 - [ ] Implementação de `CategoryController.php` e model `Category.php`.
 - [ ] Implementação de `PaymentMethodController.php` e model `PaymentMethod.php`.

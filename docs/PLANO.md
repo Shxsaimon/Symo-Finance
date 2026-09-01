@@ -109,16 +109,16 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 5 — Layout Mestre, Design System (Symo) e Componentes Visuais
 - **Objetivo:** Estruturar a camada visual mestre com Bootstrap 5 local, ícones, responsividade e componentes do tema *Symo* (`docs/DESIGN.md`).
 - **Checklist de Tarefas:**
-  - [ ] Disponibilizar os assets locais em `public/css/`, `public/js/`, `public/fonts/` e `public/img/`.
-  - [ ] Montar `app/Views/layouts/main.php` (estrutura responsiva com container max 1440px).
-  - [ ] Montar `app/Views/layouts/navbar.php` (perfil do usuário, logo, alertas e ações rápidas).
-  - [ ] Montar `app/Views/layouts/sidebar.php` (links de navegação, indicação ativa em pílula Electric Violet de 4px, restrição visual por perfil RBAC).
-  - [ ] Montar `app/Views/layouts/auth.php` (layout limpo e centralizado para telas de autenticação).
-  - [ ] Integrar exibição de mensagens flash de sucesso, alerta e erro.
+  - [x] Disponibilizar os assets locais em `public/css/`, `public/js/`, `public/fonts/` e `public/img/`.
+  - [x] Montar `app/Views/layouts/main.php` (estrutura responsiva com container max 1440px).
+  - [x] Montar `app/Views/layouts/navbar.php` (perfil do usuário, logo, alertas e ações rápidas).
+  - [x] Montar `app/Views/layouts/sidebar.php` (links de navegação, indicação ativa em pílula Electric Violet de 4px, restrição visual por perfil RBAC).
+  - [x] Montar `app/Views/layouts/auth.php` (layout limpo e centralizado para telas de autenticação).
+  - [x] Integrar exibição de mensagens flash de sucesso, alerta e erro.
 - **Critérios de Pronto:**
   - Layout funcional e responsivo em desktop, tablet e smartphone.
   - Paleta de cores, tipografia *Inter*, sombras tonais e arredondamentos de 8px e 16px conformes ao `docs/DESIGN.md`.
-- **Arquivos/Pastas Envolvidos:** `app/Views/layouts/`, `public/css/`, `public/js/`.
+- **Arquivos/Pastas Envolvidos:** `app/Views/layouts/`, `public/css/`, `public/js/`, `public/fonts/`, `public/img/`, `app/Controllers/DashboardController.php`, `app/Views/dashboard/`.
 - **Dependências:** Fases 1 a 4 concluídas.
 
 ---
