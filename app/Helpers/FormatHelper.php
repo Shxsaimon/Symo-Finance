@@ -104,6 +104,18 @@ class FormatHelper
     }
 
     /**
+     * Converte representações monetárias brasileiras (ex: "R$ 1.500,50") ou numéricas em float puro.
+     * Alias semântico para parseDecimal().
+     *
+     * @param string|float|int|null $value
+     * @return float
+     */
+    public static function parseCurrency(string|float|int|null $value): float
+    {
+        return self::parseDecimal($value);
+    }
+
+    /**
      * Formata um percentual.
      *
      * @param float|int|string|null $value
