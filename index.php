@@ -144,6 +144,30 @@ Router::get('/esqueci-senha', [AuthController::class, 'showForgotPassword']);
 // Rota de Dashboard (Protegida por Autenticação com Layout Mestre)
 Router::get('/dashboard', [DashboardController::class, 'index']);
 
+// -------------------------------------------------------------
+// FASE 6: CADASTROS BÁSICOS (Contas, Categorias, Meios de Pagamento)
+// -------------------------------------------------------------
+// 1. Contas Bancárias e Carteiras
+Router::get('/contas', [AccountController::class, 'index']);
+Router::post('/contas/salvar', [AccountController::class, 'store']);
+Router::post('/contas/atualizar/{id}', [AccountController::class, 'update']);
+Router::post('/contas/status/{id}', [AccountController::class, 'toggle']);
+Router::post('/contas/excluir/{id}', [AccountController::class, 'delete']);
+
+// 2. Categorias de Receitas e Despesas
+Router::get('/categorias', [CategoryController::class, 'index']);
+Router::post('/categorias/salvar', [CategoryController::class, 'store']);
+Router::post('/categorias/atualizar/{id}', [CategoryController::class, 'update']);
+Router::post('/categorias/status/{id}', [CategoryController::class, 'toggle']);
+Router::post('/categorias/excluir/{id}', [CategoryController::class, 'delete']);
+
+// 3. Meios de Pagamento
+Router::get('/meios-pagamento', [PaymentMethodController::class, 'index']);
+Router::post('/meios-pagamento/salvar', [PaymentMethodController::class, 'store']);
+Router::post('/meios-pagamento/atualizar/{id}', [PaymentMethodController::class, 'update']);
+Router::post('/meios-pagamento/status/{id}', [PaymentMethodController::class, 'toggle']);
+Router::post('/meios-pagamento/excluir/{id}', [PaymentMethodController::class, 'delete']);
+
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
     AuthHelper::requireRole('admin');

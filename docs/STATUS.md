@@ -7,8 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 01/09/2026
-- **Fase Atual:** Fase 5 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 6 — Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento)
+- **Fase Atual:** Fase 6 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 7 — Módulo de Cartões de Crédito e Faturas
 
 ---
 
@@ -21,7 +21,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 3** | Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs) | Concluída |
 | **Fase 4** | Autenticação, Sessão e Controle de Acesso Base (RBAC) | Concluída |
 | **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Concluída |
-| **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Pendente |
+| **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Concluída |
 | **Fase 7** | Módulo de Cartões de Crédito e Faturas | Pendente |
 | **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Pendente |
 | **Fase 9** | Módulo de Transferências entre Contas | Pendente |
@@ -48,26 +48,15 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ### Fase 2 — Banco de Dados, Migrations e Carga Inicial (Seeds)
 - [x] Implementação de `config/database.php` (PDO Singleton com auto-criação de schema `utf8mb4_unicode_ci`).
-- [x] Criação de migrations estruturais de 001 a 011 em `database/migrations/` em português:
-  - `001_criar_tabela_usuarios.php` (tabela de usuários com índices e perfis)
-  - `002_criar_tabela_contas.php` (contas financeiras e saldos)
-  - `003_criar_tabela_categorias.php` (categorias de receitas/despesas)
-  - `004_criar_tabela_meios_pagamento.php` (meios de pagamento)
-  - `005_criar_tabela_transacoes.php` (transações e índices de performance)
-  - `006_criar_tabela_transferencias.php` (transferências entre contas)
-  - `007_criar_tabelas_cartoes_e_faturas.php` (cartões e faturas)
-  - `008_criar_tabela_auditoria_logs.php` (trilha de auditoria JSON)
-  - `009_criar_tabelas_seguranca_e_erros_logs.php` (logs de segurança e erros)
-  - `010_criar_tabela_configuracoes.php` (configurações do sistema)
-  - `011_criar_tabela_migracoes.php` (controle de histórico de migrações)
+- [x] Criação de migrations estruturais de 001 a 011 em `database/migrations/` em português.
 - [x] Implementação de `migrate.php` CLI com suporte a `--seed`, `--status`, `--fresh` e lotes (`lote`).
-- [x] Implementação do seed de dados essenciais em `database/seeds/initial_data.php` (Admin, Operador, Categorias padrão, Meios de pagamento e Configurações globais).
+- [x] Implementação do seed de dados essenciais em `database/seeds/initial_data.php`.
 - [x] Testes de execução: criação de tabelas, integridade de FKs, anti-duplicação e seeds validados.
 
 ### Fase 3 — Núcleo da Aplicação (Core MVC, Helpers, Roteamento e Logs)
 - [x] Implementação de classes base `Controller.php` e `Model.php`.
 - [x] Implementação do roteador HTTP `Router.php` com suporte a GET/POST, parâmetros de URL e 404.
-- [x] Implementação de `LoggerHelper.php` com gravação nas tabelas `erros_logs`/`seguranca_logs` e fallback automático para `storage/logs/error.log` e `storage/logs/security.log`.
+- [x] Implementação de `LoggerHelper.php` com gravação nas tabelas `erros_logs`/`seguranca_logs` e fallback automático.
 - [x] Implementação de `CsrfHelper.php`, `FlashHelper.php` e `FormatHelper.php`.
 - [x] Criação das views de erro amigáveis (`403.php`, `404.php`, `500.php`) e layout base `main.php`.
 - [x] Atualização do `index.php` com autoloader PSR-like, inicialização de sessão segura, captura global de exceções e endpoint de diagnóstico `/api/health`.
@@ -77,27 +66,27 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Implementação de `AuthHelper.php` com login, logout, `requireLogin`, `requireRole`, expiração de inatividade (60 min), regeneração de ID de sessão e mitigação de força bruta.
 - [x] Implementação de `User.php` com busca segura por e-mail, verificação de BCRYPT e auditoria.
 - [x] Implementação de `AuthController.php` (`showLogin`, `authenticate`, `logout`, `showForgotPassword`).
-- [x] Criação do layout `app/Views/layouts/auth.php` e views `app/Views/auth/login.php` e `app/Views/auth/forgot-password.php` com suporte ao Design System Symo.
+- [x] Criação do layout `app/Views/layouts/auth.php` e views `app/Views/auth/login.php` e `app/Views/auth/forgot-password.php`.
 - [x] Implementação da proteção contra força bruta (5 tentativas consecutivas em 15 minutos registradas no `seguranca_logs`).
 - [x] Registro das rotas de autenticação, rota protegida `/dashboard` e rota administrativa de demonstração RBAC `/admin/teste-rbac`.
 - [x] Bateria de 26 testes automatizados e testes de integração HTTP executados e aprovados.
 
 ### Fase 5 — Layout Mestre, Design System (Symo) e Componentes Visuais
 - [x] Disponibilização e autonomia de assets locais (Bootstrap 5.3, Bootstrap Icons, Fontes WOFF2/WOFF, Chart.js 4.4 e app.js em `public/`).
-- [x] Implementação do logotipo vetorial `public/img/logo.svg` nas cores corporativas (Electric Violet `#6F02FF`, Deep Lavender `#793CFE` e Bright Teal `#3BD7D7`).
-- [x] Atualização dos design tokens e regras de layout corporativo em `public/css/custom.css` (numerais tabulares, cards tonais, sombras e pílula de 4px).
-- [x] Criação de `app/Views/layouts/sidebar.php` (sidebar fixa de 280px em desktop com segregação RBAC para perfil `admin`).
-- [x] Criação de `app/Views/layouts/navbar.php` (navbar superior fixa, botão offcanvas para mobile, badge de perfil e menu dropdown).
-- [x] Implementação de layout mestre `app/Views/layouts/main.php` integrando container fluído max 1440px, mensagens flash e scripts locais.
+- [x] Implementação do logotipo vetorial `public/img/logo.svg`.
+- [x] Atualização dos design tokens e regras de layout corporativo em `public/css/custom.css`.
+- [x] Criação de `app/Views/layouts/sidebar.php` e `app/Views/layouts/navbar.php`.
+- [x] Implementação de layout mestre `app/Views/layouts/main.php`.
 - [x] Criação de `app/Controllers/DashboardController.php` e view `app/Views/dashboard/index.php`.
 - [x] Bateria de 39 testes automatizados validada com 100% de aprovação.
 
 ### Fase 6 — Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento)
-- [ ] Implementação de `app/Models/Account.php`, `app/Models/Category.php`, `app/Models/PaymentMethod.php`.
-- [ ] Implementação de `AccountController.php` e model `Account.php`.
-- [ ] Implementação de `CategoryController.php` e model `Category.php`.
-- [ ] Implementação de `PaymentMethodController.php` e model `PaymentMethod.php`.
-- [ ] Criação das views e modais de cadastros básicos com regras de RBAC.
+- [x] Implementação de `app/Models/Account.php` com gestão de saldos, integridade contra exclusão de conta vinculada e auditoria.
+- [x] Implementação de `app/Models/Category.php` com gestão de receitas e despesas, ícones visuais e auditoria.
+- [x] Implementação de `app/Models/PaymentMethod.php` com controle de modalidade de crédito e auditoria.
+- [x] Implementação de `AccountController.php`, `CategoryController.php` e `PaymentMethodController.php` com controle estrito de RBAC e validação anti-CSRF.
+- [x] Criação das views `app/Views/accounts/index.php`, `app/Views/categories/index.php` e `app/Views/payment-methods/index.php`.
+- [x] Bateria de 40 testes automatizados executada e 100% aprovada.
 
 ### Fase 7 — Módulo de Cartões de Crédito e Faturas
 - [ ] Implementação de `CreditCardController.php` e models associados.

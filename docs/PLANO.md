@@ -126,12 +126,12 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 6 — Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento)
 - **Objetivo:** Implementar o gerenciamento cadastral de contas, categorias e meios de pagamento com controle de permissão RBAC e proteção contra exclusão física de itens com movimentações.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Models/Account.php`, `app/Models/Category.php`, `app/Models/PaymentMethod.php`.
-  - [ ] Implementar `app/Controllers/AccountController.php` (CRUD de contas, cálculo de saldo atual, inativação e soft delete).
-  - [ ] Implementar `app/Controllers/CategoryController.php` (CRUD de categorias com tipo receita/despesa, ícones e cores).
-  - [ ] Implementar `app/Controllers/PaymentMethodController.php` (CRUD de meios de pagamento).
-  - [ ] Criar views em `app/Views/accounts/`, `app/Views/categories/`, `app/Views/payment-methods/`.
-  - [ ] Aplicar restrição RBAC: Operador apenas consulta; Administrador cria/edita/inativa.
+  - [x] Implementar `app/Models/Account.php`, `app/Models/Category.php`, `app/Models/PaymentMethod.php`.
+  - [x] Implementar `app/Controllers/AccountController.php` (CRUD de contas, cálculo de saldo atual, inativação e soft delete).
+  - [x] Implementar `app/Controllers/CategoryController.php` (CRUD de categorias com tipo receita/despesa, ícones e cores).
+  - [x] Implementar `app/Controllers/PaymentMethodController.php` (CRUD de meios de pagamento).
+  - [x] Criar views em `app/Views/accounts/`, `app/Views/categories/`, `app/Views/payment-methods/`.
+  - [x] Aplicar restrição RBAC: Operador apenas consulta; Administrador cria/edita/inativa.
 - **Critérios de Pronto:**
   - Administrador consegue cadastrar, editar e inativar contas, categorias e meios de pagamento.
   - Operador visualiza os itens nos formulários e listagens sem permissão para modificá-los.
