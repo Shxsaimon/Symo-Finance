@@ -96,7 +96,12 @@ class Router
                 // Mapeia parâmetros capturados
                 $params = [];
                 foreach ($route['params'] as $index => $name) {
-                    $params[$name] = isset($matches[$index]) ? urldecode($matches[$index]) : null;
+                    $rawVal = isset($matches[$index]) ? urldecode($matches[$index]) : null;
+                    if ($rawVal !== null && ctype_digit($rawVal)) {
+                        $params[$name] = (int) $rawVal;
+                    } else {
+                        $params[$name] = $rawVal;
+                    }
                 }
 
                 // Executa middlewares

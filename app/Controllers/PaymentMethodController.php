@@ -81,9 +81,10 @@ class PaymentMethodController extends Controller
      * @param int $id
      * @return void
      */
-    public function update(int $id): void
+    public function update(int|string $id): void
     {
         AuthHelper::requireRole('admin');
+        $id = (int) $id;
 
         $token = $_POST['csrf_token'] ?? null;
         if (!CsrfHelper::validateToken($token)) {
@@ -122,12 +123,13 @@ class PaymentMethodController extends Controller
     /**
      * Alterna o status entre ativo/inativo (Apenas Administrador).
      *
-     * @param int $id
+     * @param int|string $id
      * @return void
      */
-    public function toggle(int $id): void
+    public function toggle(int|string $id): void
     {
         AuthHelper::requireRole('admin');
+        $id = (int) $id;
 
         $token = $_POST['csrf_token'] ?? null;
         if (!CsrfHelper::validateToken($token)) {
@@ -147,12 +149,13 @@ class PaymentMethodController extends Controller
     /**
      * Executa a exclusão lógica se não houver lançamentos associados (Apenas Administrador).
      *
-     * @param int $id
+     * @param int|string $id
      * @return void
      */
-    public function delete(int $id): void
+    public function delete(int|string $id): void
     {
         AuthHelper::requireRole('admin');
+        $id = (int) $id;
 
         $token = $_POST['csrf_token'] ?? null;
         if (!CsrfHelper::validateToken($token)) {
