@@ -182,6 +182,16 @@ Router::post('/faturas/fechar/{id}', [CreditCardController::class, 'closeInvoice
 Router::post('/faturas/reabrir/{id}', [CreditCardController::class, 'reopenInvoice']);
 Router::post('/faturas/pagar/{id}', [CreditCardController::class, 'payInvoice']);
 
+// -------------------------------------------------------------
+// FASE 8: TRANSAÇÕES FINANCEIRAS (Receitas, Despesas e Parcelamento)
+// -------------------------------------------------------------
+Router::get('/transacoes', [TransactionController::class, 'index']);
+Router::get('/transacoes/obter/{id}', [TransactionController::class, 'getJson']);
+Router::post('/transacoes/salvar', [TransactionController::class, 'store']);
+Router::post('/transacoes/atualizar/{id}', [TransactionController::class, 'update']);
+Router::post('/transacoes/status/{id}', [TransactionController::class, 'toggle']);
+Router::post('/transacoes/excluir/{id}', [TransactionController::class, 'delete']);
+
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
     AuthHelper::requireRole('admin');

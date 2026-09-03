@@ -159,11 +159,11 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
 - **Objetivo:** Implementar o núcleo de movimentação financeira: receitas, despesas à vista e parceladas, controle de status (pendente/pago), atualização atômica de saldos e auditoria de lançamentos.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Models/Transaction.php` com suporte a cálculo de saldos, filtros complexos e soft delete.
-  - [ ] Implementar `app/Controllers/TransactionController.php`.
-  - [ ] Implementar rotina de compra parcelada com geração de $N$ lançamentos agrupados por `installment_group_id`, ajuste de dízima residual de centavos na 1ª parcela e vinculação de faturas de cartão.
-  - [ ] Implementar validação RBAC: operador só edita/exclui lançamentos próprios; admin edita/exclui qualquer um.
-  - [ ] Criar views e modais em `app/Views/transactions/` com tabela zebrada de alta densidade e numerais tabulares.
+  - [x] Implementar `app/Models/Transaction.php` com suporte a cálculo de saldos, filtros complexos e soft delete.
+  - [x] Implementar `app/Controllers/TransactionController.php`.
+  - [x] Implementar rotina de compra parcelada com geração de $N$ lançamentos agrupados por `installment_group_id`, ajuste de dízima residual de centavos na 1ª parcela e vinculação de faturas de cartão.
+  - [x] Implementar validação RBAC: operador só edita/exclui lançamentos próprios; admin edita/exclui qualquer um.
+  - [x] Criar views e modais em `app/Views/transactions/` com tabela zebrada de alta densidade e numerais tabulares.
 - **Critérios de Pronto:**
   - Lançamento de receita/despesa com status pago atualiza imediatamente o saldo da conta vinculada; status pendente não altera saldo.
   - Compra parcelada de $N$ vezes divide valores com exatidão matemática somando centavos na primeira parcela.

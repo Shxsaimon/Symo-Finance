@@ -29,6 +29,16 @@ class PaymentMethod extends Model
     }
 
     /**
+     * Alias semântico para getActive().
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getActivePaymentMethods(): array
+    {
+        return $this->getActive();
+    }
+
+    /**
      * Cadastra um novo meio de pagamento.
      *
      * @param array<string, mixed> $data

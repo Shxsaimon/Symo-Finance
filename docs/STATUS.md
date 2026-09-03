@@ -7,8 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 02/09/2026
-- **Fase Atual:** Fase 7 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
+- **Fase Atual:** Fase 8 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 9 — Módulo de Transferências entre Contas
 
 ---
 
@@ -23,7 +23,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Concluída |
 | **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Concluída |
 | **Fase 7** | Módulo de Cartões de Crédito e Faturas | Concluída |
-| **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Pendente |
+| **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Concluída |
 | **Fase 9** | Módulo de Transferências entre Contas | Pendente |
 | **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Pendente |
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Pendente |
@@ -96,7 +96,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 44 testes automatizados executada e 100% aprovada.
 
 ### Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
-- [ ] Implementação de `Transaction.php` e `TransactionController.php`.
+- [x] Implementação de `app/Models/Transaction.php` com suporte a receitas, despesas à vista e parcelamento em N vezes com tratamento de resíduo.
+- [x] Implementação de `app/Controllers/TransactionController.php` com ações de criação, edição, alternância de status e exclusão respeitando RBAC.
+- [x] Criação da view `app/Views/transactions/index.php` com tabela financeira, filtros avançados, cards de KPIs e modais.
+- [x] Bateria de 40 testes automatizados executada e 100% aprovada.
+
+### Fase 9 — Módulo de Transferências entre Contas
+- [ ] Implementação de `Transfer.php` e `TransferController.php`.
 - [ ] Rotina de fechamento de fatura e pagamento com transação atômica.
 - [ ] Criação das views de cartões e faturas.
 
