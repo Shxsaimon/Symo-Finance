@@ -168,6 +168,20 @@ Router::post('/meios-pagamento/atualizar/{id}', [PaymentMethodController::class,
 Router::post('/meios-pagamento/status/{id}', [PaymentMethodController::class, 'toggle']);
 Router::post('/meios-pagamento/excluir/{id}', [PaymentMethodController::class, 'delete']);
 
+// -------------------------------------------------------------
+// FASE 7: CARTÕES DE CRÉDITO E FATURAS
+// -------------------------------------------------------------
+Router::get('/cartoes', [CreditCardController::class, 'index']);
+Router::get('/cartoes/detalhes/{id}', [CreditCardController::class, 'show']);
+Router::get('/faturas/{id}', [CreditCardController::class, 'invoice']);
+Router::post('/cartoes/salvar', [CreditCardController::class, 'store']);
+Router::post('/cartoes/atualizar/{id}', [CreditCardController::class, 'update']);
+Router::post('/cartoes/status/{id}', [CreditCardController::class, 'toggle']);
+Router::post('/cartoes/excluir/{id}', [CreditCardController::class, 'delete']);
+Router::post('/faturas/fechar/{id}', [CreditCardController::class, 'closeInvoice']);
+Router::post('/faturas/reabrir/{id}', [CreditCardController::class, 'reopenInvoice']);
+Router::post('/faturas/pagar/{id}', [CreditCardController::class, 'payInvoice']);
+
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
     AuthHelper::requireRole('admin');

@@ -43,7 +43,7 @@ $isActive = function (string $path) use ($currentUri): string {
             <i class="bi bi-arrow-repeat"></i>
             <span>Transferências</span>
         </a>
-        <a href="<?= BASE_URL ?>/cartoes" class="sidebar-nav-link <?= $isActive('/cartoes') ?>">
+        <a href="<?= BASE_URL ?>/cartoes" class="sidebar-nav-link <?= ($isActive('/cartoes') || str_starts_with($currentUri, '/faturas')) ? 'active' : '' ?>">
             <i class="bi bi-credit-card-2-front-fill"></i>
             <span>Cartões de Crédito</span>
         </a>

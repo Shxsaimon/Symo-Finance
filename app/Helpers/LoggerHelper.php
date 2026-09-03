@@ -70,6 +70,18 @@ class LoggerHelper
     }
 
     /**
+     * Alias semântico para error().
+     *
+     * @param string|Throwable $error
+     * @param array<string, mixed> $context
+     * @return void
+     */
+    public static function logError(string|Throwable $error, array $context = []): void
+    {
+        self::error($error, $context);
+    }
+
+    /**
      * Registra um evento de segurança (tentativas de login, acessos 403, CSRF inválido, etc.).
      *
      * @param string $evento Tipo de evento (ex: 'LOGIN_FAILED', 'FORBIDDEN_ACCESS', 'CSRF_INVALID')

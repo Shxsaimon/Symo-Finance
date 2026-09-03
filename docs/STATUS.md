@@ -6,9 +6,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 01/09/2026
-- **Fase Atual:** Fase 6 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 7 — Módulo de Cartões de Crédito e Faturas
+- **Data da Última Atualização:** 02/09/2026
+- **Fase Atual:** Fase 7 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
 
 ---
 
@@ -22,7 +22,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 4** | Autenticação, Sessão e Controle de Acesso Base (RBAC) | Concluída |
 | **Fase 5** | Layout Mestre, Design System (Symo) e Componentes Visuais | Concluída |
 | **Fase 6** | Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento) | Concluída |
-| **Fase 7** | Módulo de Cartões de Crédito e Faturas | Pendente |
+| **Fase 7** | Módulo de Cartões de Crédito e Faturas | Concluída |
 | **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Pendente |
 | **Fase 9** | Módulo de Transferências entre Contas | Pendente |
 | **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Pendente |
@@ -89,7 +89,14 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 40 testes automatizados executada e 100% aprovada.
 
 ### Fase 7 — Módulo de Cartões de Crédito e Faturas
-- [ ] Implementação de `CreditCardController.php` e models associados.
+- [x] Implementação de `app/Models/CreditCard.php` com cálculo de limite utilizado/disponível, dias de ciclo e auditoria.
+- [x] Implementação de `app/Models/CreditCardInvoice.php` com cálculo seguro de datas de fechamento/vencimento, controle de status (aberta/fechada/paga) e quitação atômica com débito em conta.
+- [x] Implementação de `CreditCardController.php` com controle de permissões e ações de faturas.
+- [x] Criação das views `app/Views/credit-cards/index.php`, `app/Views/credit-cards/show.php` e `app/Views/credit-cards/invoice.php`.
+- [x] Bateria de 44 testes automatizados executada e 100% aprovada.
+
+### Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
+- [ ] Implementação de `Transaction.php` e `TransactionController.php`.
 - [ ] Rotina de fechamento de fatura e pagamento com transação atômica.
 - [ ] Criação das views de cartões e faturas.
 

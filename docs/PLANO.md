@@ -144,10 +144,10 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 7 — Módulo de Cartões de Crédito e Faturas
 - **Objetivo:** Gerenciar cartões de crédito, cálculo de limite disponível, acompanhamento de ciclo de faturas (Aberta, Fechada, Paga) e pagamento consolidado.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Models/CreditCard.php` e `app/Models/CreditCardInvoice.php`.
-  - [ ] Implementar `app/Controllers/CreditCardController.php` (cadastro de cartões, visualização de limites e faturas).
-  - [ ] Criar rotina de fechamento de fatura e liquidação com débito em conta corrente via transação atômica PDO.
-  - [ ] Criar views em `app/Views/credit-cards/` (cards visuais de cartões, barra de limite e histórico de faturas).
+  - [x] Implementar `app/Models/CreditCard.php` e `app/Models/CreditCardInvoice.php`.
+  - [x] Implementar `app/Controllers/CreditCardController.php` (cadastro de cartões, visualização de limites e faturas).
+  - [x] Criar rotina de fechamento de fatura e liquidação com débito em conta corrente via transação atômica PDO.
+  - [x] Criar views em `app/Views/credit-cards/` (cards visuais de cartões, barra de limite e histórico de faturas).
 - **Critérios de Pronto:**
   - Faturas agrupam despesas do período corretamente.
   - Pagamento de fatura debita a conta bancária escolhida, marca fatura como paga e restabelece o limite disponível no cartão sob transação atômica.
