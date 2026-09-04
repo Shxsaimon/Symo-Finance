@@ -183,9 +183,12 @@ $anoAtual = (int) date('Y');
                             $catIcone = !empty($t['categoria_icone']) ? htmlspecialchars($t['categoria_icone'], ENT_QUOTES, 'UTF-8') : 'bi-tag';
                         ?>
                         <tr>
-                            <!-- Data -->
+                            <!-- Data da Transação / Compra -->
                             <td style="padding-left: 1.5rem;" class="tabular-nums text-muted small">
-                                <?= FormatHelper::date($t['data_vencimento']) ?>
+                                <span class="fw-semibold text-dark"><?= FormatHelper::date($t['data_transacao']) ?></span>
+                                <?php if (!empty($t['data_vencimento']) && $t['data_vencimento'] !== $t['data_transacao']): ?>
+                                    <div class="text-muted" style="font-size: 0.72rem;">Venc: <?= FormatHelper::date($t['data_vencimento']) ?></div>
+                                <?php endif; ?>
                             </td>
 
                             <!-- Categoria -->

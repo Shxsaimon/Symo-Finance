@@ -45,3 +45,14 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
   1. No Model [`Transfer.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Models/Transfer.php), adicionada checagem antes de abrir a transação PDO: `if ($saldoOrigem < $valor) throw new InvalidArgumentException(...)`, informando o saldo disponível e o valor solicitado.
   2. Na View [`transfers/index.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Views/transfers/index.php), adicionado atributo `data-saldo` nas opções do seletor e validação preventiva em JavaScript para impedir o envio do formulário e alertar o usuário visualmente.
 - **Como evitar no futuro:** Sempre incluir validação de disponibilidade de fundos tanto no backend quanto no frontend em qualquer operação mutatória de débito/transferência.
+
+## 2026-09-03 - Data de vencimento de compras no cartão de crédito exibida como vencida no Dashboard
+
+- **Sintoma:** Compras efetuadas no cartão de crédito apareciam no widget de "Compromissos Pendentes" do Dashboard como vencidas (ex: "Venceu há 1d"), utilizando a data da compra (`data_transacao`) como se fosse o vencimento financeiro da despesa.
+- **Causa:** Na gravação da transação e na query de compromissos pendentes do Dashboard (`getUpcomingPending`), o sistema utilizava `t.data_vencimento` preenchido com a data da compra em vez de herdar a data de vencimento estipulada na fatura do cartão (`fc.data_vencimento`).
+- **Solução aplicada:**
+  1. Nos métodos `createSingleTransaction` e `createInstallmentTransactions` em [`Transaction.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Models/Transaction.php), a `data_vencimento` da transação passa a herdar a `data_vencimento` da fatura mensal do cartão vinculada.
+  2. No método `getUpcomingPending()` em [`Transaction.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Models/Transaction.php), adicionado `LEFT JOIN faturas_cartao fc ON t.fatura_id = fc.id` utilizando `COALESCE(fc.data_vencimento, t.data_vencimento)` como data efetiva de cálculo.
+  3. Na view [`dashboard/index.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Views/dashboard/index.php), a ação para compras de cartão direciona diretamente para o detalhe da fatura do cartão em vez do botão de pagamento individual avulso.
+  4. Executada sincronização das transações já gravadas no banco de dados.
+- **Como evitar no futuro:** Em modelos financeiros com cartões de crédito, sempre desacoplar a data de competência/compra da data de vencimento da obrigação financeira (fatura).

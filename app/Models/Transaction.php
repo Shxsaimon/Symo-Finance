@@ -51,6 +51,9 @@ class Transaction extends Model
                 $faturaId = (int) $fatura['id'];
                 $status = 'pendente'; // Despesa no cartão fica pendente até a fatura ser paga
                 $contaId = null; // Não debita conta no momento da compra
+                if (!empty($fatura['data_vencimento'])) {
+                    $dataVencimento = $fatura['data_vencimento'];
+                }
             }
 
             // Inserção da transação
@@ -172,6 +175,9 @@ class Transaction extends Model
                     $faturaId = (int) $fatura['id'];
                     $faturasAfetadas[$faturaId] = true;
                     $contaParcelaId = null;
+                    if (!empty($fatura['data_vencimento'])) {
+                        $dataVencimento = $fatura['data_vencimento'];
+                    }
                 }
 
                 $descricaoParcela = "{$descricao} [{$i}/{$totalParcelas}]";
@@ -490,7 +496,7 @@ class Transaction extends Model
             $params[':busca'] = '%' . trim((string) $filters['busca']) . '%';
         }
 
-        $sql .= " ORDER BY t.data_vencimento DESC, t.id DESC";
+        $sql .= " ORDER BY t.data_transacao DESC, t.data_vencimento DESC, t.id DESC";
 
         $stmt = $this->db->prepare($sql);
         foreach ($params as $k => $v) {
@@ -559,6 +565,155 @@ class Transaction extends Model
             'despesas_pendentes' => $despesasPendentes,
             'saldo_periodo'      => $saldoPeriodo,
         ];
+    }
+
+    /**
+     * Retorna a evolução financeira dos últimos N meses para alimentar os gráficos do Dashboard.
+     *
+     * @param int $mesFinal
+     * @param int $anoFinal
+     * @param int $quantidadeMeses
+     * @return array<int, array<string, mixed>>
+     */
+    public function getMonthlyEvolution(int $mesFinal, int $anoFinal, int $quantidadeMeses = 6): array
+    {
+        $mesesNomesAbrev = [
+            1 => 'Jan', 2 => 'Fev', 3 => 'Mar', 4 => 'Abr',
+            5 => 'Mai', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+            9 => 'Set', 10 => 'Out', 11 => 'Nov', 12 => 'Dez'
+        ];
+
+        // Gera a lista cronológica de meses
+        $meses = [];
+        $dataCursor = new DateTimeImmutable(sprintf('%04d-%02d-01', $anoFinal, $mesFinal));
+        for ($i = $quantidadeMeses - 1; $i >= 0; $i--) {
+            $dt = $dataCursor->modify("-{$i} month");
+            $m = (int) $dt->format('n');
+            $a = (int) $dt->format('Y');
+            $chave = sprintf('%04d-%02d', $a, $m);
+            $meses[$chave] = [
+                'mes'                => $m,
+                'ano'                => $a,
+                'label'              => $mesesNomesAbrev[$m] . '/' . $dt->format('y'),
+                'total_receitas'     => 0.0,
+                'receitas_recebidas' => 0.0,
+                'total_despesas'     => 0.0,
+                'despesas_pagas'     => 0.0,
+                'balanco_liquido'    => 0.0,
+            ];
+        }
+
+        $primeiroMes = reset($meses);
+        $ultimoMes = end($meses);
+        $dataInicio = sprintf('%04d-%02d-01', $primeiroMes['ano'], $primeiroMes['mes']);
+        $dataFim = (new DateTimeImmutable(sprintf('%04d-%02d-01', $ultimoMes['ano'], $ultimoMes['mes'])))->format('Y-m-t');
+
+        $sql = "SELECT 
+                    YEAR(data_vencimento) as ano,
+                    MONTH(data_vencimento) as mes,
+                    SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END) as total_receitas,
+                    SUM(CASE WHEN tipo = 'receita' AND status = 'recebido' THEN valor ELSE 0 END) as receitas_recebidas,
+                    SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END) as total_despesas,
+                    SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas
+                FROM `transacoes`
+                WHERE excluido_em IS NULL
+                  AND data_vencimento BETWEEN :data_inicio AND :data_fim
+                GROUP BY YEAR(data_vencimento), MONTH(data_vencimento)
+                ORDER BY ano ASC, mes ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':data_inicio', $dataInicio, PDO::PARAM_STR);
+        $stmt->bindValue(':data_fim', $dataFim, PDO::PARAM_STR);
+        $stmt->execute();
+        $registros = $stmt->fetchAll();
+
+        foreach ($registros as $reg) {
+            $chave = sprintf('%04d-%02d', (int)$reg['ano'], (int)$reg['mes']);
+            if (isset($meses[$chave])) {
+                $rec = (float) ($reg['total_receitas'] ?? 0.0);
+                $desp = (float) ($reg['total_despesas'] ?? 0.0);
+                $meses[$chave]['total_receitas'] = $rec;
+                $meses[$chave]['receitas_recebidas'] = (float) ($reg['receitas_recebidas'] ?? 0.0);
+                $meses[$chave]['total_despesas'] = $desp;
+                $meses[$chave]['despesas_pagas'] = (float) ($reg['despesas_pagas'] ?? 0.0);
+                $meses[$chave]['balanco_liquido'] = $rec - $desp;
+            }
+        }
+
+        return array_values($meses);
+    }
+
+    /**
+     * Retorna a distribuição de despesas por categoria no mês para alimentar o gráfico de rosca (Donut).
+     *
+     * @param int $mes
+     * @param int $ano
+     * @return array<int, array<string, mixed>>
+     */
+    public function getExpensesByCategory(int $mes, int $ano): array
+    {
+        $sql = "SELECT c.id, c.nome, c.cor, c.icone,
+                       SUM(t.valor) as total_valor,
+                       COUNT(t.id) as total_lancamentos
+                FROM `transacoes` t
+                JOIN `categorias` c ON t.categoria_id = c.id
+                WHERE t.excluido_em IS NULL
+                  AND t.tipo = 'despesa'
+                  AND MONTH(t.data_vencimento) = :mes
+                  AND YEAR(t.data_vencimento) = :ano
+                GROUP BY c.id, c.nome, c.cor, c.icone
+                ORDER BY total_valor DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':mes', $mes, PDO::PARAM_INT);
+        $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
+        $stmt->execute();
+        $categorias = $stmt->fetchAll();
+
+        $totalGeral = array_reduce($categorias, fn($acc, $item) => $acc + (float)$item['total_valor'], 0.0);
+
+        foreach ($categorias as &$cat) {
+            $val = (float) $cat['total_valor'];
+            $cat['total_valor'] = $val;
+            $cat['percentual'] = ($totalGeral > 0) ? round(($val / $totalGeral) * 100, 1) : 0.0;
+        }
+
+        return $categorias;
+    }
+
+    /**
+     * Retorna os próximos compromissos financeiros pendentes ou vencidos.
+     * Considera a data de vencimento da fatura do cartão quando for despesa em cartão de crédito.
+     *
+     * @param int $dias Intervalo em dias a partir de hoje
+     * @param int $limite Quantidade máxima de registros retornados
+     * @return array<int, array<string, mixed>>
+     */
+    public function getUpcomingPending(int $dias = 7, int $limite = 6): array
+    {
+        $sql = "SELECT t.*, 
+                       c.nome as categoria_nome, c.cor as categoria_cor, c.icone as categoria_icone,
+                       co.nome as conta_nome, co.cor as conta_cor,
+                       cc.nome as cartao_nome, cc.cor as cartao_cor,
+                       COALESCE(fc.data_vencimento, t.data_vencimento) as data_vencimento_efetiva,
+                       DATEDIFF(COALESCE(fc.data_vencimento, t.data_vencimento), CURRENT_DATE()) as dias_para_vencer
+                FROM `transacoes` t
+                LEFT JOIN `categorias` c ON t.categoria_id = c.id
+                LEFT JOIN `contas` co ON t.conta_id = co.id
+                LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
+                LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
+                WHERE t.excluido_em IS NULL
+                  AND t.status = 'pendente'
+                  AND COALESCE(fc.data_vencimento, t.data_vencimento) <= DATE_ADD(CURRENT_DATE(), INTERVAL :dias DAY)
+                ORDER BY data_vencimento_efetiva ASC, t.id ASC
+                LIMIT :limite";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':dias', $dias, PDO::PARAM_INT);
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
     }
 
     /**

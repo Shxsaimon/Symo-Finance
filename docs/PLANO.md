@@ -191,13 +191,13 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 10 — Dashboard Financeiro e Indicadores Gráficos
 - **Objetivo:** Apresentar painel panorâmico com KPIs em tempo real, gráficos de evolução e distribuição de gastos com Chart.js local e widgets de contas a vencer.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Controllers/DashboardController.php` com agregação de métricas do mês selecionado.
-  - [ ] Implementar cálculo de Saldo Real Consolidado, Receitas do Mês, Despesas do Mês e Balanço Líquido.
-  - [ ] Integrar Chart.js local com gráficos:
+  - [x] Implementar `app/Controllers/DashboardController.php` com agregação de métricas do mês selecionado.
+  - [x] Implementar cálculo de Saldo Real Consolidado, Receitas do Mês, Despesas do Mês e Balanço Líquido.
+  - [x] Integrar Chart.js local com gráficos:
     - Evolução Financeira Mensal (barras/linhas em Electric Violet e Deep Lavender).
     - Despesas por Categoria (gráfico de rosca/donut com paleta do tema Symo).
-  - [ ] Criar widgets de contas a vencer nos próximos 7 dias e faturas de cartão.
-  - [ ] Criar view `app/Views/dashboard/index.php`.
+  - [x] Criar widgets de contas a vencer nos próximos 7 dias e faturas de cartão.
+  - [x] Criar view `app/Views/dashboard/index.php`.
 - **Critérios de Pronto:**
   - Dashboard carrega dados agregados consistentes com as transações cadastradas.
   - Gráficos renderizam localmente sem requisições a CDNs externas.

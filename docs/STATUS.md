@@ -7,8 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 03/09/2026
-- **Fase Atual:** Fase 9 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 10 — Dashboard Financeiro e Indicadores Gráficos (Chart.js)
+- **Fase Atual:** Fase 10 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
 
 ---
 
@@ -25,7 +25,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 7** | Módulo de Cartões de Crédito e Faturas | Concluída |
 | **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Concluída |
 | **Fase 9** | Módulo de Transferências entre Contas | Concluída |
-| **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Pendente |
+| **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Concluída |
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Pendente |
 | **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira e Configurações) | Pendente |
 | **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Pendente |
@@ -102,13 +102,20 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 40 testes automatizados executada e 100% aprovada.
 
 ### Fase 9 — Módulo de Transferências entre Contas
-- [x] Implementação de `app/Models/Transfer.php` com suporte a transferências internas, estorno de saldos e transação atômica.
+- [x] Implementação de `app/Models/Transfer.php` com suporte a transferências internas, estorno de saldos, validação de saldo suficiente e transação atômica.
 - [x] Implementação de `app/Controllers/TransferController.php` com controle RBAC e validações de contas distintas.
 - [x] Criação da view `app/Views/transfers/index.php` com cards de resumo, filtros, histórico e modal de transferência.
-- [x] Bateria de 28 testes automatizados executada e 100% aprovada.
+- [x] Bateria de 30 testes automatizados executada e 100% aprovada.
 
 ### Fase 10 — Dashboard Financeiro e Indicadores Gráficos (Chart.js)
-- [ ] Implementação de KPIs consolidados, gráficos de evolução e distribuição com Chart.js local.
+- [x] Implementação de `DashboardController.php` com agregação de KPIs em tempo real, evolução financeira e categorias.
+- [x] Integração de gráficos interativos com Chart.js local (Evolução Mensal e Rosca de Despesas por Categoria).
+- [x] Criação de widgets de compromissos pendentes nos próximos 7 dias e resumo visual de cartões/limites.
+- [x] Criação da view `app/Views/dashboard/index.php` completa e responsiva.
+- [x] Bateria de 34 testes automatizados executada e 100% aprovada.
+
+### Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
+- [ ] Implementação de consultas consolidadas e exportação em CSV com UTF-8 BOM.
 - [ ] Rotina de fechamento de fatura e pagamento com transação atômica.
 - [ ] Criação das views de cartões e faturas.
 
