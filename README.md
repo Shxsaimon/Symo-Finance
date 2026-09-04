@@ -15,7 +15,7 @@ Plataforma web para controle financeiro centralizado e colaborativo em tempo rea
 ## 2. Instalação e Execução Local
 
 1. **Clonar / Posicionar o Projeto:**
-   - Coloque os arquivos dentro do diretório do servidor web (ex: `htdocs/Sistema_Financeiro/` no XAMPP).
+   - Coloque os arquivos dentro do diretório do servidor web (ex: `htdocs/Symo_Finance/` no XAMPP).
 
 2. **Configuração do Banco:**
    - Ajuste os parâmetros de conexão em `config/config.php` se necessário (padrão: host `localhost`, usuário `root`, senha vazia, banco `symo_db`).
@@ -27,7 +27,7 @@ Plataforma web para controle financeiro centralizado e colaborativo em tempo rea
    ```
 
 4. **Acesso no Navegador:**
-   - Abra a URL local: `http://localhost/Sistema_Financeiro/`
+   - Abra a URL local: `http://localhost/Symo_Finance/`
 
 ---
 
