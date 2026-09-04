@@ -176,10 +176,10 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 9 — Módulo de Transferências entre Contas
 - **Objetivo:** Permitir transferências de valores entre contas bancárias com garantia de atomicidade no banco de dados e sem distorcer o fluxo de receitas/despesas.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Models/Transfer.php`.
-  - [ ] Implementar `app/Controllers/TransferController.php` com validação de contas distintas e valor positivo.
-  - [ ] Executar débito na origem e crédito no destino sob transação atômica PDO (`beginTransaction`, `commit`, `rollBack`).
-  - [ ] Criar views e formulário em `app/Views/transfers/`.
+  - [x] Implementar `app/Models/Transfer.php`.
+  - [x] Implementar `app/Controllers/TransferController.php` com validação de contas distintas e valor positivo.
+  - [x] Executar débito na origem e crédito no destino sob transação atômica PDO (`beginTransaction`, `commit`, `rollBack`).
+  - [x] Criar views e formulário em `app/Views/transfers/`.
 - **Critérios de Pronto:**
   - Transferência concluída atualiza simultaneamente o saldo de ambas as contas.
   - Qualquer erro de execução reverte integralmente a operação (`rollBack`).

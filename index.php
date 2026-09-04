@@ -192,6 +192,13 @@ Router::post('/transacoes/atualizar/{id}', [TransactionController::class, 'updat
 Router::post('/transacoes/status/{id}', [TransactionController::class, 'toggle']);
 Router::post('/transacoes/excluir/{id}', [TransactionController::class, 'delete']);
 
+// -------------------------------------------------------------
+// FASE 9: TRANSFERÊNCIAS ENTRE CONTAS
+// -------------------------------------------------------------
+Router::get('/transferencias', [TransferController::class, 'index']);
+Router::post('/transferencias/salvar', [TransferController::class, 'store']);
+Router::post('/transferencias/excluir/{id}', [TransferController::class, 'delete']);
+
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
     AuthHelper::requireRole('admin');
