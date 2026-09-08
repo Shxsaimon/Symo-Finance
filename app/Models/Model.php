@@ -92,6 +92,28 @@ abstract class Model
     }
 
     /**
+     * Busca um registro pelo ID primário incluindo registros marcados como excluídos (Soft Delete).
+     *
+     * @param int $id
+     * @return array<string, mixed>|null
+     */
+    public function findWithTrashed(int $id): ?array
+    {
+        if (empty($this->tabela)) {
+            throw new RuntimeException('Nome da tabela não definido no Model.');
+        }
+
+        $sql = "SELECT * FROM `{$this->tabela}` WHERE `{$this->chavePrimaria}` = :id LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $result = $stmt->fetch();
+        return $result !== false ? $result : null;
+    }
+
+    /**
      * Retorna todos os registros não excluídos ordenados.
      *
      * @param string $orderBy Cláusula de ordenação segura

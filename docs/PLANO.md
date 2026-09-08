@@ -224,16 +224,16 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 12 — Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload)
 - **Objetivo:** Implementar os recursos exclusivos do Administrador: gerenciamento de usuários, trilha de auditoria com JSON Diff, lixeira com restauração de saldos, configurações globais e upload seguro de logotipo/avatar.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Controllers/UserController.php` (CRUD de usuários, inativação imediata de sessão, redefinição de senha).
-  - [ ] Implementar `app/Controllers/AuditController.php` e visualizador de JSON Diff na view `app/Views/audit/`.
-  - [ ] Implementar `app/Controllers/TrashController.php` (listagem de transações, contas e categorias em soft delete, ações de restauração e expurgo definitivo).
-  - [ ] Implementar `app/Controllers/SettingsController.php` e `app/Models/Setting.php` (parâmetros do sistema e disparador de verificação de migrations).
-  - [ ] Implementar rotina de upload seguro (máx 2MB, validação de MIME-type real com `finfo`, renomeação com hash randômico e exclusão do arquivo antigo) em `storage/uploads/avatars/` e `storage/uploads/logos/`.
+  - [x] Implementar `app/Controllers/UserController.php` (CRUD de usuários, inativação imediata de sessão, redefinição de senha).
+  - [x] Implementar `app/Controllers/AuditController.php` e visualizador de JSON Diff na view `app/Views/audit/`.
+  - [x] Implementar `app/Controllers/TrashController.php` (listagem de transações, contas e categorias em soft delete, ações de restauração e expurgo definitivo).
+  - [x] Implementar `app/Controllers/SettingsController.php` e `app/Models/Setting.php` (parâmetros do sistema e disparador de verificação de migrations).
+  - [x] Implementar rotina de upload seguro (máx 2MB, validação de MIME-type real com `finfo`, renomeação com hash randômico e exclusão do arquivo antigo) em `storage/uploads/avatars/` e `storage/uploads/logos/`.
 - **Critérios de Pronto:**
   - Apenas administradores conseguem acessar `/usuarios`, `/auditoria`, `/lixeira` e `/configuracoes`.
   - Restauração de transação na lixeira reprocessa o saldo da conta com integridade.
   - Upload aceita apenas imagens válidas de até 2MB e salva nomes seguros no disco.
-- **Arquivos/Pastas Envolvidos:** `app/Controllers/` (`User*`, `Audit*`, `Trash*`, `Settings*`), `app/Models/Setting.php`, `app/Views/` (`users/`, `audit/`, `trash/`, `settings/`), `storage/uploads/`.
+- **Arquivos/Pastas Envolvidos:** `app/Controllers/` (`UserController.php`, `AuditController.php`, `TrashController.php`, `SettingsController.php`, `ProfileController.php`), `app/Models/Setting.php`, `app/Models/AuditLog.php`, `app/Models/Trash.php`, `app/Models/User.php`, `app/Helpers/UploadHelper.php`, `app/Views/` (`users/`, `audit/`, `trash/`, `settings/`), `storage/uploads/`.
 - **Dependências:** Fases 1 a 11 concluídas.
 
 ---

@@ -6,12 +6,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 03/09/2026
-- **Fase Atual:** Fase 10 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
 - **Data da Última Atualização:** 08/09/2026
-- **Fase Atual:** Fase 11 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 12 — Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload)
+- **Fase Atual:** Fase 12 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 13 — Revisão de Segurança, Validações Integradas e Homologação Final
 
 ---
 
@@ -29,9 +26,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 8** | Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento) | Concluída |
 | **Fase 9** | Módulo de Transferências entre Contas | Concluída |
 | **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Concluída |
-| **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Pendente |
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Concluída |
-| **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira e Configurações) | Pendente |
+| **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload) | Concluída |
 | **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Pendente |
 
 ---
@@ -119,40 +115,19 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 34 testes automatizados executada e 100% aprovada.
 
 ### Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
-- [ ] Implementação de consultas consolidadas e exportação em CSV com UTF-8 BOM.
-- [ ] Rotina de fechamento de fatura e pagamento com transação atômica.
-- [ ] Criação das views de cartões e faturas.
 - [x] Implementação de `app/Models/Report.php` com suporte a filtros combinados (mês/ano, período personalizado, tipo, status, conta, cartão, meio de pagamento, busca textual), totalizadores e visão agrupada por categoria.
 - [x] Implementação de `app/Controllers/ReportController.php` com listagem analítica/sintética e exportação estruturada em CSV com delimitador `;`, valores numéricos padrão PT-BR e BOM UTF-8 (`\xEF\xBB\xBF`) para compatibilidade nativa com Microsoft Excel.
 - [x] Criação da view `app/Views/reports/index.php` com alternador dinâmico de tipo de período, extrato analítico detalhado com badges e totalizadores, e visão sintética de participação por categoria com barras de progresso.
 - [x] Bateria de 33 testes automatizados executada e 100% aprovada.
 
-### Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
-- [ ] Implementação de `TransactionController.php` e model `Transaction.php`.
-- [ ] Rotina de parcelamento com agrupamento e cálculo de dízima residual.
-- [ ] Atualização automática de saldos de contas e faturas.
-- [ ] Criação das views de lançamentos com filtros avançados e visualização de parcelas.
-
-### Fase 9 — Módulo de Transferências entre Contas
-- [ ] Implementação de `TransferController.php` e model `Transfer.php`.
-- [ ] Execução atômica no banco de dados com `beginTransaction`, `commit` e `rollBack`.
-- [ ] Criação de views e histórico de transferências.
-
-### Fase 10 — Dashboard Financeiro e Indicadores Gráficos
-- [ ] Implementação de `DashboardController.php` com agregação de KPIs.
-- [ ] Renderização dos gráficos de evolução e categorias com Chart.js local.
-- [ ] Widgets de contas a vencer e faturas abertas.
-
-### Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
-- [ ] Implementação de `ReportController.php`.
-- [ ] Geração de exportação CSV nativa com UTF-8 BOM e delimitador `;`.
-- [ ] Criação das views de relatórios filtrados.
-
-### Fase 12 — Módulos Administrativos (Usuários, Auditoria, Lixeira e Configurações)
-- [ ] Implementação de `UserController.php` (gestão de membros e inativação de sessão).
-- [ ] Implementação de `AuditController.php` com visualizador de JSON Diff.
-- [ ] Implementação de `TrashController.php` com restauração e recálculo de saldos.
-- [ ] Implementação de `SettingsController.php` e rotina de upload seguro de avatar e logotipo.
+### Fase 12 — Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload)
+- [x] Implementação de `app/Controllers/UserController.php` e expansão de `app/Models/User.php` com CRUD de usuários, alternância de status com revogação imediata, redefinição de senhas com BCRYPT e bloqueio de auto-exclusão/auto-inativação.
+- [x] Implementação de `app/Controllers/AuditController.php` e model `app/Models/AuditLog.php` com filtros por tabela/ação/usuário, métricas consolidadas e modal interativo com comparativo de JSON Diff (valores antigos vs. valores novos).
+- [x] Implementação de `app/Controllers/TrashController.php` e model `app/Models/Trash.php` com abas para transações, contas e categorias excluídas, ação de restauração com reprocessamento atômico de saldos e expurgo definitivo (*Hard Delete*).
+- [x] Implementação de `app/Controllers/SettingsController.php` e model `app/Models/Setting.php` com preferências gerais de moeda/separadores/paginação, painel de status de migrações e disparador de execução de migrações.
+- [x] Implementação de `app/Helpers/UploadHelper.php` com validação de tamanho (máx 2MB), verificação real de MIME-Type / Magic Bytes via `finfo_file`, renomeação com hash randômico e exclusão limpa de arquivos anteriores em `storage/uploads/avatars/` e `storage/uploads/logos/`.
+- [x] Implementação de `app/Controllers/ProfileController.php` e view `app/Views/users/profile.php` para auto-gestão de avatar e alteração de senha por qualquer usuário autenticado.
+- [x] Bateria de 50 testes automatizados executada e 100% aprovada.
 
 ### Fase 13 — Revisão de Segurança, Validações Integradas e Homologação Final
 - [ ] Testes de penetração básicos e validação de todas as proteções (SQLi, XSS, CSRF, RBAC).

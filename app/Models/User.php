@@ -103,4 +103,248 @@ class User extends Model
     {
         return ($user['status'] ?? '') === 'ativo';
     }
+
+    /**
+     * Retorna todos os usuários cadastrados não excluídos com ordenação.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllUsers(): array
+    {
+        $sql = "SELECT id, nome, email, perfil, status, avatar, criado_em, atualizado_em 
+                FROM `{$this->tabela}` 
+                WHERE excluido_em IS NULL 
+                ORDER BY perfil ASC, nome ASC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Verifica se um e-mail já está em uso por outro usuário.
+     *
+     * @param string $email
+     * @param int|null $excludeId ID a desconsiderar (em edições)
+     * @return bool
+     */
+    public function emailExists(string $email, ?int $excludeId = null): bool
+    {
+        $sql = "SELECT COUNT(*) as total FROM `{$this->tabela}` 
+                WHERE email = :email AND excluido_em IS NULL";
+        
+        if ($excludeId !== null) {
+            $sql .= " AND id != :exclude_id";
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':email', trim(strtolower($email)), PDO::PARAM_STR);
+        if ($excludeId !== null) {
+            $stmt->bindValue(':exclude_id', $excludeId, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        $res = $stmt->fetch();
+        return ((int) ($res['total'] ?? 0)) > 0;
+    }
+
+    /**
+     * Cadastra um novo usuário no sistema.
+     *
+     * @param array<string, mixed> $data
+     * @param int $currentUserId
+     * @return array{success: bool, user_id?: int, message?: string}
+     */
+    public function createUser(array $data, int $currentUserId): array
+    {
+        $nome = trim((string) ($data['nome'] ?? ''));
+        $email = trim(strtolower((string) ($data['email'] ?? '')));
+        $senha = (string) ($data['senha'] ?? '');
+        $perfil = in_array($data['perfil'] ?? '', ['admin', 'operador'], true) ? $data['perfil'] : 'operador';
+        $status = in_array($data['status'] ?? '', ['ativo', 'inativo'], true) ? $data['status'] : 'ativo';
+        $avatar = !empty($data['avatar']) ? (string) $data['avatar'] : null;
+
+        if (empty($nome) || mb_strlen($nome) < 3) {
+            return ['success' => false, 'message' => 'O nome completo deve conter no mínimo 3 caracteres.'];
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'O endereço de e-mail informado é inválido.'];
+        }
+
+        if ($this->emailExists($email)) {
+            return ['success' => false, 'message' => 'Este e-mail já está cadastrado para outro usuário.'];
+        }
+
+        if (mb_strlen($senha) < 6) {
+            return ['success' => false, 'message' => 'A senha deve conter no mínimo 6 caracteres.'];
+        }
+
+        $hash = password_hash($senha, PASSWORD_BCRYPT, ['cost' => 12]);
+
+        $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, avatar, criado_em, atualizado_em)
+                VALUES (:nome, :email, :senha, :perfil, :status, :avatar, NOW(), NOW())";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
+        $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+        $stmt->bindValue(':senha', $hash, PDO::PARAM_STR);
+        $stmt->bindValue(':perfil', $perfil, PDO::PARAM_STR);
+        $stmt->bindValue(':status', $status, PDO::PARAM_STR);
+        $stmt->bindValue(':avatar', $avatar, $avatar !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->execute();
+
+        $newId = (int) $this->db->lastInsertId();
+
+        $this->logAudit('INSERT', $newId, null, [
+            'nome'   => $nome,
+            'email'  => $email,
+            'perfil' => $perfil,
+            'status' => $status,
+            'avatar' => $avatar,
+        ], $currentUserId);
+
+        return ['success' => true, 'user_id' => $newId, 'message' => 'Usuário cadastrado com sucesso.'];
+    }
+
+    /**
+     * Atualiza os dados de um usuário existente.
+     *
+     * @param int $id
+     * @param array<string, mixed> $data
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    public function updateUser(int $id, array $data, int $currentUserId): array
+    {
+        $usuarioAntigo = $this->find($id);
+        if (!$usuarioAntigo) {
+            return ['success' => false, 'message' => 'Usuário não encontrado.'];
+        }
+
+        $nome = trim((string) ($data['nome'] ?? $usuarioAntigo['nome']));
+        $email = trim(strtolower((string) ($data['email'] ?? $usuarioAntigo['email'])));
+        $perfil = in_array($data['perfil'] ?? '', ['admin', 'operador'], true) ? $data['perfil'] : $usuarioAntigo['perfil'];
+        $status = in_array($data['status'] ?? '', ['ativo', 'inativo'], true) ? $data['status'] : $usuarioAntigo['status'];
+        $avatar = array_key_exists('avatar', $data) ? $data['avatar'] : $usuarioAntigo['avatar'];
+
+        if (empty($nome) || mb_strlen($nome) < 3) {
+            return ['success' => false, 'message' => 'O nome completo deve conter no mínimo 3 caracteres.'];
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'O endereço de e-mail informado é inválido.'];
+        }
+
+        if ($this->emailExists($email, $id)) {
+            return ['success' => false, 'message' => 'Este e-mail já está em uso por outro usuário.'];
+        }
+
+        // Regra de segurança: Não permitir que o usuário atual inative ou altere seu próprio perfil para operador
+        if ($id === $currentUserId) {
+            $status = 'ativo'; // Força ativo
+            $perfil = 'admin'; // Força admin
+        }
+
+        $sql = "UPDATE `{$this->tabela}` 
+                SET nome = :nome, email = :email, perfil = :perfil, status = :status, avatar = :avatar, atualizado_em = NOW() 
+                WHERE id = :id AND excluido_em IS NULL";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
+        $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+        $stmt->bindValue(':perfil', $perfil, PDO::PARAM_STR);
+        $stmt->bindValue(':status', $status, PDO::PARAM_STR);
+        $stmt->bindValue(':avatar', $avatar, $avatar !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $usuarioNovo = $this->find($id);
+        $this->logAudit('UPDATE', $id, $usuarioAntigo, $usuarioNovo, $currentUserId);
+
+        return ['success' => true, 'message' => 'Dados do usuário atualizados com sucesso.'];
+    }
+
+    /**
+     * Alterna o status do usuário entre ativo e inativo (com bloqueio para auto-desativação).
+     *
+     * @param int $id
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    public function toggleStatus(int $id, int $currentUserId): array
+    {
+        if ($id === $currentUserId) {
+            return ['success' => false, 'message' => 'Você não pode desativar sua própria conta de usuário.'];
+        }
+
+        $user = $this->find($id);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Usuário não encontrado.'];
+        }
+
+        $novoStatus = ($user['status'] === 'ativo') ? 'inativo' : 'ativo';
+
+        $sql = "UPDATE `{$this->tabela}` SET status = :status, atualizado_em = NOW() WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':status', $novoStatus, PDO::PARAM_STR);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $this->logAudit('UPDATE', $id, ['status' => $user['status']], ['status' => $novoStatus], $currentUserId);
+
+        $msg = ($novoStatus === 'ativo') ? 'Usuário ativado com sucesso.' : 'Usuário inativado. Acesso revogado imediatamente.';
+        return ['success' => true, 'message' => $msg, 'novo_status' => $novoStatus];
+    }
+
+    /**
+     * Redefine a senha de um usuário administrativo.
+     *
+     * @param int $id
+     * @param string $newPassword
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    public function resetPassword(int $id, string $newPassword, int $currentUserId): array
+    {
+        if (mb_strlen($newPassword) < 6) {
+            return ['success' => false, 'message' => 'A nova senha deve conter no mínimo 6 caracteres.'];
+        }
+
+        $user = $this->find($id);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Usuário não encontrado.'];
+        }
+
+        $success = $this->updatePassword($id, $newPassword);
+        if ($success) {
+            $this->logAudit('UPDATE', $id, ['senha' => '***ALTERADA_POR_ADMIN***'], ['alterado_por' => $currentUserId], $currentUserId);
+            return ['success' => true, 'message' => 'Senha redefinida com sucesso.'];
+        }
+
+        return ['success' => false, 'message' => 'Não foi possível redefinir a senha.'];
+    }
+
+    /**
+     * Exclui logicamente um usuário (com bloqueio para auto-exclusão).
+     *
+     * @param int $id
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    public function deleteUser(int $id, int $currentUserId): array
+    {
+        if ($id === $currentUserId) {
+            return ['success' => false, 'message' => 'Você não pode excluir sua própria conta de usuário.'];
+        }
+
+        $user = $this->find($id);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Usuário não encontrado.'];
+        }
+
+        $deleted = $this->softDelete($id, $currentUserId);
+        if ($deleted) {
+            return ['success' => true, 'message' => 'Usuário excluído com sucesso.'];
+        }
+
+        return ['success' => false, 'message' => 'Falha ao excluir o usuário.'];
+    }
 }

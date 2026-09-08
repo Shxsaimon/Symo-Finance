@@ -205,6 +205,36 @@ Router::post('/transferencias/excluir/{id}', [TransferController::class, 'delete
 Router::get('/relatorios', [ReportController::class, 'index']);
 Router::get('/relatorios/exportar-csv', [ReportController::class, 'exportCsv']);
 
+// -------------------------------------------------------------
+// FASE 12: MÓDULOS ADMINISTRATIVOS E PERFIL
+// -------------------------------------------------------------
+// Gestão de Usuários (Exclusivo Admin)
+Router::get('/usuarios', [UserController::class, 'index']);
+Router::post('/usuarios/salvar', [UserController::class, 'store']);
+Router::post('/usuarios/atualizar/{id}', [UserController::class, 'update']);
+Router::post('/usuarios/toggle-status/{id}', [UserController::class, 'toggleStatus']);
+Router::post('/usuarios/redefinir-senha/{id}', [UserController::class, 'resetPassword']);
+Router::post('/usuarios/excluir/{id}', [UserController::class, 'delete']);
+
+// Trilha de Auditoria (Exclusivo Admin)
+Router::get('/auditoria', [AuditController::class, 'index']);
+Router::get('/auditoria/detalhes/{id}', [AuditController::class, 'detail']);
+
+// Lixeira do Sistema (Exclusivo Admin)
+Router::get('/lixeira', [TrashController::class, 'index']);
+Router::post('/lixeira/restaurar', [TrashController::class, 'restore']);
+Router::post('/lixeira/expurgar', [TrashController::class, 'purge']);
+
+// Configurações Globais (Exclusivo Admin)
+Router::get('/configuracoes', [SettingsController::class, 'index']);
+Router::post('/configuracoes/salvar', [SettingsController::class, 'update']);
+Router::post('/configuracoes/upload-logo', [SettingsController::class, 'uploadLogo']);
+Router::post('/configuracoes/executar-migracoes', [SettingsController::class, 'runMigrations']);
+
+// Perfil Pessoal (Qualquer Usuário Autenticado)
+Router::get('/perfil', [ProfileController::class, 'index']);
+Router::post('/perfil/salvar', [ProfileController::class, 'update']);
+
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
     AuthHelper::requireRole('admin');
