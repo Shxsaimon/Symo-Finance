@@ -9,6 +9,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Data da Última Atualização:** 03/09/2026
 - **Fase Atual:** Fase 10 — Concluída com Sucesso
 - **Próximo Passo Recomendado:** Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
+- **Data da Última Atualização:** 08/09/2026
+- **Fase Atual:** Fase 11 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Fase 12 — Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload)
 
 ---
 
@@ -27,6 +30,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 9** | Módulo de Transferências entre Contas | Concluída |
 | **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Concluída |
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Pendente |
+| **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Concluída |
 | **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira e Configurações) | Pendente |
 | **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Pendente |
 
@@ -118,6 +122,10 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [ ] Implementação de consultas consolidadas e exportação em CSV com UTF-8 BOM.
 - [ ] Rotina de fechamento de fatura e pagamento com transação atômica.
 - [ ] Criação das views de cartões e faturas.
+- [x] Implementação de `app/Models/Report.php` com suporte a filtros combinados (mês/ano, período personalizado, tipo, status, conta, cartão, meio de pagamento, busca textual), totalizadores e visão agrupada por categoria.
+- [x] Implementação de `app/Controllers/ReportController.php` com listagem analítica/sintética e exportação estruturada em CSV com delimitador `;`, valores numéricos padrão PT-BR e BOM UTF-8 (`\xEF\xBB\xBF`) para compatibilidade nativa com Microsoft Excel.
+- [x] Criação da view `app/Views/reports/index.php` com alternador dinâmico de tipo de período, extrato analítico detalhado com badges e totalizadores, e visão sintética de participação por categoria com barras de progresso.
+- [x] Bateria de 33 testes automatizados executada e 100% aprovada.
 
 ### Fase 8 — Módulo de Transações Financeiras (Receitas, Despesas e Parcelamento)
 - [ ] Implementação de `TransactionController.php` e model `Transaction.php`.

@@ -209,14 +209,14 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 11 — Relatórios Analíticos e Exportação Estruturada em CSV
 - **Objetivo:** Disponibilizar consultas consolidadas por período, categoria, conta e meio de pagamento com exportação nativa para arquivo CSV com UTF-8 BOM.
 - **Checklist de Tarefas:**
-  - [ ] Implementar `app/Controllers/ReportController.php`.
-  - [ ] Implementar filtros de período (mês/ano ou datas customizadas), categoria, conta, meio de pagamento e status.
-  - [ ] Implementar rotina de exportação CSV com delimitador `;`, valores formatados e BOM UTF-8 (`\xEF\xBB\xBF`) para compatibilidade perfeita com Excel.
-  - [ ] Criar views em `app/Views/reports/`.
+  - [x] Implementar `app/Models/Report.php` e `app/Controllers/ReportController.php`.
+  - [x] Implementar filtros de período (mês/ano ou datas customizadas), categoria, conta, meio de pagamento e status.
+  - [x] Implementar rotina de exportação CSV com delimitador `;`, valores formatados e BOM UTF-8 (`\xEF\xBB\xBF`) para compatibilidade perfeita com Excel.
+  - [x] Criar views em `app/Views/reports/`.
 - **Critérios de Pronto:**
   - Relatórios refletem exatamente os filtros selecionados.
   - Arquivo CSV baixado abre com acentuação e colunas corretas no Excel e LibreOffice.
-- **Arquivos/Pastas Envolvidos:** `app/Controllers/ReportController.php`, `app/Views/reports/`.
+- **Arquivos/Pastas Envolvidos:** `app/Models/Report.php`, `app/Controllers/ReportController.php`, `app/Views/reports/`.
 - **Dependências:** Fases 1 a 10 concluídas.
 
 ---

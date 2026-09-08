@@ -199,6 +199,12 @@ Router::get('/transferencias', [TransferController::class, 'index']);
 Router::post('/transferencias/salvar', [TransferController::class, 'store']);
 Router::post('/transferencias/excluir/{id}', [TransferController::class, 'delete']);
 
+// -------------------------------------------------------------
+// FASE 11: RELATÓRIOS ANALÍTICOS E EXPORTAÇÃO CSV
+// -------------------------------------------------------------
+Router::get('/relatorios', [ReportController::class, 'index']);
+Router::get('/relatorios/exportar-csv', [ReportController::class, 'exportCsv']);
+
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
     AuthHelper::requireRole('admin');

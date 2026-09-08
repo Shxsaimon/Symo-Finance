@@ -39,6 +39,20 @@ class Category extends Model
     }
 
     /**
+     * Retorna todas as categorias ativas e não excluídas, agrupadas logicamente por tipo e ordenadas por nome.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getActiveCategories(): array
+    {
+        $sql = "SELECT * FROM `categorias` 
+                WHERE status = 'ativa' AND excluido_em IS NULL 
+                ORDER BY tipo ASC, nome ASC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Cadastra uma nova categoria.
      *
      * @param array<string, mixed> $data
