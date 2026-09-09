@@ -136,7 +136,7 @@ class Setting extends Model
      */
     public function checkMigrationsStatus(): array
     {
-        $migrationsPath = ROOT_PATH . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
+        $migrationsPath = APP_ROOT . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
         $files = glob($migrationsPath . DIRECTORY_SEPARATOR . '*.php');
         if ($files === false) {
             $files = [];

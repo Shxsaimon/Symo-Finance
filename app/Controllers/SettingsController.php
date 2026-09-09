@@ -134,7 +134,7 @@ class SettingsController extends Controller
 
         try {
             $pdo = Database::getConnection();
-            $migrationsPath = ROOT_PATH . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
+            $migrationsPath = APP_ROOT . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations';
             $files = glob($migrationsPath . DIRECTORY_SEPARATOR . '*.php');
             if ($files === false) {
                 $files = [];

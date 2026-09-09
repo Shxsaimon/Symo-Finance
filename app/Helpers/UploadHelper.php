@@ -76,7 +76,7 @@ class UploadHelper
 
         // 5. Definição do Diretório de Destino
         $subfolderSanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder);
-        $targetDir = ROOT_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized;
+        $targetDir = APP_ROOT . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized;
 
         if (!is_dir($targetDir)) {
             if (!mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
@@ -123,7 +123,7 @@ class UploadHelper
     {
         $subfolderSanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder);
         $filenameSanitized  = basename($filename);
-        $filePath = ROOT_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized . DIRECTORY_SEPARATOR . $filenameSanitized;
+        $filePath = APP_ROOT . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized . DIRECTORY_SEPARATOR . $filenameSanitized;
 
         if (file_exists($filePath) && is_file($filePath)) {
             return @unlink($filePath);
