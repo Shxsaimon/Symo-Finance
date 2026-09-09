@@ -105,11 +105,25 @@ class Trash extends Model
      */
     public function restore(string $entity, int $id, int $currentUserId): array
     {
+        $tables = [
+            'transacao'  => 'transacoes',
+            'transacoes' => 'transacoes',
+            'conta'      => 'contas',
+            'contas'     => 'contas',
+            'categoria'  => 'categorias',
+            'categorias' => 'categorias',
+        ];
+
+        if (!isset($tables[$entity])) {
+            return ['success' => false, 'message' => 'Tipo de entidade inválido para restauração.'];
+        }
+
+        $this->tabela = $tables[$entity];
+
         return match ($entity) {
             'transacao', 'transacoes' => $this->restoreTransaction($id, $currentUserId),
             'conta', 'contas'         => $this->restoreAccount($id, $currentUserId),
             'categoria', 'categorias' => $this->restoreCategory($id, $currentUserId),
-            default                   => ['success' => false, 'message' => 'Tipo de entidade inválido para restauração.'],
         };
     }
 
@@ -209,7 +223,6 @@ class Trash extends Model
         $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
         $stmtUp->execute();
 
-        $this->tabela = 'contas';
         $this->logAudit('RESTORE', $id, ['excluido_em' => $conta['excluido_em']], ['excluido_em' => null], $currentUserId);
 
         return ['success' => true, 'message' => 'Conta bancária restaurada com sucesso.'];
@@ -239,7 +252,6 @@ class Trash extends Model
         $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
         $stmtUp->execute();
 
-        $this->tabela = 'categorias';
         $this->logAudit('RESTORE', $id, ['excluido_em' => $categoria['excluido_em']], ['excluido_em' => null], $currentUserId);
 
         return ['success' => true, 'message' => 'Categoria restaurada com sucesso.'];

@@ -56,3 +56,11 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
   3. Na view [`dashboard/index.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Views/dashboard/index.php), a ação para compras de cartão direciona diretamente para o detalhe da fatura do cartão em vez do botão de pagamento individual avulso.
   4. Executada sincronização das transações já gravadas no banco de dados.
 - **Como evitar no futuro:** Em modelos financeiros com cartões de crédito, sempre desacoplar a data de competência/compra da data de vencimento da obrigação financeira (fatura).
+
+
+## 2026-09-09 - Log RESTORE da lixeira sem tabela auditada
+
+- **Sintoma:** Ao restaurar itens da lixeira, o registro `RESTORE` era criado com a coluna `tabela` vazia.
+- **Causa:** O model `Trash` não inicializava a propriedade `$tabela`; a restauração de transações nunca a definia, deixando o contrato usado por `Model::logAudit()` vazio.
+- **Solução aplicada:** O método `restore()` passou a mapear cada entidade aceita para sua tabela (`transacoes`, `contas` ou `categorias`) antes de executar a restauração e o log.
+- **Como evitar no futuro:** Todo model que utilizar `logAudit()` deve manter sua tabela definida antes de qualquer operação auditável.
