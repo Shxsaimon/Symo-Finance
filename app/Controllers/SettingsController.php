@@ -141,17 +141,20 @@ class SettingsController extends Controller
             }
 
             // Garante tabela de migrações
-            $pdo->exec("CREATE TABLE IF NOT EXISTS `migracoes` (
+            $stmtSchema = $pdo->prepare("CREATE TABLE IF NOT EXISTS `migracoes` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `migracao` VARCHAR(255) NOT NULL UNIQUE,
                 `lote` INT UNSIGNED NOT NULL,
                 `executado_em` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+            $stmtSchema->execute();
 
-            $stmt = $pdo->query("SELECT migracao FROM `migracoes`");
+            $stmt = $pdo->prepare("SELECT migracao FROM `migracoes`");
+            $stmt->execute();
             $executed = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-            $stmtLote = $pdo->query("SELECT MAX(lote) as max_lote FROM `migracoes`");
+            $stmtLote = $pdo->prepare("SELECT MAX(lote) as max_lote FROM `migracoes`");
+            $stmtLote->execute();
             $resLote = $stmtLote->fetch();
             $novoLote = ((int) ($resLote['max_lote'] ?? 0)) + 1;
 

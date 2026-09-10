@@ -109,10 +109,13 @@ $appName = 'Symo';
                 </nav>
 
                 <div class="sidebar-footer mt-auto">
-                    <a href="<?= BASE_URL ?>/logout" class="btn btn-outline-light w-100 btn-sm d-flex align-items-center justify-content-center gap-2">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Sair do Sistema</span>
-                    </a>
+                    <form method="post" action="<?= BASE_URL ?>/logout">
+                        <?= CsrfHelper::inputField() ?>
+                        <button type="submit" class="btn btn-outline-light w-100 btn-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Sair do Sistema</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

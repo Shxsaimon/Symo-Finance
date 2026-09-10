@@ -236,6 +236,32 @@ body {
   background-color: rgba(0, 0, 0, 0.15);
 }
 
+.sidebar-logout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.25rem;
+  font-family: inherit;
+  line-height: normal;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.sidebar-logout-button:hover,
+.sidebar-logout-button:focus-visible {
+  color: var(--symo-tertiary-brand);
+}
+
 .sidebar-user {
   display: flex;
   align-items: center;

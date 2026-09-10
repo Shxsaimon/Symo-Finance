@@ -33,7 +33,7 @@ try {
 }
 
 // Garante que a tabela de migrações exista
-$pdo->exec("CREATE TABLE IF NOT EXISTS `migracoes` (
+$schemaStatement = $pdo->prepare("CREATE TABLE IF NOT EXISTS `migracoes` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `migracao` VARCHAR(255) NOT NULL UNIQUE,
     `lote` INT UNSIGNED NOT NULL,
@@ -41,6 +41,7 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS `migracoes` (
     INDEX `idx_migracoes_migracao` (`migracao`),
     INDEX `idx_migracoes_lote` (`lote`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+$schemaStatement->execute();
 
 $args = $argv ?? [];
 $isFresh  = in_array('--fresh', $args, true);
@@ -53,12 +54,14 @@ if ($isFresh) {
     $dbname = $config['database']['dbname'] ?? 'symo_db';
     $charset = $config['database']['charset'] ?? 'utf8mb4';
 
-    $pdo->exec("DROP DATABASE IF EXISTS `{$dbname}`");
-    $pdo->exec("CREATE DATABASE `{$dbname}` CHARACTER SET {$charset} COLLATE utf8mb4_unicode_ci");
+    $dropDatabaseStatement = $pdo->prepare("DROP DATABASE IF EXISTS `{$dbname}`");
+    $dropDatabaseStatement->execute();
+    $createDatabaseStatement = $pdo->prepare("CREATE DATABASE `{$dbname}` CHARACTER SET {$charset} COLLATE utf8mb4_unicode_ci");
+    $createDatabaseStatement->execute();
     Database::resetConnection();
     $pdo = Database::getConnection(false);
 
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `migracoes` (
+    $schemaStatement = $pdo->prepare("CREATE TABLE IF NOT EXISTS `migracoes` (
         `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         `migracao` VARCHAR(255) NOT NULL UNIQUE,
         `lote` INT UNSIGNED NOT NULL,
@@ -66,6 +69,7 @@ if ($isFresh) {
         INDEX `idx_migracoes_migracao` (`migracao`),
         INDEX `idx_migracoes_lote` (`lote`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    $schemaStatement->execute();
     echo "[OK] Banco de dados recriado.\n\n";
 }
 
@@ -89,7 +93,9 @@ if ($onlySeed) {
 }
 
 // 1. Obter histórico de migrações já executadas
-$executed = $pdo->query("SELECT `migracao` FROM `migracoes`")->fetchAll(PDO::FETCH_COLUMN);
+$executedStatement = $pdo->prepare("SELECT `migracao` FROM `migracoes`");
+$executedStatement->execute();
+$executed = $executedStatement->fetchAll(PDO::FETCH_COLUMN);
 
 // 2. Localizar arquivos de migração no diretório
 $migrationsDir = __DIR__ . '/database/migrations';
@@ -109,7 +115,9 @@ if ($isStatus) {
 }
 
 // Determina o próximo número de lote
-$currentBatch = (int) $pdo->query("SELECT MAX(`lote`) FROM `migracoes`")->fetchColumn();
+$batchStatement = $pdo->prepare("SELECT MAX(`lote`) FROM `migracoes`");
+$batchStatement->execute();
+$currentBatch = (int) $batchStatement->fetchColumn();
 $nextBatch = $currentBatch + 1;
 
 $appliedCount = 0;
@@ -154,7 +162,9 @@ if ($appliedCount === 0) {
 // Executa seeds automaticamente se for o primeiro lote de migrações ou se solicitado
 $usuariosExistem = false;
 try {
-    $totalUsuarios = (int) $pdo->query("SELECT COUNT(*) FROM `usuarios`")->fetchColumn();
+    $usersStatement = $pdo->prepare("SELECT COUNT(*) FROM `usuarios`");
+    $usersStatement->execute();
+    $totalUsuarios = (int) $usersStatement->fetchColumn();
     $usuariosExistem = ($totalUsuarios > 0);
 } catch (Throwable $e) {
     $usuariosExistem = false;

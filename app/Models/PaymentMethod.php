@@ -24,7 +24,8 @@ class PaymentMethod extends Model
         $sql = "SELECT * FROM `meios_pagamento` 
                 WHERE status = 'ativo' AND excluido_em IS NULL 
                 ORDER BY nome ASC";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 

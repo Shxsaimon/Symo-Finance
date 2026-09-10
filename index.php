@@ -42,6 +42,7 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_only_cookies', '1');
+    ini_set('session.cookie_secure', ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '1' : '0'));
     session_start();
 }
 
@@ -137,7 +138,6 @@ Router::get('/', function (): void {
 // Rotas de Autenticação e Gestão de Acesso
 Router::get('/login', [AuthController::class, 'showLogin']);
 Router::post('/login', [AuthController::class, 'authenticate']);
-Router::get('/logout', [AuthController::class, 'logout']);
 Router::post('/logout', [AuthController::class, 'logout']);
 Router::get('/esqueci-senha', [AuthController::class, 'showForgotPassword']);
 
@@ -270,7 +270,8 @@ Router::get('/api/health', function (): void {
 
     try {
         $db = Database::getConnection();
-        $db->query('SELECT 1');
+        $healthStatement = $db->prepare('SELECT 1');
+        $healthStatement->execute();
     } catch (Throwable $e) {
         $dbStatus = 'ERRO';
         $dbError = $e->getMessage();
@@ -282,7 +283,6 @@ Router::get('/api/health', function (): void {
         'timezone'  => date_default_timezone_get(),
         'database'  => [
             'status' => $dbStatus,
-            'error'  => $dbError,
         ],
         'core' => [
             'mvc'     => 'operational',
@@ -292,7 +292,6 @@ Router::get('/api/health', function (): void {
         ],
         'auth' => [
             'authenticated' => AuthHelper::check(),
-            'user'          => AuthHelper::user(),
         ]
     ];
 

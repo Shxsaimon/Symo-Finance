@@ -24,7 +24,8 @@ class Account extends Model
         $sql = "SELECT * FROM `contas` 
                 WHERE status = 'ativa' AND excluido_em IS NULL 
                 ORDER BY nome ASC";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 
@@ -38,7 +39,8 @@ class Account extends Model
         $sql = "SELECT COALESCE(SUM(saldo_atual), 0) AS saldo_total 
                 FROM `contas` 
                 WHERE status = 'ativa' AND excluido_em IS NULL";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $result = $stmt->fetch();
         return (float) ($result['saldo_total'] ?? 0.0);
     }

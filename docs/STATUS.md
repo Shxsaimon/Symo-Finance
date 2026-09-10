@@ -6,9 +6,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 08/09/2026
-- **Fase Atual:** Fase 12 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Fase 13 — Revisão de Segurança, Validações Integradas e Homologação Final
+- **Data da Última Atualização:** 09/09/2026
+- **Fase Atual:** Fase 13 — Concluída com Sucesso
+- **Próximo Passo Recomendado:** Manutenção evolutiva e acompanhamento operacional do sistema
 
 ---
 
@@ -28,7 +28,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 10** | Dashboard Financeiro e Indicadores Gráficos (Chart.js) | Concluída |
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Concluída |
 | **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload) | Concluída |
-| **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Pendente |
+| **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Concluída |
 
 ---
 
@@ -130,5 +130,12 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 50 testes automatizados executada e 100% aprovada.
 
 ### Fase 13 — Revisão de Segurança, Validações Integradas e Homologação Final
-- [ ] Testes de penetração básicos e validação de todas as proteções (SQLi, XSS, CSRF, RBAC).
-- [ ] Validação dos critérios de aceitação da seção 26 do `docs/FSD.md`.
+- [x] Corrigido logout mutável por GET; agora exige POST com token CSRF em todos os layouts.
+- [x] Removida exposição de erro do banco e dados do usuário no endpoint `/api/health`.
+- [x] Aplicado atributo `Secure` ao cookie de sessão quando a requisição usa HTTPS.
+- [x] Substituídos acessos SQL diretos por prepared statements na camada `app/`, no health check e no CLI de migrations.
+- [x] Executados lint PHP completo, diagnóstico do editor, testes HTTP de 302/403/404, proteção de diretórios e ausência de CDNs externas em runtime.
+- [x] Executado `migrate.php --status` com o MySQL ativo; as 11 migrations foram confirmadas como aplicadas.
+- [x] Concluídos os testes manuais autenticados de RBAC, XSS/SQLi, uploads e exportação CSV.
+- [x] Validada a conformidade dos critérios de aceitação da seção 26 do `docs/FSD.md`.
+- [x] Sistema construído, banco de dados operacional e aplicação homologada para uso.

@@ -23,9 +23,15 @@ class Trash extends Model
         $sqlC = "SELECT COUNT(*) FROM `contas` WHERE excluido_em IS NOT NULL";
         $sqlCat = "SELECT COUNT(*) FROM `categorias` WHERE excluido_em IS NOT NULL";
 
-        $transacoes = (int) $this->db->query($sqlT)->fetchColumn();
-        $contas     = (int) $this->db->query($sqlC)->fetchColumn();
-        $categorias = (int) $this->db->query($sqlCat)->fetchColumn();
+        $stmtTransacoes = $this->db->prepare($sqlT);
+        $stmtTransacoes->execute();
+        $transacoes = (int) $stmtTransacoes->fetchColumn();
+        $stmtContas = $this->db->prepare($sqlC);
+        $stmtContas->execute();
+        $contas = (int) $stmtContas->fetchColumn();
+        $stmtCategorias = $this->db->prepare($sqlCat);
+        $stmtCategorias->execute();
+        $categorias = (int) $stmtCategorias->fetchColumn();
 
         return [
             'transacoes' => $transacoes,
@@ -57,7 +63,8 @@ class Trash extends Model
                 WHERE t.excluido_em IS NOT NULL
                 ORDER BY t.excluido_em DESC";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 
@@ -74,7 +81,8 @@ class Trash extends Model
                 WHERE c.excluido_em IS NOT NULL
                 ORDER BY c.excluido_em DESC";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 
@@ -91,7 +99,8 @@ class Trash extends Model
                 WHERE cat.excluido_em IS NOT NULL
                 ORDER BY cat.excluido_em DESC";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 

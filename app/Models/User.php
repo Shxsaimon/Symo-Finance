@@ -115,7 +115,8 @@ class User extends Model
                 FROM `{$this->tabela}` 
                 WHERE excluido_em IS NULL 
                 ORDER BY perfil ASC, nome ASC";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 

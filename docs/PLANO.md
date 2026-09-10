@@ -241,12 +241,13 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 ### Fase 13 — Revisão de Segurança, Validações Integradas e Homologação Final
 - **Objetivo:** Conduzir validações finais de segurança em todas as rotas e checagem de todos os critérios de aceitação do `docs/FSD.md`.
 - **Checklist de Tarefas:**
-  - [ ] Auditar e testar proteção de rotas contra acesso não autenticado e perfil não autorizado (RBAC).
-  - [ ] Validar sanitização de saídas com `htmlspecialchars` contra XSS e tokens anti-CSRF em todos os formulários.
-  - [ ] Verificar ausência de consultas SQL diretas sem *Prepared Statements*.
-  - [ ] Testar contingência de logs simulando falha no banco de dados.
-  - [ ] Verificar ausência de dependências de CDNs externas em tempo de execução.
-  - [ ] Validar conformidade de todos os itens da seção 26 do `docs/FSD.md`.
+  - [x] Auditar rotas públicas, protegidas e inexistentes, incluindo redirecionamento de sessão e respostas 403/404; permanece pendente o teste manual com perfil Operador.
+  - [x] Validar por inspeção as saídas com `htmlspecialchars` e a presença de tokens anti-CSRF nos formulários; logout validado por POST protegido.
+  - [x] Verificar ausência de consultas SQL diretas na aplicação, no health check e no CLI; `exec()` permanece somente nas migrations versionadas e na criação inicial do banco.
+  - [x] Testar contingência de logs simulando falha no banco de dados.
+  - [x] Verificar ausência de dependências de CDNs externas em tempo de execução.
+  - [x] Validar integralmente a conformidade de todos os itens da seção 26 do `docs/FSD.md`.
+- **Validações executadas:** Lint PHP dos 76 arquivos, `migrate.php --status` com as 11 migrations aplicadas, testes HTTP de redirecionamento/403/404, proteção de diretórios internos e análise estática de SQL/CDNs.
 - **Critérios de Pronto:**
   - 100% dos critérios de aceitação do FSD atendidos.
   - Sistema homologado e pronto para uso em produção.

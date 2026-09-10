@@ -64,3 +64,21 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 - **Causa:** O model `Trash` não inicializava a propriedade `$tabela`; a restauração de transações nunca a definia, deixando o contrato usado por `Model::logAudit()` vazio.
 - **Solução aplicada:** O método `restore()` passou a mapear cada entidade aceita para sua tabela (`transacoes`, `contas` ou `categorias`) antes de executar a restauração e o log.
 - **Como evitar no futuro:** Todo model que utilizar `logAudit()` deve manter sua tabela definida antes de qualquer operação auditável.
+
+## 2026-09-09 - PHP fora do PATH durante a validação
+
+- **Sintoma:** O comando `php -l` não foi reconhecido no PowerShell.
+- **Causa:** O executável do PHP do XAMPP não está disponível no `PATH` da sessão.
+- **Solução aplicada:** As validações foram executadas com `C:\xampp\php\php.exe`.
+- **Como evitar no futuro:** Configurar o PHP do XAMPP no `PATH` ou usar explicitamente o executável local nos scripts de validação.
+
+---
+
+## 2026-09-09 - MySQL indisponível durante a homologação final
+
+- **Sintoma:** `php migrate.php --status` terminou com `SQLSTATE[HY000] [2002]`, recusando a conexão ao banco.
+- **Causa:** O serviço MySQL local não estava aceitando conexões na última validação.
+- **Solução aplicada:** O endpoint `/api/health` confirmou estado `degraded` sem expor a mensagem técnica; nenhuma alteração destrutiva foi executada.
+- **Como evitar no futuro:** Iniciar o MySQL antes de executar migrations e repetir a validação de status antes de concluir a homologação.
+
+---

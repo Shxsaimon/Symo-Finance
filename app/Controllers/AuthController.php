@@ -118,6 +118,18 @@ class AuthController extends Controller
      */
     public function logout(): void
     {
+        if (!$this->validateCsrf()) {
+            LoggerHelper::security('CSRF_INVALID', ['action' => 'logout']);
+            http_response_code(403);
+            $view403 = APP_ROOT . '/app/Views/errors/403.php';
+            if (file_exists($view403)) {
+                require $view403;
+            } else {
+                echo '<h1>403 — Acesso Restrito</h1><p>Token de segurança inválido.</p>';
+            }
+            exit;
+        }
+
         AuthHelper::logout();
         FlashHelper::set('success', 'Você saiu do sistema com segurança.');
         $this->redirect('/login?logout=1');

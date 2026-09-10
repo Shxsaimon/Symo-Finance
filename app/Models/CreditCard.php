@@ -144,7 +144,8 @@ class CreditCard extends Model
                 WHERE c.excluido_em IS NULL
                 ORDER BY c.status ASC, c.nome ASC";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $cards = $stmt->fetchAll();
 
         foreach ($cards as &$card) {

@@ -25,7 +25,6 @@ $pageTitle   = $title ?? 'Painel Financeiro';
         </h2>
     </div>
 
-    <!-- Lado Direito: Ações e Menu de Perfil -->
     <div class="navbar-actions">
         <!-- Badge de Perfil -->
         <span class="<?= AuthHelper::isAdmin() ? 'badge-role-admin' : 'badge-role-operador' ?> d-none d-md-inline-block">
@@ -69,10 +68,13 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                 <?php endif; ?>
                 <li><hr class="dropdown-divider my-1"></li>
                 <li>
-                    <a class="dropdown-item py-2 text-danger d-flex align-items-center gap-2" href="<?= BASE_URL ?>/logout">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Sair do Sistema</span>
-                    </a>
+                    <form method="post" action="<?= BASE_URL ?>/logout" class="m-0">
+                        <?= CsrfHelper::inputField() ?>
+                        <button type="submit" class="dropdown-item py-2 text-danger d-flex align-items-center gap-2 border-0 bg-transparent w-100">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Sair do Sistema</span>
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>

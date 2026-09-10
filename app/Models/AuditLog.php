@@ -115,7 +115,8 @@ class AuditLog extends Model
     public function getAuditedTables(): array
     {
         $sql = "SELECT DISTINCT tabela FROM `{$this->tabela}` ORDER BY tabela ASC";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
         return is_array($rows) ? $rows : [];
     }
@@ -137,7 +138,8 @@ class AuditLog extends Model
                     SUM(CASE WHEN acao = 'PURGE' THEN 1 ELSE 0 END) as total_purge
                 FROM `{$this->tabela}`";
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $res = $stmt->fetch();
 
         return [

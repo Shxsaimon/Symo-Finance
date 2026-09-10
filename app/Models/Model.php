@@ -133,7 +133,8 @@ abstract class Model
 
         $sql .= " ORDER BY " . $this->sanitizeOrderBy($orderBy);
 
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 

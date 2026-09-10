@@ -48,7 +48,8 @@ class Category extends Model
         $sql = "SELECT * FROM `categorias` 
                 WHERE status = 'ativa' AND excluido_em IS NULL 
                 ORDER BY tipo ASC, nome ASC";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 

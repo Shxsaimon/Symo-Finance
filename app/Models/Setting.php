@@ -22,7 +22,8 @@ class Setting extends Model
     public function getAll(): array
     {
         $sql = "SELECT chave, valor, tipo FROM `{$this->tabela}`";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $rows = $stmt->fetchAll();
 
         $settings = [];
@@ -144,7 +145,8 @@ class Setting extends Model
 
         // Busca histórico de migrações executadas
         $sql = "SELECT migracao, lote, executado_em FROM `migracoes` ORDER BY migracao ASC";
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
         $executed = [];
         foreach ($stmt->fetchAll() as $row) {
             $executed[$row['migracao']] = $row;

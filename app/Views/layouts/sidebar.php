@@ -24,10 +24,7 @@ $isActive = function (string $path) use ($currentUri): string {
         <img src="<?= BASE_URL ?>/public/img/logo.svg" alt="Symo Financeiro">
     </a>
 
-    <!-- Menu de Navegação -->
     <nav class="sidebar-menu">
-        <!-- 1. Visão Geral -->
-        <div class="sidebar-section-title">Visão Geral</div>
         <a href="<?= BASE_URL ?>/dashboard" class="sidebar-nav-link <?= $isActive('/dashboard') ?>">
             <i class="bi bi-grid-1x2-fill"></i>
             <span>Dashboard</span>
@@ -106,9 +103,12 @@ $isActive = function (string $path) use ($currentUri): string {
                     <?= htmlspecialchars($currentUser['perfil'] ?? 'Operador', ENT_QUOTES, 'UTF-8') ?>
                 </p>
             </div>
-            <a href="<?= BASE_URL ?>/logout" title="Sair do Sistema" style="color: rgba(255,255,255,0.6); font-size: 1.25rem; transition: color 0.2s;" onmouseover="this.style.color='#ffdad6';" onmouseout="this.style.color='rgba(255,255,255,0.6)';">
-                <i class="bi bi-box-arrow-right"></i>
-            </a>
+            <form method="post" action="<?= BASE_URL ?>/logout" class="sidebar-logout-form">
+                <?= CsrfHelper::inputField() ?>
+                <button type="submit" title="Sair do Sistema" class="sidebar-logout-button">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </form>
         </div>
     </div>
 </aside>
