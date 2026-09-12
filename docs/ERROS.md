@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-11 - Function PHP fora do diretório api na Vercel
+
+- **Sintoma:** O deploy falhou com `The pattern "index.php" defined in functions doesn't match any Serverless Functions inside the api directory`.
+- **Causa:** O runtime comunitário `vercel-php` identifica Functions PHP dentro de `api/`; o `index.php` raiz do projeto não era reconhecido como uma Function.
+- **Solução aplicada:** Criado `api/index.php` como adaptador que inclui o front controller existente, atualizado o padrão de `functions` para `api/*.php` e direcionado o rewrite global para `/api/index.php`.
+- **Como evitar no futuro:** Manter os entrypoints PHP destinados à Vercel dentro de `api/` e validar o deploy com a versão do runtime compatível com a versão de PHP requerida.
+
 ## 2026-09-01 - SQLSTATE[HY093]: Invalid parameter number com placeholders duplicados em PDO nativo
 
 - **Sintoma:** Erro `PDOException: SQLSTATE[HY093]: Invalid parameter number` ao executar query preparada com o mesmo placeholder `:id` utilizado mais de uma vez na cláusula `WHERE (conta_origem_id = :id OR conta_destino_id = :id)`.

@@ -9,7 +9,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Data da Última Atualização:** 09/09/2026
 - **Fase Atual:** Fase 13 — Concluída com Sucesso
 - **Próximo Passo Recomendado:** Manutenção evolutiva e acompanhamento operacional do sistema
-- **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
+- **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 
 ---
 
