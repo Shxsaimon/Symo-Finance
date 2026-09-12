@@ -6,10 +6,11 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 09/09/2026
+- **Data da Última Atualização:** 11/09/2026
 - **Fase Atual:** Fase 13 — Concluída com Sucesso
 - **Próximo Passo Recomendado:** Manutenção evolutiva e acompanhamento operacional do sistema
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
+- **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
 
 ---
 

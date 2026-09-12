@@ -5,7 +5,7 @@
 
 # --- Configurações Locais e Credenciais Sensíveis ---
 # O arquivo config/config.php contém senhas e parâmetros de conexão reais
-config/config.php
+# config/config.php
 .env
 .env.*
 !.env.example

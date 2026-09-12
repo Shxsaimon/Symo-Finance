@@ -11,20 +11,20 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 return [
     'app' => [
-        'name'        => 'Symo',
-        'env'         => 'development', // 'development' ou 'production'
-        'debug'       => true,           // Definir como false em produção
-        'base_url'    => '',             // Deixar vazio para detecção automática ou definir URL base (ex: 'http://localhost/Sistema_Financeiro')
-        'timezone'    => 'America/Sao_Paulo',
-        'session_ttl' => 3600,           // Tempo de sessão inativa em segundos (60 minutos)
+        'name'        => getenv('APP_NAME') ?: 'Symo',
+        'env'         => getenv('APP_ENV') ?: 'development',
+        'debug'       => filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),
+        'base_url'    => rtrim((string) (getenv('APP_BASE_URL') ?: ''), '/'),
+        'timezone'    => getenv('APP_TIMEZONE') ?: 'America/Sao_Paulo',
+        'session_ttl' => max(60, (int) (getenv('APP_SESSION_TTL') ?: 3600)),
     ],
     'database' => [
-        'host'     => 'localhost',
-        'port'     => 3306,
-        'dbname'   => 'symo_db',
-        'username' => 'root',
-        'password' => '',
-        'charset'  => 'utf8mb4',
+        'host'     => getenv('DB_HOST') ?: 'localhost',
+        'port'     => (int) (getenv('DB_PORT') ?: 3306),
+        'dbname'   => getenv('DB_NAME') ?: 'symo_db',
+        'username' => getenv('DB_USER') ?: 'root',
+        'password' => getenv('DB_PASSWORD') ?: '',
+        'charset'  => getenv('DB_CHARSET') ?: 'utf8mb4',
     ],
     'upload' => [
         'max_size'    => 2097152, // 2 MB em bytes
