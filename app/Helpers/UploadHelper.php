@@ -74,6 +74,49 @@ class UploadHelper
         $randomHex = bin2hex(random_bytes(16));
         $newFilename = "{$prefix}{$randomHex}.{$extension}";
 
+        if (getenv('VERCEL') === '1' || getenv('VERCEL_ENV') !== false) {
+            $token = (string) (getenv('BLOB_READ_WRITE_TOKEN') ?: '');
+            if ($token === '') {
+                return ['success' => false, 'error' => 'O armazenamento de imagens da Vercel ainda não foi configurado.'];
+            }
+
+            $blobPath = $subfolder . '/' . $newFilename;
+            $blobUrl = 'https://blob.vercel-storage.com/' . $blobPath;
+            $handle = fopen($tmpPath, 'rb');
+            $curl = curl_init($blobUrl);
+            curl_setopt_array($curl, [
+                CURLOPT_PUT => true,
+                CURLOPT_INFILE => $handle,
+                CURLOPT_INFILESIZE => $fileSize,
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: ' . $detectedMime,
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+            ]);
+            $response = curl_exec($curl);
+            $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            curl_close($curl);
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+
+            $responseData = is_string($response) ? json_decode($response, true) : null;
+            if ($status < 200 || $status >= 300 || !is_array($responseData) || empty($responseData['url'])) {
+                return ['success' => false, 'error' => 'Não foi possível salvar a imagem no armazenamento da Vercel.'];
+            }
+
+            if (!empty($oldFilename)) {
+                self::deleteBlob((string) $oldFilename, $token);
+            }
+
+            return [
+                'success' => true,
+                'filename' => (string) $responseData['url'],
+                'relative_path' => (string) $responseData['url'],
+            ];
+        }
+
         // 5. Definição do Diretório de Destino
         $subfolderSanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder);
         $targetDir = APP_ROOT . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized;
@@ -121,6 +164,10 @@ class UploadHelper
      */
     public static function deleteFile(string $subfolder, string $filename): bool
     {
+        if (filter_var($filename, FILTER_VALIDATE_URL) && (getenv('BLOB_READ_WRITE_TOKEN') ?: '') !== '') {
+            return self::deleteBlob($filename, (string) getenv('BLOB_READ_WRITE_TOKEN'));
+        }
+
         $subfolderSanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder);
         $filenameSanitized  = basename($filename);
         $filePath = APP_ROOT . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized . DIRECTORY_SEPARATOR . $filenameSanitized;
@@ -130,6 +177,24 @@ class UploadHelper
         }
 
         return false;
+    }
+
+    private static function deleteBlob(string $url, string $token): bool
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_CUSTOMREQUEST => 'DELETE',
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+            CURLOPT_RETURNTRANSFER => true,
+        ]);
+        curl_exec($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+        return $status >= 200 && $status < 300;
     }
 }
 

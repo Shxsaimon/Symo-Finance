@@ -10,6 +10,10 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 return new class {
     public function up(PDO $pdo): void
     {
+        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+            return;
+        }
+
         // 1. Tabela cartoes_credito
         $sqlCartoes = "CREATE TABLE IF NOT EXISTS `cartoes_credito` (
             `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

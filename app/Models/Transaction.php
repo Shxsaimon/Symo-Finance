@@ -696,7 +696,7 @@ class Transaction extends Model
                        co.nome as conta_nome, co.cor as conta_cor,
                        cc.nome as cartao_nome, cc.cor as cartao_cor,
                        COALESCE(fc.data_vencimento, t.data_vencimento) as data_vencimento_efetiva,
-                       DATEDIFF(COALESCE(fc.data_vencimento, t.data_vencimento), CURRENT_DATE()) as dias_para_vencer
+                       (COALESCE(fc.data_vencimento, t.data_vencimento) - CURRENT_DATE) as dias_para_vencer
                 FROM `transacoes` t
                 LEFT JOIN `categorias` c ON t.categoria_id = c.id
                 LEFT JOIN `contas` co ON t.conta_id = co.id
@@ -704,7 +704,7 @@ class Transaction extends Model
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
                 WHERE t.excluido_em IS NULL
                   AND t.status = 'pendente'
-                  AND COALESCE(fc.data_vencimento, t.data_vencimento) <= DATE_ADD(CURRENT_DATE(), INTERVAL :dias DAY)
+                  AND COALESCE(fc.data_vencimento, t.data_vencimento) <= (CURRENT_DATE + (:dias * INTERVAL '1 day'))
                 ORDER BY data_vencimento_efetiva ASC, t.id ASC
                 LIMIT :limite";
 

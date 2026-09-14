@@ -10,6 +10,12 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 return new class {
     public function up(PDO $pdo): void
     {
+        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+            require_once dirname(__DIR__) . '/PostgresSchema.php';
+            PostgresSchema::create($pdo);
+            return;
+        }
+
         $sql = "CREATE TABLE IF NOT EXISTS `usuarios` (
             `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             `nome` VARCHAR(120) NOT NULL,

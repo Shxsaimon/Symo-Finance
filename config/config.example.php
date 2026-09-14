@@ -39,5 +39,8 @@ return [
     'logs' => [
         'file_fallback' => dirname(__DIR__) . '/storage/logs/error.log',
         'security_file' => dirname(__DIR__) . '/storage/logs/security.log',
+    ],
+    'storage' => [
+        'blob_token' => getenv('BLOB_READ_WRITE_TOKEN') ?: '',
     ]
 ];

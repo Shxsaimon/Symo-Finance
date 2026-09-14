@@ -13,6 +13,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
 - **Migração Neon:** `DATABASE_URL` passou a ser aceita pelo PDO como PostgreSQL com SSL obrigatório; as migrations e queries ainda precisam ser convertidas de MySQL para PostgreSQL antes da homologação.
 - **Compatibilidade Linux/Vercel:** O autoloader de `index.php` mapeia a classe `Database` para `config/database.php`, preservando o nome atual do arquivo e corrigindo a diferença de maiúsculas/minúsculas.
+- **Validação Neon:** Código e migrations passaram no lint PHP; execução real contra o Neon está pendente porque o PHP local não possui `pdo_pgsql` e o MySQL local está indisponível.
+- **Armazenamento serverless:** Logs usam `error_log()` na Vercel; uploads usam Vercel Blob quando `BLOB_READ_WRITE_TOKEN` estiver configurado.
 
 ---
 

@@ -43,6 +43,15 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_secure', ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '1' : '0'));
+
+    require_once APP_ROOT . '/config/database.php';
+    require_once APP_ROOT . '/app/Helpers/DatabaseSessionHandler.php';
+    try {
+        $sessionDatabase = Database::getConnection();
+        session_set_save_handler(new DatabaseSessionHandler($sessionDatabase, (int) ($config['app']['session_ttl'] ?? 3600)), true);
+    } catch (Throwable $sessionException) {
+        error_log('Sessão persistente indisponível: ' . $sessionException->getMessage());
+    }
     session_start();
 }
 

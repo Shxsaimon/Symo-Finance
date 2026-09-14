@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-14 - Validação local do Neon bloqueada por extensões e banco local
+
+- **Sintoma:** `migrate.php --status` local falhou porque o MySQL em `localhost:3306` recusou conexão; o PHP do XAMPP também não possui `pdo_pgsql`.
+- **Causa:** O ambiente local ainda está configurado para MySQL e não tem o driver PDO PostgreSQL necessário para testar `DATABASE_URL` do Neon.
+- **Solução aplicada:** O código foi preparado para PostgreSQL, mas a execução contra o Neon deve ser feita em um PHP com `pdo_pgsql` habilitado ou por uma ferramenta PostgreSQL compatível.
+- **Como evitar no futuro:** Validar `php -m` antes de executar migrations remotas e nunca usar `--fresh` contra o banco de produção.
+
 ## 2026-09-14 - Classe Database não encontrada no runtime Linux
 
 - **Sintoma:** A Vercel retornou `Class "Database" not found` ao construir o `Model` durante o login.

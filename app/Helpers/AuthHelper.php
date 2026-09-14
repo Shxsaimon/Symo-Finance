@@ -272,11 +272,14 @@ class AuthHelper
             $db = Database::getConnection();
 
             // Conta tentativas falhas nos últimos 15 minutos (900 segundos)
-            $sql = "SELECT COUNT(*) as total 
+                        $interval = $db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql'
+                                ? "CURRENT_TIMESTAMP - INTERVAL '15 minutes'"
+                                : 'NOW() - INTERVAL 15 MINUTE';
+                        $sql = "SELECT COUNT(*) as total
                     FROM seguranca_logs 
                     WHERE evento = 'LOGIN_FAILED' 
                       AND (email = :email OR endereco_ip = :ip) 
-                      AND criado_em >= (NOW() - INTERVAL 15 MINUTE)";
+                                            AND criado_em >= ({$interval})";
 
             $stmt = $db->prepare($sql);
             $stmt->bindValue(':email', $email, PDO::PARAM_STR);

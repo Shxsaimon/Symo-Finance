@@ -130,7 +130,7 @@ class AuditLog extends Model
     {
         $sql = "SELECT 
                     COUNT(*) as total_eventos,
-                    SUM(CASE WHEN DATE(criado_em) = CURRENT_DATE() THEN 1 ELSE 0 END) as eventos_hoje,
+                    SUM(CASE WHEN CAST(criado_em AS DATE) = CURRENT_DATE THEN 1 ELSE 0 END) as eventos_hoje,
                     SUM(CASE WHEN acao = 'INSERT' THEN 1 ELSE 0 END) as total_insert,
                     SUM(CASE WHEN acao = 'UPDATE' THEN 1 ELSE 0 END) as total_update,
                     SUM(CASE WHEN acao = 'SOFT_DELETE' THEN 1 ELSE 0 END) as total_delete,
@@ -179,12 +179,12 @@ class AuditLog extends Model
         }
 
         if (!empty($filters['data_inicio'])) {
-            $sql .= " AND DATE(a.criado_em) >= :data_inicio";
+            $sql .= " AND CAST(a.criado_em AS DATE) >= :data_inicio";
             $params[':data_inicio'] = (string) $filters['data_inicio'];
         }
 
         if (!empty($filters['data_fim'])) {
-            $sql .= " AND DATE(a.criado_em) <= :data_fim";
+            $sql .= " AND CAST(a.criado_em AS DATE) <= :data_fim";
             $params[':data_fim'] = (string) $filters['data_fim'];
         }
 

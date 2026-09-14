@@ -13,13 +13,13 @@ return new class {
     public function run(PDO $pdo): void
     {
         // 1. Usuários Padrão
-        $stmtUser = $pdo->prepare("SELECT id FROM `usuarios` WHERE `email` = :email");
+        $stmtUser = $pdo->prepare("SELECT id FROM usuarios WHERE email = :email");
         
         // Admin
         $stmtUser->execute(['email' => 'admin@symo.local']);
         if (!$stmtUser->fetch()) {
             $passAdmin = password_hash('Admin@123456', PASSWORD_BCRYPT, ['cost' => 12]);
-            $insUser = $pdo->prepare("INSERT INTO `usuarios` (`nome`, `email`, `senha`, `perfil`, `status`) VALUES (:nome, :email, :senha, :perfil, :status)");
+            $insUser = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, perfil, status) VALUES (:nome, :email, :senha, :perfil, :status)");
             $insUser->execute([
                 'nome'    => 'Administrador Symo',
                 'email'   => 'admin@symo.local',
@@ -34,7 +34,7 @@ return new class {
         $stmtUser->execute(['email' => 'operador@symo.local']);
         if (!$stmtUser->fetch()) {
             $passOperador = password_hash('Operador@123456', PASSWORD_BCRYPT, ['cost' => 12]);
-            $insUser = $pdo->prepare("INSERT INTO `usuarios` (`nome`, `email`, `senha`, `perfil`, `status`) VALUES (:nome, :email, :senha, :perfil, :status)");
+            $insUser = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, perfil, status) VALUES (:nome, :email, :senha, :perfil, :status)");
             $insUser->execute([
                 'nome'    => 'Operador Symo',
                 'email'   => 'operador@symo.local',
@@ -64,8 +64,8 @@ return new class {
             ['nome' => 'Outras Despesas', 'tipo' => 'despesa', 'icone' => 'bi-dash-circle', 'cor' => '#6F02FF'],
         ];
 
-        $stmtCat = $pdo->prepare("SELECT id FROM `categorias` WHERE `nome` = :nome AND `tipo` = :tipo");
-        $insCat = $pdo->prepare("INSERT INTO `categorias` (`nome`, `tipo`, `icone`, `cor`, `status`) VALUES (:nome, :tipo, :icone, :cor, 'ativa')");
+        $stmtCat = $pdo->prepare("SELECT id FROM categorias WHERE nome = :nome AND tipo = :tipo");
+        $insCat = $pdo->prepare("INSERT INTO categorias (nome, tipo, icone, cor, status) VALUES (:nome, :tipo, :icone, :cor, 'ativa')");
         
         foreach ($categories as $cat) {
             $stmtCat->execute(['nome' => $cat['nome'], 'tipo' => $cat['tipo']]);
@@ -85,8 +85,8 @@ return new class {
             ['nome' => 'Transferência Bancária', 'eh_credito' => 0],
         ];
 
-        $stmtPm = $pdo->prepare("SELECT id FROM `meios_pagamento` WHERE `nome` = :nome");
-        $insPm = $pdo->prepare("INSERT INTO `meios_pagamento` (`nome`, `eh_credito`, `status`) VALUES (:nome, :eh_credito, 'ativo')");
+        $stmtPm = $pdo->prepare("SELECT id FROM meios_pagamento WHERE nome = :nome");
+        $insPm = $pdo->prepare("INSERT INTO meios_pagamento (nome, eh_credito, status) VALUES (:nome, :eh_credito, 'ativo')");
 
         foreach ($paymentMethods as $pm) {
             $stmtPm->execute(['nome' => $pm['nome']]);
@@ -106,8 +106,8 @@ return new class {
             ['chave' => 'logotipo_aplicacao', 'valor' => null, 'tipo' => 'string', 'descricao' => 'Caminho do Logotipo da Aplicação'],
         ];
 
-        $stmtSet = $pdo->prepare("SELECT id FROM `configuracoes` WHERE `chave` = :chave");
-        $insSet = $pdo->prepare("INSERT INTO `configuracoes` (`chave`, `valor`, `tipo`, `descricao`) VALUES (:chave, :valor, :tipo, :descricao)");
+        $stmtSet = $pdo->prepare("SELECT id FROM configuracoes WHERE chave = :chave");
+        $insSet = $pdo->prepare("INSERT INTO configuracoes (chave, valor, tipo, descricao) VALUES (:chave, :valor, :tipo, :descricao)");
 
         foreach ($settings as $st) {
             $stmtSet->execute(['chave' => $st['chave']]);

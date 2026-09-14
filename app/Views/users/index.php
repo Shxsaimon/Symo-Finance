@@ -50,7 +50,9 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                     <?php foreach ($users as $u): ?>
                         <?php 
                         $isSelf = ((int)$u['id'] === $loggedUserId);
-                        $avatarUrl = !empty($u['avatar']) ? BASE_URL . '/storage/uploads/avatars/' . htmlspecialchars($u['avatar'], ENT_QUOTES, 'UTF-8') : null;
+                        $avatarUrl = !empty($u['avatar'])
+                            ? (filter_var((string) $u['avatar'], FILTER_VALIDATE_URL) ? (string) $u['avatar'] : BASE_URL . '/storage/uploads/avatars/' . htmlspecialchars($u['avatar'], ENT_QUOTES, 'UTF-8'))
+                            : null;
                         ?>
                         <tr>
                             <td>

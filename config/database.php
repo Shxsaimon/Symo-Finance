@@ -3,6 +3,30 @@ declare(strict_types=1);
 
 defined('APP_RUNNING') or die('Acesso direto proibido.');
 
+class SymoPostgresConnection extends PDO
+{
+    public function prepare(string $query, array $options = []): PDOStatement|false
+    {
+        return parent::prepare(self::normalizeSql($query), $options);
+    }
+
+    public function exec(string $statement): int|false
+    {
+        return parent::exec(self::normalizeSql($statement));
+    }
+
+    private static function normalizeSql(string $sql): string
+    {
+        $sql = str_replace('`', '', $sql);
+        $sql = preg_replace('/\bNOW\(\)/i', 'CURRENT_TIMESTAMP', $sql) ?? $sql;
+        $sql = preg_replace('/\bCURRENT_DATE\(\)/i', 'CURRENT_DATE', $sql) ?? $sql;
+        $sql = preg_replace("/INTERVAL\\s+(\\d+)\\s+MINUTE/i", "INTERVAL '$1 minutes'", $sql) ?? $sql;
+        $sql = preg_replace("/INTERVAL\\s+(\\d+)\\s+DAY/i", "INTERVAL '$1 days'", $sql) ?? $sql;
+
+        return $sql;
+    }
+}
+
 /**
  * Symo — Fábrica de Conexão PDO (Singleton)
  *
@@ -72,7 +96,7 @@ class Database
                     . ';sslmode=require';
                 $username = rawurldecode((string) ($parts['user'] ?? ''));
                 $password = rawurldecode((string) ($parts['pass'] ?? ''));
-                self::$instance = new PDO($dsn, $username, $password, $options);
+                self::$instance = new SymoPostgresConnection($dsn, $username, $password, $options);
             } else {
                 if ($driver !== 'mysql') {
                     throw new InvalidArgumentException('DB_DRIVER deve ser mysql quando DATABASE_URL não estiver definida.');

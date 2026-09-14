@@ -71,17 +71,26 @@ class Setting extends Model
         $valorString = is_array($valor) ? json_encode($valor, JSON_UNESCAPED_UNICODE) : (string)$valor;
         $antigo = $this->get($chave);
 
-        $sql = "INSERT INTO `{$this->tabela}` (chave, valor, tipo, descricao, atualizado_em)
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+            $sql = "INSERT INTO {$this->tabela} (chave, valor, tipo, descricao, atualizado_em)
+                VALUES (:chave, :valor, :tipo, :descricao, CURRENT_TIMESTAMP)
+                ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor, tipo = EXCLUDED.tipo,
+                descricao = EXCLUDED.descricao, atualizado_em = CURRENT_TIMESTAMP";
+        } else {
+            $sql = "INSERT INTO `{$this->tabela}` (chave, valor, tipo, descricao, atualizado_em)
                 VALUES (:chave, :valor, :tipo, :descricao, NOW())
                 ON DUPLICATE KEY UPDATE valor = :valor_up, tipo = :tipo_up, atualizado_em = NOW()";
+        }
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':chave', $chave, PDO::PARAM_STR);
         $stmt->bindValue(':valor', $valorString, PDO::PARAM_STR);
         $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
         $stmt->bindValue(':descricao', $descricao, $descricao !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
-        $stmt->bindValue(':valor_up', $valorString, PDO::PARAM_STR);
-        $stmt->bindValue(':tipo_up', $tipo, PDO::PARAM_STR);
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'pgsql') {
+            $stmt->bindValue(':valor_up', $valorString, PDO::PARAM_STR);
+            $stmt->bindValue(':tipo_up', $tipo, PDO::PARAM_STR);
+        }
         $success = $stmt->execute();
 
         if ($success) {

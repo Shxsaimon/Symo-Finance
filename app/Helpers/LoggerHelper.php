@@ -132,6 +132,17 @@ class LoggerHelper
      */
     private static function fallbackLogToFile(string $tipo, string $mensagem, array $contexto = []): void
     {
+        $timestamp = date('Y-m-d H:i:s');
+        $ip = $contexto['ip'] ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        $fileInfo = isset($contexto['arquivo'], $contexto['linha']) ? " em {$contexto['arquivo']}:{$contexto['linha']}" : '';
+        $contextStr = !empty($contexto) ? ' | Contexto: ' . json_encode($contexto, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
+        $logEntry = "[{$timestamp}] [" . strtoupper($tipo) . "] [IP: {$ip}] Mensagem: {$mensagem}{$fileInfo}{$contextStr}" . PHP_EOL;
+
+        if (getenv('VERCEL') === '1' || getenv('VERCEL_ENV') !== false) {
+            error_log($logEntry);
+            return;
+        }
+
         $logDir = APP_ROOT . '/storage/logs';
         if (!is_dir($logDir)) {
             @mkdir($logDir, 0755, true);
@@ -139,13 +150,6 @@ class LoggerHelper
 
         $fileName = $tipo === 'security' ? 'security.log' : 'error.log';
         $logFile  = $logDir . '/' . $fileName;
-
-        $timestamp = date('Y-m-d H:i:s');
-        $ip = $contexto['ip'] ?? ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-        $fileInfo = isset($contexto['arquivo'], $contexto['linha']) ? " em {$contexto['arquivo']}:{$contexto['linha']}" : '';
-        $contextStr = !empty($contexto) ? ' | Contexto: ' . json_encode($contexto, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
-
-        $logEntry = "[{$timestamp}] [" . strtoupper($tipo) . "] [IP: {$ip}] Mensagem: {$mensagem}{$fileInfo}{$contextStr}" . PHP_EOL;
 
         @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
     }
