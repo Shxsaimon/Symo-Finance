@@ -19,6 +19,8 @@ return [
         'session_ttl' => max(60, (int) (getenv('APP_SESSION_TTL') ?: 3600)),
     ],
     'database' => [
+        'url'      => getenv('DATABASE_URL') ?: '',
+        'driver'   => getenv('DB_DRIVER') ?: 'mysql',
         'host'     => getenv('DB_HOST') ?: 'localhost',
         'port'     => (int) (getenv('DB_PORT') ?: 3306),
         'dbname'   => getenv('DB_NAME') ?: 'symo_db',

@@ -11,6 +11,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Próximo Passo Recomendado:** Manutenção evolutiva e acompanhamento operacional do sistema
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
+- **Migração Neon:** `DATABASE_URL` passou a ser aceita pelo PDO como PostgreSQL com SSL obrigatório; as migrations e queries ainda precisam ser convertidas de MySQL para PostgreSQL antes da homologação.
 
 ---
 

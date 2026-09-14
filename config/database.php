@@ -45,6 +45,8 @@ class Database
             $config = require $configFile;
             $dbConfig = $config['database'] ?? [];
 
+            $databaseUrl = trim((string) ($dbConfig['url'] ?? ''));
+            $driver = strtolower((string) ($dbConfig['driver'] ?? 'mysql'));
             $host     = $dbConfig['host'] ?? 'localhost';
             $port     = (int) ($dbConfig['port'] ?? 3306);
             $dbname   = $dbConfig['dbname'] ?? 'symo_db';
@@ -56,18 +58,39 @@ class Database
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$charset} COLLATE utf8mb4_unicode_ci",
             ];
 
-            if ($createDbIfNotExists) {
-                $dsnServer = "mysql:host={$host};port={$port};charset={$charset}";
-                $tempPdo = new PDO($dsnServer, $username, $password, $options);
-                $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbname}` CHARACTER SET {$charset} COLLATE utf8mb4_unicode_ci");
-                unset($tempPdo);
-            }
+            if ($databaseUrl !== '') {
+                $parts = parse_url($databaseUrl);
+                if ($parts === false || ($parts['scheme'] ?? '') !== 'postgresql') {
+                    throw new InvalidArgumentException('DATABASE_URL deve ser uma URL PostgreSQL válida.');
+                }
 
-            $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
-            self::$instance = new PDO($dsn, $username, $password, $options);
+                $dsn = 'pgsql:host=' . ($parts['host'] ?? '')
+                    . ';port=' . ($parts['port'] ?? 5432)
+                    . ';dbname=' . ltrim((string) ($parts['path'] ?? ''), '/')
+                    . ';sslmode=require';
+                $username = rawurldecode((string) ($parts['user'] ?? ''));
+                $password = rawurldecode((string) ($parts['pass'] ?? ''));
+                self::$instance = new PDO($dsn, $username, $password, $options);
+            } else {
+                if ($driver !== 'mysql') {
+                    throw new InvalidArgumentException('DB_DRIVER deve ser mysql quando DATABASE_URL não estiver definida.');
+                }
+
+                $mysqlOptions = $options;
+                $mysqlOptions[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES {$charset} COLLATE utf8mb4_unicode_ci";
+
+                if ($createDbIfNotExists) {
+                    $dsnServer = "mysql:host={$host};port={$port};charset={$charset}";
+                    $tempPdo = new PDO($dsnServer, $username, $password, $mysqlOptions);
+                    $tempPdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbname}` CHARACTER SET {$charset} COLLATE utf8mb4_unicode_ci");
+                    unset($tempPdo);
+                }
+
+                $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
+                self::$instance = new PDO($dsn, $username, $password, $mysqlOptions);
+            }
         }
 
         return self::$instance;
