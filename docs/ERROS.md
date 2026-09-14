@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-14 - Classe Database não encontrada no runtime Linux
+
+- **Sintoma:** A Vercel retornou `Class "Database" not found` ao construir o `Model` durante o login.
+- **Causa:** O autoloader montava `Database.php`, enquanto o arquivo versionado era `config/database.php`; Windows trata essa diferença de forma diferente do Linux.
+- **Solução aplicada:** Adicionado mapeamento explícito de `Database` para `database.php` no autoloader, sem renomear o arquivo e sem alterar o modo de debug.
+- **Como evitar no futuro:** Validar nomes de arquivos e imports em ambiente Linux ou CI, pois o filesystem de produção diferencia maiúsculas e minúsculas.
+
 ## 2026-09-11 - Function PHP fora do diretório api na Vercel
 
 - **Sintoma:** O deploy falhou com `The pattern "index.php" defined in functions doesn't match any Serverless Functions inside the api directory`.

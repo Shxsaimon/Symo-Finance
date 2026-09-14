@@ -66,8 +66,13 @@ spl_autoload_register(function (string $class): void {
         APP_ROOT . '/app/Models/',
     ];
 
+    $fileNames = [
+        'Database' => 'database.php',
+    ];
+
     foreach ($directories as $dir) {
-        $file = $dir . $class . '.php';
+        $fileName = $fileNames[$class] ?? ($class . '.php');
+        $file = $dir . $fileName;
         if (file_exists($file)) {
             require_once $file;
             return;
