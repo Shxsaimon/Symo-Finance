@@ -20,6 +20,8 @@ class SymoPostgresConnection extends PDO
         $sql = str_replace('`', '', $sql);
         $sql = preg_replace('/\bNOW\(\)/i', 'CURRENT_TIMESTAMP', $sql) ?? $sql;
         $sql = preg_replace('/\bCURRENT_DATE\(\)/i', 'CURRENT_DATE', $sql) ?? $sql;
+        $sql = preg_replace('/\bMONTH\(([^()]+)\)/i', 'EXTRACT(MONTH FROM $1)', $sql) ?? $sql;
+        $sql = preg_replace('/\bYEAR\(([^()]+)\)/i', 'EXTRACT(YEAR FROM $1)', $sql) ?? $sql;
         $sql = preg_replace("/INTERVAL\\s+(\\d+)\\s+MINUTE/i", "INTERVAL '$1 minutes'", $sql) ?? $sql;
         $sql = preg_replace("/INTERVAL\\s+(\\d+)\\s+DAY/i", "INTERVAL '$1 days'", $sql) ?? $sql;
 

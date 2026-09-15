@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-14 - Funções MONTH e YEAR incompatíveis no Dashboard PostgreSQL
+
+- **Sintoma:** Após o login, o Dashboard retornou `Undefined function: 7 ERROR: function month(date) does not exist` em `Transaction.php`.
+- **Causa:** PostgreSQL não implementa as funções MySQL `MONTH()` e `YEAR()` usadas nas consultas de resumo, evolução, relatórios e transferências.
+- **Solução aplicada:** O adaptador `SymoPostgresConnection` passou a converter essas funções para `EXTRACT(MONTH FROM ...)` e `EXTRACT(YEAR FROM ...)` antes de executar `prepare` ou `exec`.
+- **Como evitar no futuro:** Ao adicionar consultas, validar funções específicas do MySQL contra PostgreSQL e preferir filtros por intervalo de datas.
+
 ## 2026-09-14 - Execução remota de migrations via GitHub Actions
 
 - **Sintoma:** A Vercel não oferece terminal CLI persistente para executar `migrate.php`.
