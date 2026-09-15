@@ -16,6 +16,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Validação Neon:** Código e migrations passaram no lint PHP; execução real contra o Neon está pendente porque o PHP local não possui `pdo_pgsql` e o MySQL local está indisponível.
 - **Armazenamento serverless:** Logs usam `error_log()` na Vercel; uploads usam Vercel Blob quando `BLOB_READ_WRITE_TOKEN` estiver configurado.
 - **Correção Dashboard PostgreSQL:** `MONTH()` e `YEAR()` agora são convertidos para `EXTRACT()` na conexão PostgreSQL.
+- **Assets Vercel:** Rewrite global ajustado para não capturar `/public/` e `/api/`.
 - **Migrations via GitHub Actions:** Workflow manual criado em `.github/workflows/database-migrations.yml`; requer o Secret `NEON_DATABASE_URL` no repositório.
 
 ---

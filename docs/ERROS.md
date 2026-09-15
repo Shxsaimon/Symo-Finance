@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-14 - Assets públicos retornando 404 na Vercel
+
+- **Sintoma:** CSS, JavaScript e imagens em `/public/` retornavam 404 e o Dashboard era exibido sem estilos.
+- **Causa:** O rewrite global `/(.*)` encaminhava também os arquivos estáticos para `api/index.php`, onde o Router PHP respondia 404.
+- **Solução aplicada:** O rewrite passou a excluir `/public/` e `/api/`, permitindo que a Vercel sirva assets e Functions diretamente.
+- **Como evitar no futuro:** Rewrites do front controller devem excluir diretórios de assets e endpoints já reconhecidos pela plataforma.
+
 ## 2026-09-14 - Funções MONTH e YEAR incompatíveis no Dashboard PostgreSQL
 
 - **Sintoma:** Após o login, o Dashboard retornou `Undefined function: 7 ERROR: function month(date) does not exist` em `Transaction.php`.
