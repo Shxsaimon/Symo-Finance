@@ -4,9 +4,7 @@
     "api/*.php": {
       "runtime": "vercel-php@0.5.5",
       "maxDuration": 30,
-      "includeFiles": [
-        "public/**"
-      ]
+      "includeFiles": "public/**"
     }
   },
   "rewrites": [
