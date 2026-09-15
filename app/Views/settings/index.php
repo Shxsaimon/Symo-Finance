@@ -10,7 +10,7 @@ $csrfToken = CsrfHelper::generateToken();
 $logoFilename = $settings['logotipo_aplicacao'] ?? null;
 $logoUrl = !empty($logoFilename)
     ? (filter_var((string) $logoFilename, FILTER_VALIDATE_URL) ? (string) $logoFilename : BASE_URL . '/storage/uploads/logos/' . htmlspecialchars((string) $logoFilename, ENT_QUOTES, 'UTF-8'))
-    : BASE_URL . '/public/img/logo.svg';
+    : ASSET_URL . '/img/logo.svg';
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">

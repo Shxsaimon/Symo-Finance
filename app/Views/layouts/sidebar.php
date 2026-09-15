@@ -21,7 +21,7 @@ $isActive = function (string $path) use ($currentUri): string {
 <aside class="sidebar-symo">
     <!-- Logotipo e Marca -->
     <a href="<?= BASE_URL ?>/dashboard" class="sidebar-brand">
-        <img src="<?= BASE_URL ?>/public/img/logo.svg" alt="Symo Financeiro">
+        <img src="<?= ASSET_URL ?>/img/logo.svg" alt="Symo Financeiro">
     </a>
 
     <nav class="sidebar-menu">

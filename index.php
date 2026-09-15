@@ -66,6 +66,10 @@ if (empty($config['app']['base_url'])) {
     define('BASE_URL', rtrim($config['app']['base_url'], '/'));
 }
 
+define('ASSET_URL', (getenv('VERCEL') === '1' || getenv('VERCEL_ENV') !== false)
+    ? BASE_URL
+    : BASE_URL . '/public');
+
 // 6. Autoloader Simples do Core MVC (Controllers, Models, Helpers, Config)
 spl_autoload_register(function (string $class): void {
     $directories = [

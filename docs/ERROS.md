@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-14 - Assets continuavam 404 após ajuste do rewrite
+
+- **Sintoma:** Os links em `/public/...` ou na raiz dos assets retornavam 404/texto plano; o navegador recusava CSS e JavaScript por MIME incorreto e o Chart.js não era definido.
+- **Causa:** O runtime comunitário `vercel-php` estava encaminhando os assets para a Function e não os entregava como arquivos estáticos confiáveis apenas com o rewrite.
+- **Solução aplicada:** A Function `api/index.php` passou a servir somente assets permitidos de `public/`, com validação de caminho, MIME explícito e cache; `public/**` foi incluído no bundle da Function.
+- **Como evitar no futuro:** Validar no deploy o status e o `Content-Type` de `/css/*.css`, `/js/*.js` e `/img/*.svg` antes de testar componentes da interface.
+
 ## 2026-09-14 - Assets públicos retornando 404 na Vercel
 
 - **Sintoma:** CSS, JavaScript e imagens em `/public/` retornavam 404 e o Dashboard era exibido sem estilos.

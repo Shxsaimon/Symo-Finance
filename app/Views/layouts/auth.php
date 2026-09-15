@@ -20,12 +20,12 @@ $appName   = 'Symo';
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     
     <!-- Assets Locais -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/bootstrap.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/custom.css">
+    <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?= ASSET_URL ?>/css/custom.css">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/public/img/logo.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/logo.svg">
 
     <style>
         body {
@@ -75,7 +75,7 @@ $appName   = 'Symo';
         <div class="auth-brand">
             <a href="<?= BASE_URL ?>/login" class="d-inline-block text-decoration-none">
                 <div style="background: linear-gradient(135deg, #4a2ec2 0%, #260058 100%); padding: 10px 20px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(74, 46, 194, 0.25);">
-                    <img src="<?= BASE_URL ?>/public/img/logo.svg" alt="Symo Financeiro" style="margin: 0; height: 32px;">
+                    <img src="<?= ASSET_URL ?>/img/logo.svg" alt="Symo Financeiro" style="margin: 0; height: 32px;">
                 </div>
             </a>
             <p style="color: var(--symo-outline); margin: 0.75rem 0 0 0; font-size: 0.9rem;">
@@ -94,7 +94,7 @@ $appName   = 'Symo';
     </div>
 
     <!-- Scripts Locais -->
-    <script src="<?= BASE_URL ?>/public/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= BASE_URL ?>/public/js/app.js"></script>
+    <script src="<?= ASSET_URL ?>/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= ASSET_URL ?>/js/app.js"></script>
 </body>
 </html>

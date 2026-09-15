@@ -21,12 +21,12 @@ $appName = 'Symo';
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
 
     <!-- Assets Locais Obrigatórios (Sem CDNs externas) -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/bootstrap.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/css/custom.css">
+    <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?= ASSET_URL ?>/css/custom.css">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/public/img/logo.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/logo.svg">
 </head>
 <body>
     <div class="app-layout">
@@ -36,7 +36,7 @@ $appName = 'Symo';
         <!-- 2. Sidebar Offcanvas para Mobile (< 992px) -->
         <div class="offcanvas offcanvas-start p-0 d-lg-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel" style="width: 280px; background: linear-gradient(180deg, #4a2ec2 0%, #260058 100%);">
             <div class="offcanvas-header p-3 border-bottom border-white-subtle">
-                <img src="<?= BASE_URL ?>/public/img/logo.svg" alt="Symo" height="32">
+                <img src="<?= ASSET_URL ?>/img/logo.svg" alt="Symo" height="32">
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
             </div>
             <div class="offcanvas-body p-0 d-flex flex-column">
@@ -137,8 +137,8 @@ $appName = 'Symo';
     </div>
 
     <!-- Scripts Locais Obrigatórios (Sem CDNs externas) -->
-    <script src="<?= BASE_URL ?>/public/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= BASE_URL ?>/public/js/chart.umd.min.js"></script>
-    <script src="<?= BASE_URL ?>/public/js/app.js"></script>
+    <script src="<?= ASSET_URL ?>/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= ASSET_URL ?>/js/chart.umd.min.js"></script>
+    <script src="<?= ASSET_URL ?>/js/app.js"></script>
 </body>
 </html>
