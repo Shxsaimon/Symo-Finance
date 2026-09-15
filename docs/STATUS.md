@@ -15,6 +15,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Compatibilidade Linux/Vercel:** O autoloader de `index.php` mapeia a classe `Database` para `config/database.php`, preservando o nome atual do arquivo e corrigindo a diferença de maiúsculas/minúsculas.
 - **Validação Neon:** Código e migrations passaram no lint PHP; execução real contra o Neon está pendente porque o PHP local não possui `pdo_pgsql` e o MySQL local está indisponível.
 - **Armazenamento serverless:** Logs usam `error_log()` na Vercel; uploads usam Vercel Blob quando `BLOB_READ_WRITE_TOKEN` estiver configurado.
+- **Migrations via GitHub Actions:** Workflow manual criado em `.github/workflows/database-migrations.yml`; requer o Secret `NEON_DATABASE_URL` no repositório.
 
 ---
 

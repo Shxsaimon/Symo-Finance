@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-14 - Execução remota de migrations via GitHub Actions
+
+- **Sintoma:** A Vercel não oferece terminal CLI persistente para executar `migrate.php`.
+- **Causa:** `migrate.php` exige execução em modo CLI e o runtime serverless da Vercel é orientado a requisições.
+- **Solução aplicada:** Criado workflow manual `.github/workflows/database-migrations.yml`, com PHP 8.2, `pdo_pgsql` e ações controladas de status, migration ou seed.
+- **Como evitar no futuro:** Armazenar a URL do Neon em Secret do GitHub e nunca permitir `--fresh` em produção.
+
 ## 2026-09-14 - Validação local do Neon bloqueada por extensões e banco local
 
 - **Sintoma:** `migrate.php --status` local falhou porque o MySQL em `localhost:3306` recusou conexão; o PHP do XAMPP também não possui `pdo_pgsql`.

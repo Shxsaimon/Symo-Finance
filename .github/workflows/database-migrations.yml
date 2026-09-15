@@ -1,0 +1,58 @@
+name: Symo Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Operacao a executar"
+        required: true
+        type: choice
+        options:
+          - status
+          - migrate
+          - seed
+        default: status
+
+jobs:
+  database:
+    name: Executar migracoes PostgreSQL
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_TIMEZONE: America/Sao_Paulo
+      APP_SESSION_TTL: "3600"
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP com PostgreSQL
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo, pdo_pgsql
+          coverage: none
+
+      - name: Validar configuracao
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "O secret NEON_DATABASE_URL nao foi configurado."
+            exit 1
+          fi
+          php -m | grep -E '^pdo_pgsql$'
+          php -l migrate.php
+
+      - name: Ver status das migracoes
+        if: inputs.action == 'status'
+        run: php migrate.php --status
+
+      - name: Executar migracoes
+        if: inputs.action == 'migrate'
+        run: php migrate.php
+
+      - name: Executar seed inicial
+        if: inputs.action == 'seed'
+        run: php migrate.php --seed
