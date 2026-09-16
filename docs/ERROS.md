@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-16 - Execução de migrations integrada ao painel
+
+- **Sintoma:** A tela administrativa executava migrations diretamente na Function PHP, enquanto a execução oficial usava GitHub Actions com PHP e `pdo_pgsql`.
+- **Causa:** Havia dois caminhos de execução, com risco de divergência de ambiente e de incompatibilidade SQL no runtime web.
+- **Solução aplicada:** O painel passou a disparar o workflow `database-migrations.yml` pela API do GitHub, usando as ações `status`, `migrate` e `seed`, com acompanhamento da execução, jobs e logs para administradores.
+- **Como evitar no futuro:** Manter migrations de produção no workflow controlado e nunca expor o token GitHub no HTML ou JavaScript.
+
 ## 2026-09-16 - Upload Blob usando endpoint fabricado
 
 - **Sintoma:** O upload recebia `BLOB_READ_WRITE_TOKEN`, mas falhava ao validar a resposta porque o código enviava o arquivo para `https://blob.vercel-storage.com/...`, uma URL montada manualmente.

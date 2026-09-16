@@ -251,6 +251,8 @@ Router::get('/configuracoes', [SettingsController::class, 'index']);
 Router::post('/configuracoes/salvar', [SettingsController::class, 'update']);
 Router::post('/configuracoes/upload-logo', [SettingsController::class, 'uploadLogo']);
 Router::post('/configuracoes/executar-migracoes', [SettingsController::class, 'runMigrations']);
+Router::get('/configuracoes/github-actions/status', [SettingsController::class, 'githubActionStatus']);
+Router::get('/configuracoes/github-actions/logs/{id}', [SettingsController::class, 'githubActionLog']);
 
 // Perfil Pessoal (Qualquer Usuário Autenticado)
 Router::get('/perfil', [ProfileController::class, 'index']);

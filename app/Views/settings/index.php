@@ -9,6 +9,10 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 $csrfToken = CsrfHelper::generateToken();
 $logoFilename = $settings['logotipo_aplicacao'] ?? null;
 $logoUrl = !empty($logoFilename) ? BASE_URL . '/media/logo' : ASSET_URL . '/img/logo.svg';
+$githubRun = $githubExecution['run'] ?? null;
+$githubJobs = $githubExecution['jobs'] ?? [];
+$githubStatus = $githubRun['status'] ?? 'never';
+$githubConclusion = $githubRun['conclusion'] ?? null;
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
@@ -109,19 +113,49 @@ $logoUrl = !empty($logoFilename) ? BASE_URL . '/media/logo' : ASSET_URL . '/img/
     <!-- Coluna Direita: Status do Banco de Dados e Migrações -->
     <div class="col-lg-5">
         <div class="symo-card shadow-sm border-0 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                 <h5 class="fw-bold mb-0" style="color: var(--symo-primary-brand);">
                     <i class="bi bi-database-check me-2"></i>Status do Banco & Migrações
                 </h5>
-                <form action="<?= BASE_URL ?>/configuracoes/executar-migracoes" method="POST" class="d-inline" onsubmit="return confirm('Deseja executar as migrações pendentes no banco de dados?');">
+                <form action="<?= BASE_URL ?>/configuracoes/executar-migracoes" method="POST" class="d-flex align-items-center gap-2" onsubmit="return confirmarAcaoBanco(this);">
                     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                    <button type="submit" class="btn btn-outline-success btn-sm">
-                        <i class="bi bi-play-circle me-1"></i>Executar Migrações
+                    <label for="database_action" class="visually-hidden">Operação do banco</label>
+                    <select id="database_action" name="database_action" class="form-select form-select-sm" required>
+                        <option value="status">Verificar status</option>
+                        <option value="migrate">Executar migrations</option>
+                        <option value="seed">Executar seed</option>
+                    </select>
+                    <button type="submit" class="btn btn-outline-success btn-sm text-nowrap">
+                        <i class="bi bi-play-circle me-1"></i>Enviar
                     </button>
                 </form>
             </div>
 
-            <p class="text-muted small mb-3">Abaixo estão listadas todas as migrações estruturais do projeto e seu estado de execução no schema.</p>
+            <p class="text-muted small mb-3">Escolha uma operação. O GitHub Actions executará a tarefa com o segredo do banco mantido fora da aplicação.</p>
+
+            <div id="github-action-status" class="border rounded p-3 mb-3 small" data-status-url="<?= htmlspecialchars(BASE_URL . '/configuracoes/github-actions/status', ENT_QUOTES, 'UTF-8') ?>">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Última execução no GitHub</strong>
+                    <span id="github-run-badge" class="badge <?= $githubStatus === 'completed' && $githubConclusion === 'success' ? 'bg-success' : ($githubStatus === 'never' ? 'bg-secondary' : 'bg-warning text-dark') ?>">
+                        <?= htmlspecialchars($githubStatus === 'never' ? 'Ainda não executado' : (string) $githubStatus, ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                </div>
+                <div id="github-run-details" class="text-muted">
+                    <?php if ($githubRun): ?>
+                        Operação: <span class="fw-semibold"><?= htmlspecialchars((string) ($githubRun['display_title'] ?? 'Workflow manual'), ENT_QUOTES, 'UTF-8') ?></span>
+                        <?php if (!empty($githubRun['html_url'])): ?>
+                            <a href="<?= htmlspecialchars((string) $githubRun['html_url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Abrir no GitHub</a>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        Nenhuma execução encontrada.
+                    <?php endif; ?>
+                </div>
+                <div id="github-job-list" class="mt-2">
+                    <?php foreach ($githubJobs as $job): ?>
+                        <div><?= htmlspecialchars((string) ($job['name'] ?? 'Job'), ENT_QUOTES, 'UTF-8') ?>: <?= htmlspecialchars((string) ($job['status'] ?? 'desconhecido'), ENT_QUOTES, 'UTF-8') ?><?= isset($job['conclusion']) && $job['conclusion'] ? ' (' . htmlspecialchars((string) $job['conclusion'], ENT_QUOTES, 'UTF-8') . ')' : '' ?><?php if (!empty($job['id'])): ?> <a href="<?= htmlspecialchars(BASE_URL . '/configuracoes/github-actions/logs/' . (int) $job['id'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Ver log</a><?php endif; ?></div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
 
             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
@@ -169,4 +203,65 @@ $logoUrl = !empty($logoFilename) ? BASE_URL . '/media/logo' : ASSET_URL . '/img/
         </div>
     </div>
 </div>
+
+<script>
+function confirmarAcaoBanco(formulario) {
+    const acao = formulario.querySelector('[name="database_action"]').value;
+    const mensagens = {
+        status: 'Deseja consultar o status das migrations no GitHub Actions?',
+        migrate: 'Deseja executar as migrations pendentes no banco de produção?',
+        seed: 'Deseja executar o seed no banco de produção?'
+    };
+    return window.confirm(mensagens[acao] || 'Deseja enviar esta operação ao GitHub Actions?');
+}
+
+(function acompanharGitHubAction() {
+    const painel = document.getElementById('github-action-status');
+    if (!painel) return;
+
+    const textoSeguro = (valor) => document.createTextNode(String(valor ?? ''));
+
+    const atualizar = () => fetch(painel.dataset.statusUrl, { credentials: 'same-origin' })
+        .then((resposta) => resposta.ok ? resposta.json() : null)
+        .then((dados) => {
+            if (!dados || !dados.run) return;
+            const run = dados.run;
+            const badge = document.getElementById('github-run-badge');
+            const detalhes = document.getElementById('github-run-details');
+            const jobs = document.getElementById('github-job-list');
+            badge.textContent = run.status === 'completed' ? (run.conclusion || 'completed') : run.status;
+            badge.className = 'badge ' + (run.status === 'completed' && run.conclusion === 'success' ? 'bg-success' : run.status === 'completed' ? 'bg-danger' : 'bg-warning text-dark');
+            detalhes.replaceChildren(textoSeguro('Operação: '));
+            const titulo = document.createElement('span');
+            titulo.className = 'fw-semibold';
+            titulo.appendChild(textoSeguro(run.display_title || 'Workflow manual'));
+            detalhes.appendChild(titulo);
+            if (run.html_url) {
+                const link = document.createElement('a');
+                link.href = run.html_url;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.appendChild(textoSeguro(' Abrir no GitHub'));
+                detalhes.appendChild(link);
+            }
+            jobs.replaceChildren(...(dados.jobs || []).map((job) => {
+                const linha = document.createElement('div');
+                linha.appendChild(textoSeguro(job.name + ': ' + job.status + (job.conclusion ? ' (' + job.conclusion + ')' : '')));
+                if (job.id) {
+                    const link = document.createElement('a');
+                    link.href = painel.dataset.statusUrl.replace('/status', '/logs/' + Number(job.id));
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.appendChild(textoSeguro(' Ver log'));
+                    linha.appendChild(link);
+                }
+                return linha;
+            }));
+        })
+        .catch(() => undefined);
+
+    atualizar();
+    window.setInterval(atualizar, 10000);
+})();
+</script>
 
