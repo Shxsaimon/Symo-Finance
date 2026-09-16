@@ -8,9 +8,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  */
 $csrfToken = CsrfHelper::generateToken();
 $logoFilename = $settings['logotipo_aplicacao'] ?? null;
-$logoUrl = !empty($logoFilename)
-    ? (filter_var((string) $logoFilename, FILTER_VALIDATE_URL) ? (string) $logoFilename : BASE_URL . '/storage/uploads/logos/' . htmlspecialchars((string) $logoFilename, ENT_QUOTES, 'UTF-8'))
-    : ASSET_URL . '/img/logo.svg';
+$logoUrl = !empty($logoFilename) ? BASE_URL . '/media/logo' : ASSET_URL . '/img/logo.svg';
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
@@ -96,8 +94,8 @@ $logoUrl = !empty($logoFilename)
                         <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                         <div class="mb-3">
                             <label for="logotipo" class="form-label fw-semibold small">Enviar Novo Logotipo</label>
-                            <input type="file" class="form-control form-control-sm" id="logotipo" name="logotipo" required accept="image/png, image/jpeg, image/webp">
-                            <small class="text-muted">Recomendado: SVG, PNG transparente ou WebP até 2 MB.</small>
+                            <input type="file" class="form-control form-control-sm" id="logotipo" name="logotipo" required accept="image/svg+xml, image/png, image/jpeg, image/webp">
+                            <small class="text-muted">Formatos aceitos: SVG, PNG, JPEG ou WebP até 2 MB.</small>
                         </div>
                         <button type="submit" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-upload me-1"></i>Atualizar Logotipo

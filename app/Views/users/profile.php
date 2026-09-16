@@ -7,9 +7,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  * Symo — View de Perfil do Usuário (users/profile.php)
  */
 $csrfToken = CsrfHelper::generateToken();
-$avatarUrl = !empty($user['avatar'])
-    ? (filter_var((string) $user['avatar'], FILTER_VALIDATE_URL) ? (string) $user['avatar'] : BASE_URL . '/storage/uploads/avatars/' . htmlspecialchars($user['avatar'], ENT_QUOTES, 'UTF-8'))
-    : null;
+$avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user['id'] : null;
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
@@ -83,7 +81,7 @@ $avatarUrl = !empty($user['avatar'])
 
                 <div class="mb-4">
                     <label for="avatar" class="form-label fw-semibold">Alterar Foto de Avatar (Máx 2 MB)</label>
-                    <input type="file" class="form-control" id="avatar" name="avatar" accept="image/png, image/jpeg, image/webp">
+                    <input type="file" class="form-control" id="avatar" name="avatar" accept="image/svg+xml, image/png, image/jpeg, image/webp">
                     <small class="text-muted">Envie uma foto quadrada nos formatos JPG, PNG ou WebP.</small>
                 </div>
 

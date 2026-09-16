@@ -152,6 +152,9 @@ Router::get('/', function (): void {
     }
     exit;
 });
+// Arquivos privados armazenados no Vercel Blob
+Router::get('/media/avatar/{id}', [BlobController::class, 'avatar']);
+Router::get('/media/logo', [BlobController::class, 'logo']);
 
 // Rotas de Autenticação e Gestão de Acesso
 Router::get('/login', [AuthController::class, 'showLogin']);

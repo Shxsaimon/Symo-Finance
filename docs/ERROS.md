@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-16 - Upload Blob usando endpoint fabricado
+
+- **Sintoma:** O upload recebia `BLOB_READ_WRITE_TOKEN`, mas falhava ao validar a resposta porque o código enviava o arquivo para `https://blob.vercel-storage.com/...`, uma URL montada manualmente.
+- **Causa:** O fluxo não utilizava o SDK oficial, não suportava corretamente Blob privado e não possuía rota server-side para leitura autenticada.
+- **Solução aplicada:** Criada a Function `api/blob.js` com `@vercel/blob` para `put`, `get` e `del`; o PHP passou a chamá-la com segredo interno, guardar a URL retornada e servir imagens por rotas autenticadas. Adicionados suporte a SVG sanitizado e migration 012 para campos `TEXT`.
+- **Como evitar no futuro:** Não fabricar URLs do Blob nem expor tokens no navegador; testar upload, leitura e exclusão com o mesmo ambiente Vercel configurado.
+
 ## 2026-09-14 - Assets continuavam 404 após ajuste do rewrite
 
 - **Sintoma:** Os links em `/public/...` ou na raiz dos assets retornavam 404/texto plano; o navegador recusava CSS e JavaScript por MIME incorreto e o Chart.js não era definido.

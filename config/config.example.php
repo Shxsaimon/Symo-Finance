@@ -41,6 +41,9 @@ return [
         'security_file' => dirname(__DIR__) . '/storage/logs/security.log',
     ],
     'storage' => [
-        'blob_token' => getenv('BLOB_READ_WRITE_TOKEN') ?: '',
+        'blob_token'  => getenv('BLOB_READ_WRITE_TOKEN') ?: '',
+        'store_id'    => getenv('symo_finance_STORE_ID') ?: (getenv('BLOB_STORE_ID') ?: ''),
+        'proxy_secret' => getenv('BLOB_PROXY_SECRET') ?: '',
+        'proxy_url'   => rtrim((string) (getenv('BLOB_PROXY_URL') ?: ''), '/'),
     ]
 ];

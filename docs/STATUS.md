@@ -14,7 +14,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Migração Neon:** `DATABASE_URL` passou a ser aceita pelo PDO como PostgreSQL com SSL obrigatório; as migrations e queries ainda precisam ser convertidas de MySQL para PostgreSQL antes da homologação.
 - **Compatibilidade Linux/Vercel:** O autoloader de `index.php` mapeia a classe `Database` para `config/database.php`, preservando o nome atual do arquivo e corrigindo a diferença de maiúsculas/minúsculas.
 - **Validação Neon:** Fluxo mínimo validado em produção: login, sessão, redirecionamento para Dashboard, consultas com banco vazio e renderização do gráfico funcionando.
-- **Armazenamento serverless:** Logs usam `error_log()` na Vercel; uploads usam Vercel Blob quando `BLOB_READ_WRITE_TOKEN` estiver configurado. x
+- **Armazenamento serverless:** Logs usam `error_log()` na Vercel; uploads e leituras privadas usam a Function `api/blob.js` com `@vercel/blob` e `BLOB_READ_WRITE_TOKEN`. O PostgreSQL guarda as URLs dos blobs e o PHP entrega as imagens por rotas autenticadas.
+- **Integração Blob privada:** Implementados upload, download e exclusão via SDK oficial, proxy PHP autenticado, suporte a SVG sanitizado e migration 012 para campos `TEXT`.
 - **Correção Dashboard PostgreSQL:** `MONTH()` e `YEAR()` agora são convertidos para `EXTRACT()` na conexão PostgreSQL.
 - **Assets Vercel:** Rewrite global ajustado para não capturar `/public/` e `/api/`.
 - **Entrega de assets:** `api/index.php` serve assets públicos permitidos com MIME correto; `public/**` está incluído no bundle PHP.

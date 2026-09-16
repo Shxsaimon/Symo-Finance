@@ -7,8 +7,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  * Symo — Helper de Upload Seguro de Arquivos (UploadHelper)
  *
  * Valida arquivos enviados verificando tamanho máximo (2 MB),
- * MIME-Type real e Magic Bytes via finfo_file, extensões permitidas (.jpg, .jpeg, .png, .webp),
- * gera nomes randômicos seguros com hash e remove arquivos anteriores.
+ * MIME-Type real e Magic Bytes via finfo_file, extensões permitidas
+ * (.jpg, .jpeg, .png, .webp, .svg), gera nomes randômicos seguros com hash.
  */
 class UploadHelper
 {
@@ -18,6 +18,7 @@ class UploadHelper
         'image/jpeg' => 'jpg',
         'image/png'  => 'png',
         'image/webp' => 'webp',
+        'image/svg+xml' => 'svg',
     ];
 
     /**
@@ -64,94 +65,52 @@ class UploadHelper
         finfo_close($finfo);
 
         if ($detectedMime === false || !array_key_exists($detectedMime, self::ALLOWED_MIME_TYPES)) {
-            return ['success' => false, 'error' => 'Formato de arquivo inválido. Permitido apenas imagens JPEG, PNG ou WebP.'];
+            return ['success' => false, 'error' => 'Formato de arquivo inválido. Permitido apenas imagens JPEG, PNG, WebP ou SVG.'];
         }
 
         $extension = self::ALLOWED_MIME_TYPES[$detectedMime];
+
+        if ($detectedMime === 'image/svg+xml') {
+            $svgContent = file_get_contents($tmpPath);
+            if (!is_string($svgContent) || preg_match('/<\s*(script|iframe|object|embed|foreignObject)\b|\bon[a-z]+\s*=|javascript:/i', $svgContent)) {
+                return ['success' => false, 'error' => 'O arquivo SVG contém conteúdo não permitido.'];
+            }
+        }
 
         // 4. Sanitização e Geração de Nome Seguro com Hash Randômico
         $prefix = ($subfolder === 'avatars') ? 'avatar_' : 'logo_';
         $randomHex = bin2hex(random_bytes(16));
         $newFilename = "{$prefix}{$randomHex}.{$extension}";
 
-        if (getenv('VERCEL') === '1' || getenv('VERCEL_ENV') !== false) {
-            $token = (string) (getenv('BLOB_READ_WRITE_TOKEN') ?: '');
-            if ($token === '') {
-                return ['success' => false, 'error' => 'O armazenamento de imagens da Vercel ainda não foi configurado.'];
-            }
-
-            $blobPath = $subfolder . '/' . $newFilename;
-            $blobUrl = 'https://blob.vercel-storage.com/' . $blobPath;
-            $handle = fopen($tmpPath, 'rb');
-            $curl = curl_init($blobUrl);
-            curl_setopt_array($curl, [
-                CURLOPT_PUT => true,
-                CURLOPT_INFILE => $handle,
-                CURLOPT_INFILESIZE => $fileSize,
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Bearer ' . $token,
-                    'Content-Type: ' . $detectedMime,
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-            ]);
-            $response = curl_exec($curl);
-            $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            curl_close($curl);
-            if (is_resource($handle)) {
-                fclose($handle);
-            }
-
-            $responseData = is_string($response) ? json_decode($response, true) : null;
-            if ($status < 200 || $status >= 300 || !is_array($responseData) || empty($responseData['url'])) {
-                return ['success' => false, 'error' => 'Não foi possível salvar a imagem no armazenamento da Vercel.'];
-            }
-
-            if (!empty($oldFilename)) {
-                self::deleteBlob((string) $oldFilename, $token);
-            }
-
-            return [
-                'success' => true,
-                'filename' => (string) $responseData['url'],
-                'relative_path' => (string) $responseData['url'],
-            ];
+        $proxyUrl = rtrim((string) (getenv('BLOB_PROXY_URL') ?: (defined('BASE_URL') ? BASE_URL . '/api/blob' : '')), '/');
+        $proxySecret = (string) (getenv('BLOB_PROXY_SECRET') ?: '');
+        if ($proxyUrl === '' || $proxySecret === '') {
+            return ['success' => false, 'error' => 'O proxy seguro do armazenamento da Vercel ainda não foi configurado.'];
         }
 
-        // 5. Definição do Diretório de Destino
-        $subfolderSanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder);
-        $targetDir = APP_ROOT . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized;
-
-        if (!is_dir($targetDir)) {
-            if (!mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
-                return ['success' => false, 'error' => 'Falha ao criar o diretório de destino de uploads.'];
-            }
+        $fileContent = file_get_contents($tmpPath);
+        if (!is_string($fileContent)) {
+            return ['success' => false, 'error' => 'Não foi possível ler a imagem enviada.'];
         }
 
-        $targetPath = $targetDir . DIRECTORY_SEPARATOR . $newFilename;
-
-        // 6. Movimentação do Arquivo
-        if (!move_uploaded_file($tmpPath, $targetPath)) {
-            // Fallback para testes onde move_uploaded_file pode não validar se for mock
-            if (!copy($tmpPath, $targetPath)) {
-                return ['success' => false, 'error' => 'Não foi possível salvar a imagem no disco do servidor.'];
-            }
+        $responseData = self::requestProxy($proxyUrl, $proxySecret, [
+            'action' => 'upload',
+            'pathname' => $subfolder . '/' . $newFilename,
+            'contentType' => $detectedMime,
+            'data' => base64_encode($fileContent),
+        ]);
+        if (!is_array($responseData) || empty($responseData['url'])) {
+            return ['success' => false, 'error' => 'Não foi possível salvar a imagem no armazenamento da Vercel.'];
         }
 
-        // 7. Remoção Segura do Arquivo Anterior (caso informado e existente)
         if (!empty($oldFilename)) {
-            $oldFilenameSanitized = basename($oldFilename);
-            $oldFilePath = $targetDir . DIRECTORY_SEPARATOR . $oldFilenameSanitized;
-            if (file_exists($oldFilePath) && is_file($oldFilePath)) {
-                @unlink($oldFilePath);
-            }
+            self::deleteFile($subfolder, (string) $oldFilename);
         }
-
-        $relativePath = 'storage/uploads/' . $subfolderSanitized . '/' . $newFilename;
 
         return [
-            'success'       => true,
-            'filename'      => $newFilename,
-            'relative_path' => $relativePath,
+            'success' => true,
+            'filename' => (string) $responseData['url'],
+            'relative_path' => (string) $responseData['url'],
         ];
     }
 
@@ -164,37 +123,70 @@ class UploadHelper
      */
     public static function deleteFile(string $subfolder, string $filename): bool
     {
-        if (filter_var($filename, FILTER_VALIDATE_URL) && (getenv('BLOB_READ_WRITE_TOKEN') ?: '') !== '') {
-            return self::deleteBlob($filename, (string) getenv('BLOB_READ_WRITE_TOKEN'));
-        }
+        if (filter_var($filename, FILTER_VALIDATE_URL)) {
+            $proxyUrl = rtrim((string) (getenv('BLOB_PROXY_URL') ?: (defined('BASE_URL') ? BASE_URL . '/api/blob' : '')), '/');
+            $proxySecret = (string) (getenv('BLOB_PROXY_SECRET') ?: '');
+            if ($proxyUrl === '' || $proxySecret === '') {
+                return false;
+            }
 
-        $subfolderSanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $subfolder);
-        $filenameSanitized  = basename($filename);
-        $filePath = APP_ROOT . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subfolderSanitized . DIRECTORY_SEPARATOR . $filenameSanitized;
-
-        if (file_exists($filePath) && is_file($filePath)) {
-            return @unlink($filePath);
+            return is_array(self::requestProxy($proxyUrl, $proxySecret, [
+                'action' => 'delete',
+                'url' => $filename,
+            ]));
         }
 
         return false;
     }
 
-    private static function deleteBlob(string $url, string $token): bool
+    public static function downloadBlob(string $url): ?array
     {
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            return false;
+        $proxyUrl = rtrim((string) (getenv('BLOB_PROXY_URL') ?: (defined('BASE_URL') ? BASE_URL . '/api/blob' : '')), '/');
+        $proxySecret = (string) (getenv('BLOB_PROXY_SECRET') ?: '');
+        if (!filter_var($url, FILTER_VALIDATE_URL) || $proxyUrl === '' || $proxySecret === '') {
+            return null;
         }
 
+        $result = self::requestProxy($proxyUrl, $proxySecret, [
+            'action' => 'download',
+            'url' => $url,
+        ]);
+
+        if (!is_array($result) || empty($result['data']) || empty($result['contentType'])) {
+            return null;
+        }
+
+        $content = base64_decode((string) $result['data'], true);
+        return $content === false ? null : [
+            'contentType' => (string) $result['contentType'],
+            'data' => $content,
+        ];
+    }
+
+    /** @param array<string, mixed> $payload @return array<string, mixed>|null */
+    private static function requestProxy(string $url, string $secret, array $payload): ?array
+    {
         $curl = curl_init($url);
         curl_setopt_array($curl, [
-            CURLOPT_CUSTOMREQUEST => 'DELETE',
-            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload, JSON_THROW_ON_ERROR),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'X-Symo-Blob-Secret: ' . $secret,
+            ],
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 25,
         ]);
-        curl_exec($curl);
+        $response = curl_exec($curl);
         $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-        return $status >= 200 && $status < 300;
+
+        if (!is_string($response) || $status < 200 || $status >= 300) {
+            return null;
+        }
+
+        $decoded = json_decode($response, true);
+        return is_array($decoded) ? $decoded : null;
     }
 }
 
