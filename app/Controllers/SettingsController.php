@@ -153,10 +153,10 @@ class SettingsController extends Controller
         exit;
     }
 
-    public function githubActionLog(int|string $jobId): void
+    public function githubActionLog(int|string $id): void
     {
         AuthHelper::requireRole('admin');
-        $log = GitHubActionsHelper::jobLog((int) $jobId);
+        $log = GitHubActionsHelper::jobLog((int) $id);
         if ($log === null) {
             http_response_code(404);
             exit;
