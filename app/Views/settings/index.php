@@ -230,7 +230,7 @@ function confirmarAcaoBanco(formulario) {
     return window.confirm(mensagens[acao] || 'Deseja enviar esta operação ao GitHub Actions?');
 }
 
-(function acompanharGitHubAction() {
+document.addEventListener('DOMContentLoaded', () => {
     const painel = document.getElementById('github-action-status');
     if (!painel) return;
 
@@ -278,9 +278,9 @@ function confirmarAcaoBanco(formulario) {
 
     atualizar();
     window.setInterval(atualizar, 10000);
-})();
+});
 
-(function configurarLogsGitHub() {
+document.addEventListener('DOMContentLoaded', () => {
     const modalElement = document.getElementById('githubLogModal');
     const feedback = document.getElementById('github-log-feedback');
     const content = document.getElementById('github-log-content');
@@ -313,6 +313,6 @@ function confirmarAcaoBanco(formulario) {
     document.querySelectorAll('.js-github-log').forEach((botao) => {
         botao.addEventListener('click', () => window.carregarLogGitHub(botao));
     });
-})();
+});
 </script>
 

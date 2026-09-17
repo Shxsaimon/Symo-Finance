@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-16 - Modal de logs inicializado antes do Bootstrap
+
+- **Sintoma:** O console informava `window.carregarLogGitHub is not a function` ao clicar em `Ver log`.
+- **Causa:** O JavaScript da view era executado antes dos scripts do layout; como `bootstrap` ainda não existia, a inicialização retornava sem definir o handler global.
+- **Solução aplicada:** O polling e a inicialização do modal foram adiados para o evento `DOMContentLoaded`, após o carregamento dos assets do Bootstrap.
+- **Como evitar no futuro:** Views que dependem de scripts carregados pelo layout devem inicializar componentes somente após `DOMContentLoaded` ou após confirmação da disponibilidade da biblioteca.
+
 ## 2026-09-16 - Download de logs do GitHub retornava 302
 
 - **Sintoma:** O botão de log retornava 404 mesmo com job concluído e ID correto.
