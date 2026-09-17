@@ -91,14 +91,40 @@ class GitHubActionsHelper
                 'User-Agent: Symo-Application',
                 'X-GitHub-Api-Version: 2022-11-28',
             ],
+            CURLOPT_HEADER => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 20,
         ]);
         $response = curl_exec($curl);
         $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $headerSize = (int) curl_getinfo($curl, CURLINFO_HEADER_SIZE);
         curl_close($curl);
 
-        return is_string($response) && $status >= 200 && $status < 300 ? $response : null;
+        if (!is_string($response) || $status !== 302) {
+            return null;
+        }
+
+        $headers = substr($response, 0, $headerSize);
+        if (!is_string($headers) || !preg_match('/^Location:\s*(.+)$/mi', $headers, $matches)) {
+            return null;
+        }
+
+        $downloadUrl = trim($matches[1]);
+        if (!filter_var($downloadUrl, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $download = curl_init($downloadUrl);
+        curl_setopt_array($download, [
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 20,
+        ]);
+        $log = curl_exec($download);
+        $downloadStatus = (int) curl_getinfo($download, CURLINFO_HTTP_CODE);
+        curl_close($download);
+
+        return is_string($log) && $downloadStatus >= 200 && $downloadStatus < 300 ? $log : null;
     }
 
     /** @return array{owner: string, repository: string, workflow: string, branch: string, token: string}|null */

@@ -157,14 +157,22 @@ class SettingsController extends Controller
     {
         AuthHelper::requireRole('admin');
         $log = GitHubActionsHelper::jobLog((int) $id);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: private, no-store');
+
         if ($log === null) {
             http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'message' => 'O log ainda não está disponível ou não pôde ser baixado do GitHub.',
+            ], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        header('Content-Type: text/plain; charset=utf-8');
-        header('Cache-Control: private, no-store');
-        echo $log;
+        echo json_encode([
+            'success' => true,
+            'log' => $log,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
 }

@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-16 - Download de logs do GitHub retornava 302
+
+- **Sintoma:** O botão de log retornava 404 mesmo com job concluído e ID correto.
+- **Causa:** A API do GitHub retorna `302 Found` com uma URL temporária no cabeçalho `Location`; o cURL esperava somente respostas 2xx e não seguia o download.
+- **Solução aplicada:** O helper passou a extrair `Location`, baixar o log em uma segunda requisição sem reenviar o token GitHub e retornar o conteúdo em JSON. A interface passou a exibir o log em modal Bootstrap.
+- **Como evitar no futuro:** Tratar explicitamente respostas de redirecionamento da API de logs e nunca encaminhar o token GitHub para a URL temporária de download.
+
 ## 2026-09-16 - Execução de migrations integrada ao painel
 
 - **Sintoma:** A tela administrativa executava migrations diretamente na Function PHP, enquanto a execução oficial usava GitHub Actions com PHP e `pdo_pgsql`.

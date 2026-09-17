@@ -152,7 +152,7 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
                 </div>
                 <div id="github-job-list" class="mt-2">
                     <?php foreach ($githubJobs as $job): ?>
-                        <div><?= htmlspecialchars((string) ($job['name'] ?? 'Job'), ENT_QUOTES, 'UTF-8') ?>: <?= htmlspecialchars((string) ($job['status'] ?? 'desconhecido'), ENT_QUOTES, 'UTF-8') ?><?= isset($job['conclusion']) && $job['conclusion'] ? ' (' . htmlspecialchars((string) $job['conclusion'], ENT_QUOTES, 'UTF-8') . ')' : '' ?><?php if (!empty($job['id'])): ?> <a href="<?= htmlspecialchars(BASE_URL . '/configuracoes/github-actions/logs/' . (int) $job['id'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Ver log</a><?php endif; ?></div>
+                        <div><?= htmlspecialchars((string) ($job['name'] ?? 'Job'), ENT_QUOTES, 'UTF-8') ?>: <?= htmlspecialchars((string) ($job['status'] ?? 'desconhecido'), ENT_QUOTES, 'UTF-8') ?><?= isset($job['conclusion']) && $job['conclusion'] ? ' (' . htmlspecialchars((string) $job['conclusion'], ENT_QUOTES, 'UTF-8') . ')' : '' ?><?php if (!empty($job['id'])): ?> <button type="button" class="btn btn-link btn-sm p-0 align-baseline js-github-log" data-log-url="<?= htmlspecialchars(BASE_URL . '/configuracoes/github-actions/logs/' . (int) $job['id'], ENT_QUOTES, 'UTF-8') ?>">Ver log</button><?php endif; ?></div>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -204,6 +204,21 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
     </div>
 </div>
 
+<div class="modal fade" id="githubLogModal" tabindex="-1" aria-labelledby="githubLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="githubLogModalLabel">Log do GitHub Actions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="github-log-feedback" class="text-muted small mb-2">Carregando log...</div>
+                <pre id="github-log-content" class="bg-dark text-light rounded p-3 mb-0" style="max-height: 65vh; overflow: auto; white-space: pre-wrap; tab-size: 4;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function confirmarAcaoBanco(formulario) {
     const acao = formulario.querySelector('[name="database_action"]').value;
@@ -248,12 +263,13 @@ function confirmarAcaoBanco(formulario) {
                 const linha = document.createElement('div');
                 linha.appendChild(textoSeguro(job.name + ': ' + job.status + (job.conclusion ? ' (' + job.conclusion + ')' : '')));
                 if (job.id) {
-                    const link = document.createElement('a');
-                    link.href = painel.dataset.statusUrl.replace('/status', '/logs/' + Number(job.id));
-                    link.target = '_blank';
-                    link.rel = 'noopener';
-                    link.appendChild(textoSeguro(' Ver log'));
-                    linha.appendChild(link);
+                    const botao = document.createElement('button');
+                    botao.type = 'button';
+                    botao.className = 'btn btn-link btn-sm p-0 align-baseline js-github-log';
+                    botao.dataset.logUrl = painel.dataset.statusUrl.replace('/status', '/logs/' + Number(job.id));
+                    botao.appendChild(textoSeguro('Ver log'));
+                    linha.appendChild(botao);
+                    botao.addEventListener('click', () => window.carregarLogGitHub(botao));
                 }
                 return linha;
             }));
@@ -262,6 +278,41 @@ function confirmarAcaoBanco(formulario) {
 
     atualizar();
     window.setInterval(atualizar, 10000);
+})();
+
+(function configurarLogsGitHub() {
+    const modalElement = document.getElementById('githubLogModal');
+    const feedback = document.getElementById('github-log-feedback');
+    const content = document.getElementById('github-log-content');
+    if (!modalElement || !feedback || !content || typeof bootstrap === 'undefined') return;
+
+    const modal = new bootstrap.Modal(modalElement);
+    window.carregarLogGitHub = (botao) => {
+        feedback.textContent = 'Carregando log...';
+        content.textContent = '';
+        modal.show();
+
+        fetch(botao.dataset.logUrl, { credentials: 'same-origin' })
+            .then(async (resposta) => {
+                const dados = await resposta.json();
+                if (!resposta.ok || !dados.success) {
+                    throw new Error(dados.message || 'Não foi possível carregar o log.');
+                }
+                return dados;
+            })
+            .then((dados) => {
+                feedback.textContent = 'Log carregado com sucesso.';
+                content.textContent = dados.log || '(O log está vazio.)';
+            })
+            .catch((erro) => {
+                feedback.textContent = erro.message;
+                content.textContent = '';
+            });
+    };
+
+    document.querySelectorAll('.js-github-log').forEach((botao) => {
+        botao.addEventListener('click', () => window.carregarLogGitHub(botao));
+    });
 })();
 </script>
 

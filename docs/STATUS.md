@@ -21,6 +21,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Entrega de assets:** `api/index.php` serve assets públicos permitidos com MIME correto; `public/**` está incluído no bundle PHP.
 - **Migrations via GitHub Actions:** Workflow manual criado em `.github/workflows/database-migrations.yml`; requer o Secret `NEON_DATABASE_URL` no repositório.
 - **Painel GitHub Actions:** A tela de Configurações dispara `status`, `migrate` e `seed` pelo workflow via API do GitHub, acompanha jobs e disponibiliza os logs para administradores. Requer `GITHUB_ACTIONS_TOKEN` na Vercel.
+- **Logs GitHub Actions:** O download dos logs trata o redirecionamento temporário `302` da API e exibe o conteúdo completo em modal dentro da tela de Configurações.
 
 ---
 
