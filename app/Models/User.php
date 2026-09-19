@@ -258,7 +258,18 @@ class User extends Model
 
             DefaultDataHelper::popularDadosPadrao($this->db, $newId);
 
-            $this->logAudit('INSERT', $newId, null, ['nome' => $nome, 'email' => $email, 'perfil' => 'admin'], $newId);
+            // Gravação de auditoria feita diretamente (sem o catch silencioso de Model::logAudit),
+            // para que uma eventual falha real apareça no log em vez de aparecer mascarada
+            // pelo erro genérico "current transaction is aborted" do PostgreSQL.
+            $enderecoIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $stmtAudit = $this->db->prepare("INSERT INTO auditoria_logs (usuario_id, tabela, registro_id, acao, valores_antigos, valores_novos, endereco_ip, criado_em)
+                    VALUES (:usuario_id, :tabela, :registro_id, 'INSERT', NULL, :valores_novos, :endereco_ip, NOW())");
+            $stmtAudit->bindValue(':usuario_id', $newId, PDO::PARAM_INT);
+            $stmtAudit->bindValue(':tabela', $this->tabela, PDO::PARAM_STR);
+            $stmtAudit->bindValue(':registro_id', $newId, PDO::PARAM_INT);
+            $stmtAudit->bindValue(':valores_novos', json_encode(['nome' => $nome, 'email' => $email, 'perfil' => 'admin'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), PDO::PARAM_STR);
+            $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
+            $stmtAudit->execute();
 
             $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
             $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
