@@ -19,20 +19,21 @@ class Trash extends Model
      */
     public function getCounts(): array
     {
-        $sqlT = "SELECT COUNT(*) FROM `transacoes` WHERE usuario_id = :usuario_id AND excluido_em IS NOT NULL";
-        $sqlC = "SELECT COUNT(*) FROM `contas` WHERE usuario_id = :usuario_id AND excluido_em IS NOT NULL";
-        $sqlCat = "SELECT COUNT(*) FROM `categorias` WHERE usuario_id = :usuario_id AND excluido_em IS NOT NULL";
+        $scope = $this->ownerClause('usuario_id');
+        $sqlT = "SELECT COUNT(*) FROM `transacoes` WHERE {$scope} AND excluido_em IS NOT NULL";
+        $sqlC = "SELECT COUNT(*) FROM `contas` WHERE {$scope} AND excluido_em IS NOT NULL";
+        $sqlCat = "SELECT COUNT(*) FROM `categorias` WHERE {$scope} AND excluido_em IS NOT NULL";
 
         $stmtTransacoes = $this->db->prepare($sqlT);
-        $stmtTransacoes->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $this->bindOwner($stmtTransacoes);
         $stmtTransacoes->execute();
         $transacoes = (int) $stmtTransacoes->fetchColumn();
         $stmtContas = $this->db->prepare($sqlC);
-        $stmtContas->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $this->bindOwner($stmtContas);
         $stmtContas->execute();
         $contas = (int) $stmtContas->fetchColumn();
         $stmtCategorias = $this->db->prepare($sqlCat);
-        $stmtCategorias->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $this->bindOwner($stmtCategorias);
         $stmtCategorias->execute();
         $categorias = (int) $stmtCategorias->fetchColumn();
 
@@ -63,11 +64,11 @@ class Trash extends Model
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `usuarios` u ON t.usuario_id = u.id
                 LEFT JOIN `usuarios` ue ON t.excluido_por = ue.id
-                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NOT NULL
+                WHERE {$this->ownerClause('t.usuario_id')} AND t.excluido_em IS NOT NULL
                 ORDER BY t.excluido_em DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $this->bindOwner($stmt, 't.usuario_id');
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -82,11 +83,11 @@ class Trash extends Model
         $sql = "SELECT c.*, ue.nome as excluido_por_nome
                 FROM `contas` c
                 LEFT JOIN `usuarios` ue ON c.excluido_por = ue.id
-                WHERE c.usuario_id = :usuario_id AND c.excluido_em IS NOT NULL
+                WHERE {$this->ownerClause('c.usuario_id')} AND c.excluido_em IS NOT NULL
                 ORDER BY c.excluido_em DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $this->bindOwner($stmt, 'c.usuario_id');
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -101,11 +102,11 @@ class Trash extends Model
         $sql = "SELECT cat.*, ue.nome as excluido_por_nome
                 FROM `categorias` cat
                 LEFT JOIN `usuarios` ue ON cat.excluido_por = ue.id
-                WHERE cat.usuario_id = :usuario_id AND cat.excluido_em IS NOT NULL
+                WHERE {$this->ownerClause('cat.usuario_id')} AND cat.excluido_em IS NOT NULL
                 ORDER BY cat.excluido_em DESC";
 
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $this->bindOwner($stmt, 'cat.usuario_id');
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -169,10 +170,10 @@ class Trash extends Model
      */
     private function restoreTransaction(int $id, int $currentUserId): array
     {
-        $sql = "SELECT * FROM `transacoes` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NOT NULL LIMIT 1";
+        $sql = "SELECT * FROM `transacoes` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmt);
         $stmt->execute();
         $transacao = $stmt->fetch();
 
@@ -184,10 +185,10 @@ class Trash extends Model
 
         try {
             // 1. Limpa as flags de exclusão
-            $sqlUp = "UPDATE `transacoes` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
+            $sqlUp = "UPDATE `transacoes` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND {$this->ownerClause('usuario_id')}";
             $stmtUp = $this->db->prepare($sqlUp);
             $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmtUp->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+            $this->bindOwner($stmtUp);
             $stmtUp->execute();
 
             // 2. Reaplica saldo na conta bancária caso esteja liquidada
@@ -225,10 +226,10 @@ class Trash extends Model
      */
     private function restoreAccount(int $id, int $currentUserId): array
     {
-        $sql = "SELECT * FROM `contas` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NOT NULL LIMIT 1";
+        $sql = "SELECT * FROM `contas` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmt);
         $stmt->execute();
         $conta = $stmt->fetch();
 
@@ -236,10 +237,10 @@ class Trash extends Model
             return ['success' => false, 'message' => 'Conta bancária não encontrada na lixeira.'];
         }
 
-        $sqlUp = "UPDATE `contas` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
+        $sqlUp = "UPDATE `contas` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND {$this->ownerClause('usuario_id')}";
         $stmtUp = $this->db->prepare($sqlUp);
         $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmtUp->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmtUp);
         $stmtUp->execute();
 
         $this->logAudit('RESTORE', $id, ['excluido_em' => $conta['excluido_em']], ['excluido_em' => null], $currentUserId);
@@ -256,10 +257,10 @@ class Trash extends Model
      */
     private function restoreCategory(int $id, int $currentUserId): array
     {
-        $sql = "SELECT * FROM `categorias` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NOT NULL LIMIT 1";
+        $sql = "SELECT * FROM `categorias` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmt);
         $stmt->execute();
         $categoria = $stmt->fetch();
 
@@ -267,10 +268,10 @@ class Trash extends Model
             return ['success' => false, 'message' => 'Categoria não encontrada na lixeira.'];
         }
 
-        $sqlUp = "UPDATE `categorias` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
+        $sqlUp = "UPDATE `categorias` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND {$this->ownerClause('usuario_id')}";
         $stmtUp = $this->db->prepare($sqlUp);
         $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmtUp->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmtUp);
         $stmtUp->execute();
 
         $this->logAudit('RESTORE', $id, ['excluido_em' => $categoria['excluido_em']], ['excluido_em' => null], $currentUserId);
@@ -293,10 +294,10 @@ class Trash extends Model
             return ['success' => false, 'message' => 'Tabela inválida para expurgo.'];
         }
 
-        $sqlFind = "SELECT * FROM `{$tableName}` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NOT NULL LIMIT 1";
+        $sqlFind = "SELECT * FROM `{$tableName}` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL LIMIT 1";
         $stmtFind = $this->db->prepare($sqlFind);
         $stmtFind->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmtFind->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmtFind);
         $stmtFind->execute();
         $antigo = $stmtFind->fetch();
 
@@ -304,16 +305,28 @@ class Trash extends Model
             return ['success' => false, 'message' => 'Registro não encontrado para expurgo definitivo.'];
         }
 
-        $sqlDel = "DELETE FROM `{$tableName}` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NOT NULL";
+        $sqlDel = "DELETE FROM `{$tableName}` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL";
         $stmtDel = $this->db->prepare($sqlDel);
         $stmtDel->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmtDel->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+        $this->bindOwner($stmtDel);
         $stmtDel->execute();
 
         $this->tabela = $tableName;
         $this->logAudit('PURGE', $id, $antigo, null, $currentUserId);
 
         return ['success' => true, 'message' => 'Registro expurgado definitivamente do sistema.'];
+    }
+
+    private function ownerClause(string $column): string
+    {
+        return AuthHelper::isDev() ? '1=1' : "{$column} = :usuario_id";
+    }
+
+    private function bindOwner(PDOStatement $stmt, string $column = 'usuario_id'): void
+    {
+        if (!AuthHelper::isDev()) {
+            $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        }
     }
 }
 

@@ -7,8 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 18/09/2026
-- **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 3/6 concluída)
-- **Próximo Passo Recomendado:** Etapa 4 — Segmentação de RBAC e menus (`dev`, Configurações, Auditoria e Gestão de Usuários)
+- **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
+- **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
@@ -180,4 +180,10 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
   - [x] Transferências validam contas do mesmo usuário e restringem os ajustes de saldo ao proprietário.
   - [x] Dashboard, relatórios, histórico de transferências e faturas passaram a filtrar o usuário autenticado.
   - [x] Lixeira filtra contagens/listagens/restauração/expurgo por `usuario_id`.
-- **Próximas etapas planejadas:** (4) segmentação de RBAC/menu (Auditoria e Gestão de Usuários exclusivos do `dev`, Configurações divididas); (5) login com Google (OAuth via cURL nativo, sem Composer); (6) testes manuais completos e atualização final da documentação.
+- **Etapa 4/6 — Segmentação de RBAC, menus e configurações (Concluída):**
+  - [x] Perfil `dev` ganhou helpers explícitos (`isDev()`/`requireDev()`); `admin` continua sendo o administrador da própria conta, não administrador global.
+  - [x] Gestão de Usuários e Auditoria ficaram restritas ao `dev`, inclusive por URL direta; `dev` herda as permissões operacionais de `admin` nos módulos financeiros.
+  - [x] Lixeira ficou disponível aos usuários autenticados com dados próprios; o `dev` possui visão global, restauração e expurgo globais.
+  - [x] Configurações comuns usam exclusivamente `configuracoes_usuario`; identidade visual, status de migrations e GitHub Actions ficaram exclusivos do `dev`.
+  - [x] Sidebar passou a exibir Gestão de Usuários/Auditoria apenas para `dev` e Configurações/Lixeira conforme o perfil.
+- **Próximas etapas planejadas:** (5) login Google via OAuth 2.0 (cURL nativo, sem Composer); (6) testes manuais completos e atualização final da documentação.

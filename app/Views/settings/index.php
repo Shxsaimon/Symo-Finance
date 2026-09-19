@@ -17,8 +17,8 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
     <div>
-        <h1 class="h3 fw-bold mb-1" style="color: var(--symo-on-surface);">Configurações do Sistema</h1>
-        <p class="text-muted mb-0">Parâmetros globais, formatação monetária, identidade visual e integridade do banco de dados.</p>
+        <h1 class="h3 fw-bold mb-1" style="color: var(--symo-on-surface);">Configurações</h1>
+        <p class="text-muted mb-0"><?= $isDev ? 'Parâmetros globais, identidade visual e integridade do banco de dados.' : 'Preferências pessoais de formatação e paginação.' ?></p>
     </div>
 </div>
 
@@ -34,11 +34,13 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
             <form action="<?= BASE_URL ?>/configuracoes/salvar" method="POST">
                 <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
 
+                <?php if ($isDev): ?>
                 <div class="mb-3">
                     <label for="nome_aplicacao" class="form-label fw-semibold">Nome da Aplicação / Empresa</label>
                     <input type="text" class="form-control" id="nome_aplicacao" name="nome_aplicacao" value="<?= htmlspecialchars((string)($settings['nome_aplicacao'] ?? 'Symo'), ENT_QUOTES, 'UTF-8') ?>" required>
                     <small class="text-muted">Exibido na barra de navegação e títulos das páginas.</small>
                 </div>
+                <?php endif; ?>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
@@ -80,6 +82,7 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
             </form>
         </div>
 
+        <?php if ($isDev): ?>
         <!-- 2. Identidade Visual e Logotipo -->
         <div class="symo-card shadow-sm border-0 p-4">
             <h5 class="fw-bold mb-3" style="color: var(--symo-primary-brand);">
@@ -108,8 +111,10 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
+    <?php if ($isDev): ?>
     <!-- Coluna Direita: Status do Banco de Dados e Migrações -->
     <div class="col-lg-5">
         <div class="symo-card shadow-sm border-0 p-4">
@@ -202,6 +207,7 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
             </div>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <div class="modal fade" id="githubLogModal" tabindex="-1" aria-labelledby="githubLogModalLabel" aria-hidden="true">

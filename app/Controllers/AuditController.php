@@ -27,7 +27,7 @@ class AuditController extends Controller
      */
     public function index(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
 
         $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
         $porPagina = 30;
@@ -71,7 +71,7 @@ class AuditController extends Controller
      */
     public function detail(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $logId = (int) $id;
 
         $registro = $this->auditLogModel->getDetailsById($logId);

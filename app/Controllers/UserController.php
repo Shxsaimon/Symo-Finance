@@ -25,7 +25,7 @@ class UserController extends Controller
      */
     public function index(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
 
         $users = $this->userModel->getAllUsers();
 
@@ -43,7 +43,7 @@ class UserController extends Controller
      */
     public function store(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/usuarios');
@@ -97,7 +97,7 @@ class UserController extends Controller
      */
     public function update(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $userId = (int) $id;
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -153,7 +153,7 @@ class UserController extends Controller
      */
     public function toggleStatus(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $userId = (int) $id;
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -185,7 +185,7 @@ class UserController extends Controller
      */
     public function resetPassword(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $userId = (int) $id;
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -218,7 +218,7 @@ class UserController extends Controller
      */
     public function delete(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $userId = (int) $id;
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

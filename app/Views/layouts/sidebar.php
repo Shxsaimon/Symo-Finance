@@ -11,6 +11,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  */
 $currentUser = AuthHelper::user();
 $isAdmin     = AuthHelper::isAdmin();
+$isDev       = AuthHelper::isDev();
 $currentUri  = Router::getCurrentUri();
 
 // Helper local para marcar item ativo
@@ -67,21 +68,25 @@ $isActive = function (string $path) use ($currentUri): string {
             <span>Relatórios Analíticos</span>
         </a>
 
-        <!-- 5. Administração (Exclusivo Administrador via RBAC) -->
-        <?php if ($isAdmin): ?>
+        <!-- 5. Administração e preferências -->
+        <?php if ($isDev || $isAdmin): ?>
             <div class="sidebar-section-title">Administração</div>
+            <?php if ($isDev): ?>
             <a href="<?= BASE_URL ?>/usuarios" class="sidebar-nav-link <?= $isActive('/usuarios') ?>">
                 <i class="bi bi-people-fill"></i>
                 <span>Gestão de Usuários</span>
             </a>
+            <?php endif; ?>
             <a href="<?= BASE_URL ?>/lixeira" class="sidebar-nav-link <?= $isActive('/lixeira') ?>">
                 <i class="bi bi-trash3-fill"></i>
                 <span>Lixeira do Sistema</span>
             </a>
+            <?php if ($isDev): ?>
             <a href="<?= BASE_URL ?>/auditoria" class="sidebar-nav-link <?= $isActive('/auditoria') ?>">
                 <i class="bi bi-shield-check"></i>
                 <span>Trilha de Auditoria</span>
             </a>
+            <?php endif; ?>
             <a href="<?= BASE_URL ?>/configuracoes" class="sidebar-nav-link <?= $isActive('/configuracoes') ?>">
                 <i class="bi bi-gear-fill"></i>
                 <span>Configurações</span>

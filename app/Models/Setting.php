@@ -13,6 +13,38 @@ class Setting extends Model
 {
     protected string $tabela = 'configuracoes';
     protected string $chavePrimaria = 'id';
+    private const PREFERENCIAS_USUARIO = ['simbolo_moeda', 'separador_decimal', 'separador_milhar', 'registros_por_pagina'];
+
+    public function getUserPreferences(int $userId): array
+    {
+        $stmt = $this->db->prepare('SELECT chave, valor, tipo FROM configuracoes_usuario WHERE usuario_id = :usuario_id');
+        $stmt->execute(['usuario_id' => $userId]);
+        $settings = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $settings[$row['chave']] = $this->castValue($row['valor'], (string) $row['tipo']);
+        }
+        return $settings;
+    }
+
+    public function updateUserPreferences(array $settings, int $userId): bool
+    {
+        $sql = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql'
+            ? 'INSERT INTO configuracoes_usuario (usuario_id, chave, valor, tipo, atualizado_em) VALUES (:usuario_id, :chave, :valor, :tipo, CURRENT_TIMESTAMP) ON CONFLICT (usuario_id, chave) DO UPDATE SET valor = EXCLUDED.valor, tipo = EXCLUDED.tipo, atualizado_em = CURRENT_TIMESTAMP'
+            : 'INSERT INTO `configuracoes_usuario` (usuario_id, chave, valor, tipo, atualizado_em) VALUES (:usuario_id, :chave, :valor, :tipo, NOW()) ON DUPLICATE KEY UPDATE valor = :valor_up, tipo = :tipo_up, atualizado_em = NOW()';
+
+        foreach ($settings as $chave => $valor) {
+            if (!in_array($chave, self::PREFERENCIAS_USUARIO, true)) {
+                continue;
+            }
+            $tipo = is_int($valor) ? 'integer' : 'string';
+            $valorString = (string) $valor;
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql'
+                ? ['usuario_id' => $userId, 'chave' => $chave, 'valor' => $valorString, 'tipo' => $tipo]
+                : ['usuario_id' => $userId, 'chave' => $chave, 'valor' => $valorString, 'tipo' => $tipo, 'valor_up' => $valorString, 'tipo_up' => $tipo]);
+        }
+        return true;
+    }
 
     /**
      * Retorna todas as configurações como um array associativo [chave => valor_convertido].

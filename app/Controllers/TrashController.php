@@ -25,7 +25,7 @@ class TrashController extends Controller
      */
     public function index(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireLogin();
 
         $activeTab = $_GET['aba'] ?? 'transacoes';
         if (!in_array($activeTab, ['transacoes', 'contas', 'categorias'], true)) {
@@ -54,7 +54,7 @@ class TrashController extends Controller
      */
     public function restore(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/lixeira');
@@ -87,7 +87,7 @@ class TrashController extends Controller
      */
     public function purge(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/lixeira');

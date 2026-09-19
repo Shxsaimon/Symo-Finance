@@ -25,17 +25,19 @@ class SettingsController extends Controller
      */
     public function index(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireLogin();
 
-        $settings = $this->settingModel->getAll();
-        $migrationsStatus = $this->settingModel->checkMigrationsStatus();
-        $githubExecution = GitHubActionsHelper::latestRun();
+        $isDev = AuthHelper::isDev();
+        $settings = $isDev ? $this->settingModel->getAll() : $this->settingModel->getUserPreferences((int) AuthHelper::id());
+        $migrationsStatus = $isDev ? $this->settingModel->checkMigrationsStatus() : [];
+        $githubExecution = $isDev ? GitHubActionsHelper::latestRun() : [];
 
         $this->render('settings/index', [
             'title'            => 'Configurações do Sistema — Symo',
             'settings'         => $settings,
             'migrationsStatus' => $migrationsStatus,
             'githubExecution'  => $githubExecution,
+            'isDev'            => $isDev,
         ], 'layouts/main');
     }
 
@@ -46,7 +48,7 @@ class SettingsController extends Controller
      */
     public function update(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireLogin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/configuracoes');
@@ -55,6 +57,19 @@ class SettingsController extends Controller
         if (!CsrfHelper::validateToken($_POST['csrf_token'] ?? null)) {
             FlashHelper::set('error', 'Token de segurança expirado.');
             $this->redirect('/configuracoes');
+        }
+
+        $currentUserId = (int) AuthHelper::id();
+        if (!AuthHelper::isDev()) {
+            $this->settingModel->updateUserPreferences([
+                'simbolo_moeda' => trim((string) ($_POST['simbolo_moeda'] ?? 'R$')),
+                'separador_decimal' => trim((string) ($_POST['separador_decimal'] ?? ',')),
+                'separador_milhar' => trim((string) ($_POST['separador_milhar'] ?? '.')),
+                'registros_por_pagina' => max(10, min(100, (int) ($_POST['registros_por_pagina'] ?? 25))),
+            ], $currentUserId);
+            FlashHelper::set('success', 'Preferências pessoais salvas com sucesso.');
+            $this->redirect('/configuracoes');
+            return;
         }
 
         $nomeApp = trim((string) ($_POST['nome_aplicacao'] ?? 'Symo'));
@@ -71,7 +86,6 @@ class SettingsController extends Controller
             'registros_por_pagina' => $registrosPorPagina,
         ];
 
-        $currentUserId = (int) AuthHelper::id();
         $this->settingModel->updateBatch($novasConfiguracoes, $currentUserId);
 
         FlashHelper::set('success', 'Configurações globais salvas com sucesso.');
@@ -85,7 +99,7 @@ class SettingsController extends Controller
      */
     public function uploadLogo(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/configuracoes');
@@ -123,7 +137,7 @@ class SettingsController extends Controller
      */
     public function runMigrations(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/configuracoes');
@@ -147,7 +161,7 @@ class SettingsController extends Controller
 
     public function githubActionStatus(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(GitHubActionsHelper::latestRun(), JSON_UNESCAPED_UNICODE);
         exit;
@@ -155,7 +169,7 @@ class SettingsController extends Controller
 
     public function githubActionLog(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $log = GitHubActionsHelper::jobLog((int) $id);
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: private, no-store');

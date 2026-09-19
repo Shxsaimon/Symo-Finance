@@ -159,7 +159,12 @@ class AuthHelper
      */
     public static function isAdmin(): bool
     {
-        return self::role() === 'admin';
+        return in_array(self::role(), ['admin', 'dev'], true);
+    }
+
+    public static function isDev(): bool
+    {
+        return self::role() === 'dev';
     }
 
     /**
@@ -170,6 +175,11 @@ class AuthHelper
     public static function isOperador(): bool
     {
         return self::role() === 'operador';
+    }
+
+    public static function requireDev(): void
+    {
+        self::requireRole('dev');
     }
 
     /**
@@ -199,7 +209,8 @@ class AuthHelper
         self::requireLogin();
 
         $currentRole = self::role();
-        if ($currentRole === null || !in_array($currentRole, $allowedRoles, true)) {
+        $hasPermission = $currentRole === 'dev' && in_array('admin', $allowedRoles, true);
+        if ($currentRole === null || (!$hasPermission && !in_array($currentRole, $allowedRoles, true))) {
             LoggerHelper::security('FORBIDDEN_ACCESS_ATTEMPT', [
                 'usuario_id'   => self::id(),
                 'perfil_atual' => $currentRole,

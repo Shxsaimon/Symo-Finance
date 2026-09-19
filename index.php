@@ -231,7 +231,7 @@ Router::get('/relatorios/exportar-csv', [ReportController::class, 'exportCsv']);
 // -------------------------------------------------------------
 // FASE 12: MÓDULOS ADMINISTRATIVOS E PERFIL
 // -------------------------------------------------------------
-// Gestão de Usuários (Exclusivo Admin)
+// Gestão de Usuários (Exclusivo dev)
 Router::get('/usuarios', [UserController::class, 'index']);
 Router::post('/usuarios/salvar', [UserController::class, 'store']);
 Router::post('/usuarios/atualizar/{id}', [UserController::class, 'update']);
@@ -239,16 +239,16 @@ Router::post('/usuarios/toggle-status/{id}', [UserController::class, 'toggleStat
 Router::post('/usuarios/redefinir-senha/{id}', [UserController::class, 'resetPassword']);
 Router::post('/usuarios/excluir/{id}', [UserController::class, 'delete']);
 
-// Trilha de Auditoria (Exclusivo Admin)
+// Trilha de Auditoria (Exclusivo dev)
 Router::get('/auditoria', [AuditController::class, 'index']);
 Router::get('/auditoria/detalhes/{id}', [AuditController::class, 'detail']);
 
-// Lixeira do Sistema (Exclusivo Admin)
+// Lixeira isolada por usuário; dev possui visão global
 Router::get('/lixeira', [TrashController::class, 'index']);
 Router::post('/lixeira/restaurar', [TrashController::class, 'restore']);
 Router::post('/lixeira/expurgar', [TrashController::class, 'purge']);
 
-// Configurações Globais (Exclusivo Admin)
+// Preferências pessoais; identidade visual e banco exclusivos do dev
 Router::get('/configuracoes', [SettingsController::class, 'index']);
 Router::post('/configuracoes/salvar', [SettingsController::class, 'update']);
 Router::post('/configuracoes/upload-logo', [SettingsController::class, 'uploadLogo']);
@@ -262,7 +262,7 @@ Router::post('/perfil/salvar', [ProfileController::class, 'update']);
 
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {
-    AuthHelper::requireRole('admin');
+    AuthHelper::requireDev();
     ?>
     <!DOCTYPE html>
     <html lang="pt-BR">
