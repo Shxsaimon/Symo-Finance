@@ -65,10 +65,18 @@ jobs:
 
       - name: Executar migracoes
         if: inputs.action == 'migrate'
+        env:
+          SYSTEM_DEV_NAME: ${{ secrets.SYSTEM_DEV_NAME }}
+          SYSTEM_DEV_EMAIL: ${{ secrets.SYSTEM_DEV_EMAIL }}
+          SYSTEM_DEV_PASSWORD: ${{ secrets.SYSTEM_DEV_PASSWORD }}
         run: php migrate.php
 
       - name: Executar seed inicial
         if: inputs.action == 'seed'
+        env:
+          SYSTEM_DEV_NAME: ${{ secrets.SYSTEM_DEV_NAME }}
+          SYSTEM_DEV_EMAIL: ${{ secrets.SYSTEM_DEV_EMAIL }}
+          SYSTEM_DEV_PASSWORD: ${{ secrets.SYSTEM_DEV_PASSWORD }}
         run: php migrate.php --seed
 
       - name: Resetar banco de dados (fresh) e recriar tudo
