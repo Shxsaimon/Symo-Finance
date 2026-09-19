@@ -78,6 +78,13 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
     </button>
 </form>
 
+<div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--symo-outline, #7b7489);">
+    Ainda não tem uma conta?
+    <a href="<?= BASE_URL ?>/registrar" style="color: var(--symo-primary-brand, #6f02ff); text-decoration: none; font-weight: 600;">
+        Criar conta
+    </a>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const toggleBtn = document.getElementById('btn-toggle-senha');

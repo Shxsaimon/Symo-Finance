@@ -146,4 +146,83 @@ class AuthController extends Controller
             'title' => 'Recuperação de Senha — Symo'
         ], 'layouts/auth');
     }
+
+    /**
+     * Exibe a tela de autocadastro ou redireciona para o dashboard se já autenticado.
+     *
+     * @return void
+     */
+    public function showRegister(): void
+    {
+        if (AuthHelper::check()) {
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        $this->render('auth/register', [
+            'title'   => 'Criar Conta — Symo',
+            'oldNome' => $_SESSION['old_register_nome'] ?? '',
+            'oldEmail' => $_SESSION['old_register_email'] ?? '',
+        ], 'layouts/auth');
+
+        unset($_SESSION['old_register_nome'], $_SESSION['old_register_email']);
+    }
+
+    /**
+     * Processa o autocadastro de uma nova conta.
+     *
+     * @return void
+     */
+    public function register(): void
+    {
+        if (!$this->validateCsrf()) {
+            LoggerHelper::security('CSRF_INVALID', ['action' => 'register']);
+            FlashHelper::set('error', 'Token de segurança expirado ou inválido. Por favor, envie o formulário novamente.');
+            $this->redirect('/registrar');
+            return;
+        }
+
+        $post = $this->getPost();
+        $nome = trim((string) ($post['nome'] ?? ''));
+        $email = trim((string) ($post['email'] ?? ''));
+        $senha = (string) ($post['senha'] ?? '');
+        $senhaConfirmacao = (string) ($post['senha_confirmacao'] ?? '');
+
+        $_SESSION['old_register_nome'] = $nome;
+        $_SESSION['old_register_email'] = $email;
+
+        if (empty($nome) || empty($email) || empty($senha)) {
+            FlashHelper::set('error', 'Preencha nome, e-mail e senha para criar sua conta.');
+            $this->redirect('/registrar');
+            return;
+        }
+
+        if ($senha !== $senhaConfirmacao) {
+            FlashHelper::set('error', 'A confirmação de senha não coincide com a senha informada.');
+            $this->redirect('/registrar');
+            return;
+        }
+
+        $result = $this->userModel->registerSelf([
+            'nome'  => $nome,
+            'email' => $email,
+            'senha' => $senha,
+        ]);
+
+        if (!$result['success']) {
+            FlashHelper::set('error', (string) $result['message']);
+            $this->redirect('/registrar');
+            return;
+        }
+
+        unset($_SESSION['old_register_nome'], $_SESSION['old_register_email']);
+
+        $user = $this->userModel->findByEmail($email);
+        if ($user) {
+            AuthHelper::login($user);
+        }
+
+        FlashHelper::set('success', 'Conta criada com sucesso! Bem-vindo(a) ao Symo.');
+        $this->redirect('/dashboard');
+    }
 }

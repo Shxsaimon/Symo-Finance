@@ -206,6 +206,63 @@ class User extends Model
     }
 
     /**
+     * Realiza o autocadastro público de uma nova conta (perfil 'admin' da própria conta).
+     * Clona o conjunto padrão de categorias, meios de pagamento e preferências pessoais.
+     *
+     * @param array<string, mixed> $data
+     * @return array{success: bool, user_id?: int, message?: string}
+     */
+    public function registerSelf(array $data): array
+    {
+        $nome = trim((string) ($data['nome'] ?? ''));
+        $email = trim(strtolower((string) ($data['email'] ?? '')));
+        $senha = (string) ($data['senha'] ?? '');
+
+        if (empty($nome) || mb_strlen($nome) < 3) {
+            return ['success' => false, 'message' => 'O nome completo deve conter no mínimo 3 caracteres.'];
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'O endereço de e-mail informado é inválido.'];
+        }
+
+        if (!preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $senha)) {
+            return ['success' => false, 'message' => 'A senha deve conter no mínimo 8 caracteres, incluindo letras e números.'];
+        }
+
+        // Mensagem genérica: evita confirmar/negar a existência de um e-mail cadastrado (anti-enumeração).
+        if ($this->emailExists($email)) {
+            return ['success' => false, 'message' => 'Não foi possível concluir o cadastro. Verifique os dados informados.'];
+        }
+
+        $hash = password_hash($senha, PASSWORD_BCRYPT, ['cost' => 12]);
+
+        $this->db->beginTransaction();
+        try {
+            $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, criado_em, atualizado_em)
+                    VALUES (:nome, :email, :senha, 'admin', 'ativo', NOW(), NOW())";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
+            $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+            $stmt->bindValue(':senha', $hash, PDO::PARAM_STR);
+            $stmt->execute();
+
+            $newId = (int) $this->db->lastInsertId();
+
+            DefaultDataHelper::popularDadosPadrao($this->db, $newId);
+
+            $this->logAudit('INSERT', $newId, null, ['nome' => $nome, 'email' => $email, 'perfil' => 'admin'], $newId);
+
+            $this->db->commit();
+            return ['success' => true, 'user_id' => $newId, 'message' => 'Conta criada com sucesso.'];
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            LoggerHelper::error($e, ['context' => 'User::registerSelf', 'email' => $email]);
+            return ['success' => false, 'message' => 'Não foi possível concluir o cadastro. Tente novamente em instantes.'];
+        }
+    }
+
+    /**
      * Atualiza os dados de um usuário existente.
      *
      * @param int $id

@@ -161,6 +161,8 @@ Router::get('/login', [AuthController::class, 'showLogin']);
 Router::post('/login', [AuthController::class, 'authenticate']);
 Router::post('/logout', [AuthController::class, 'logout']);
 Router::get('/esqueci-senha', [AuthController::class, 'showForgotPassword']);
+Router::get('/registrar', [AuthController::class, 'showRegister']);
+Router::post('/registrar', [AuthController::class, 'register']);
 
 // Rota de Dashboard (Protegida por Autenticação com Layout Mestre)
 Router::get('/dashboard', [DashboardController::class, 'index']);
