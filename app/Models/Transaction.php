@@ -460,10 +460,9 @@ class Transaction extends Model
                 LEFT JOIN `usuarios` u ON t.usuario_id = u.id
                 WHERE t.excluido_em IS NULL";
 
-            $sql .= " AND t.usuario_id = :usuario_id";
-            $params[':usuario_id'] = AuthHelper::id();
-
         $params = [];
+        $sql .= " AND t.usuario_id = :usuario_id";
+        $params[':usuario_id'] = AuthHelper::id();
 
         if (!empty($filters['mes'])) {
             $sql .= " AND MONTH(t.data_vencimento) = :mes";
