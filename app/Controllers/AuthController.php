@@ -215,12 +215,17 @@ class AuthController extends Controller
             return;
         }
 
+        $user = $result['user'] ?? null;
+        if (!$user) {
+            LoggerHelper::error(new RuntimeException('Cadastro concluído mas usuário não retornado para login automático.'), ['context' => 'AuthController::register', 'email' => $email]);
+            FlashHelper::set('success', 'Conta criada com sucesso! Faça login para continuar.');
+            $this->redirect('/login');
+            return;
+        }
+
         unset($_SESSION['old_register_nome'], $_SESSION['old_register_email']);
 
-        $user = $this->userModel->findByEmail($email);
-        if ($user) {
-            AuthHelper::login($user);
-        }
+        AuthHelper::login($user);
 
         FlashHelper::set('success', 'Conta criada com sucesso! Bem-vindo(a) ao Symo.');
         $this->redirect('/dashboard');
