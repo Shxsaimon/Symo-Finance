@@ -239,8 +239,6 @@ class User extends Model
 
         $this->db->beginTransaction();
         try {
-            error_log('[registerSelf] Checkpoint 0: iniciando transação para ' . $email);
-
             $isPgsql = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
             $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, criado_em, atualizado_em)
                     VALUES (:nome, :email, :senha, 'admin', 'ativo', NOW(), NOW())"
@@ -254,15 +252,11 @@ class User extends Model
             // No PostgreSQL, o RETURNING id devolve o identificador exato da linha inserida nesta mesma instrução.
             $newId = $isPgsql ? (int) $stmt->fetchColumn() : (int) $this->db->lastInsertId();
 
-            error_log('[registerSelf] Checkpoint 1: usuário inserido com id=' . $newId);
-
             if ($newId <= 0) {
                 throw new RuntimeException('Não foi possível obter o ID do usuário recém-criado.');
             }
 
             DefaultDataHelper::popularDadosPadrao($this->db, $newId);
-
-            error_log('[registerSelf] Checkpoint 2: dados padrão populados para usuario_id=' . $newId);
 
             // Gravação de auditoria feita diretamente (sem o catch silencioso de Model::logAudit),
             // para que uma eventual falha real apareça no log em vez de aparecer mascarada
@@ -277,8 +271,6 @@ class User extends Model
             $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
             $stmtAudit->execute();
 
-            error_log('[registerSelf] Checkpoint 3: auditoria registrada para usuario_id=' . $newId);
-
             $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
             $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
             $stmtUser->execute();
@@ -291,7 +283,6 @@ class User extends Model
             $this->db->commit();
             return ['success' => true, 'user_id' => $newId, 'user' => $novoUsuario, 'message' => 'Conta criada com sucesso.'];
         } catch (Throwable $e) {
-            error_log('[registerSelf] FALHA: ' . get_class($e) . ' - ' . $e->getMessage() . ' em ' . $e->getFile() . ':' . $e->getLine());
             $this->db->rollBack();
             LoggerHelper::error($e, ['context' => 'User::registerSelf', 'email' => $email]);
             return ['success' => false, 'message' => 'Não foi possível concluir o cadastro. Tente novamente em instantes.'];

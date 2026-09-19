@@ -84,47 +84,32 @@ class DefaultDataHelper
     {
         $insCat = $pdo->prepare("INSERT INTO `categorias` (usuario_id, nome, tipo, icone, cor, status) VALUES (:usuario_id, :nome, :tipo, :icone, :cor, 'ativa')");
         foreach (self::categoriasPadrao() as $categoria) {
-            try {
-                $insCat->execute([
-                    'usuario_id' => $usuarioId,
-                    'nome'       => $categoria['nome'],
-                    'tipo'       => $categoria['tipo'],
-                    'icone'      => $categoria['icone'],
-                    'cor'        => $categoria['cor'],
-                ]);
-            } catch (Throwable $e) {
-                error_log('[DefaultDataHelper] Falha ao inserir categoria "' . $categoria['nome'] . '": ' . $e->getMessage());
-                throw $e;
-            }
+            $insCat->execute([
+                'usuario_id' => $usuarioId,
+                'nome'       => $categoria['nome'],
+                'tipo'       => $categoria['tipo'],
+                'icone'      => $categoria['icone'],
+                'cor'        => $categoria['cor'],
+            ]);
         }
 
         $insPm = $pdo->prepare("INSERT INTO `meios_pagamento` (usuario_id, nome, eh_credito, status) VALUES (:usuario_id, :nome, :eh_credito, 'ativo')");
         foreach (self::meiosPagamentoPadrao() as $meio) {
-            try {
-                $insPm->execute([
-                    'usuario_id'  => $usuarioId,
-                    'nome'        => $meio['nome'],
-                    'eh_credito'  => $meio['eh_credito'],
-                ]);
-            } catch (Throwable $e) {
-                error_log('[DefaultDataHelper] Falha ao inserir meio de pagamento "' . $meio['nome'] . '": ' . $e->getMessage());
-                throw $e;
-            }
+            $insPm->execute([
+                'usuario_id'  => $usuarioId,
+                'nome'        => $meio['nome'],
+                'eh_credito'  => $meio['eh_credito'],
+            ]);
         }
 
         $insPref = $pdo->prepare("INSERT INTO `configuracoes_usuario` (usuario_id, chave, valor, tipo) VALUES (:usuario_id, :chave, :valor, :tipo)");
         foreach (self::preferenciasPadrao() as $preferencia) {
-            try {
-                $insPref->execute([
-                    'usuario_id' => $usuarioId,
-                    'chave'      => $preferencia['chave'],
-                    'valor'      => $preferencia['valor'],
-                    'tipo'       => $preferencia['tipo'],
-                ]);
-            } catch (Throwable $e) {
-                error_log('[DefaultDataHelper] Falha ao inserir preferência "' . $preferencia['chave'] . '": ' . $e->getMessage());
-                throw $e;
-            }
+            $insPref->execute([
+                'usuario_id' => $usuarioId,
+                'chave'      => $preferencia['chave'],
+                'valor'      => $preferencia['valor'],
+                'tipo'       => $preferencia['tipo'],
+            ]);
         }
     }
 }
