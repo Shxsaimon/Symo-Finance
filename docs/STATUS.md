@@ -6,9 +6,10 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 14/09/2026
-- **Fase Atual:** Fase 13 — Concluída com Sucesso
-- **Próximo Passo Recomendado:** Manutenção evolutiva e acompanhamento operacional do sistema
+- **Data da Última Atualização:** 18/09/2026
+- **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 1/6 concluída)
+- **Próximo Passo Recomendado:** Etapa 2 — Autocadastro local (`/registrar`) e botão "Criar conta" na tela de login
+- **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
 - **Migração Neon:** `DATABASE_URL` passou a ser aceita pelo PDO como PostgreSQL com SSL obrigatório; as migrations e queries ainda precisam ser convertidas de MySQL para PostgreSQL antes da homologação.
@@ -153,3 +154,17 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Concluídos os testes manuais autenticados de RBAC, XSS/SQLi, uploads e exportação CSV.
 - [x] Validada a conformidade dos critérios de aceitação da seção 26 do `docs/FSD.md`.
 - [x] Sistema construído, banco de dados operacional e aplicação homologada para uso.
+
+### Fase 14 — Multiusuário (Isolamento por Usuário) e Login Google
+- **Contexto:** Symo passa de single-tenant colaborativo para multiusuário real: autocadastro aberto (perfil `admin` da própria conta), login social via Google, e isolamento de dados por `usuario_id`. Novo perfil `dev` (admin do sistema, bootstrap único) substitui o antigo par admin/operador nas telas administrativas globais (Configurações completas, Gestão de Usuários, Auditoria). Alinhamento de negócio completo realizado antes da implementação.
+- **Etapa 1/6 — Migrations, seed do `dev` e template de dados padrão (Concluída):**
+  - [x] Migration `013_ajustar_perfil_google_usuarios.php`: `perfil` ganha o valor `dev`; `senha` passa a aceitar `NULL` (contas 100% Google); nova coluna `google_id` (única, nullable).
+  - [x] Migration `014_adicionar_usuario_id_dados_financeiros.php`: adiciona `usuario_id` (FK obrigatória) em `contas`, `categorias`, `meios_pagamento` e `cartoes_credito` (assume tabelas vazias, banco recriado via `--fresh`).
+  - [x] Migration `015_criar_tabela_configuracoes_usuario.php`: nova tabela `configuracoes_usuario` (preferências pessoais por usuário: moeda, separadores, paginação); tabela `configuracoes` original permanece exclusiva do perfil `dev` (identidade visual, status de migrations, GitHub Actions).
+  - [x] Criado `app/Helpers/DefaultDataHelper.php`, extraindo o template de categorias/meios de pagamento/preferências (antes fixo no seed) para clonagem por usuário no cadastro.
+  - [x] `database/seeds/initial_data.php` reescrito: remove os usuários demo `admin@symo.local`/`operador@symo.local` e as categorias/meios globais; cria apenas o usuário `dev` (via `config.php`/variáveis `SYSTEM_DEV_EMAIL`, `SYSTEM_DEV_PASSWORD`, `SYSTEM_DEV_NAME`) e as configurações globais restantes (`nome_aplicacao`, `logotipo_aplicacao`).
+  - [x] Adicionados blocos `dev` e `google_oauth` em `config/config.php` e `config/config.example.php`.
+  - **Pendente antes de rodar em qualquer ambiente:** definir as variáveis de ambiente `SYSTEM_DEV_EMAIL`/`SYSTEM_DEV_PASSWORD`/`SYSTEM_DEV_NAME`; executar `php migrate.php` e depois `php migrate.php --seed`.
+  - [x] `migrate.php --fresh` agora funciona também no PostgreSQL/Neon: reseta o schema `public` inteiro (`DROP SCHEMA ... CASCADE`) e reaplica todas as migrations do zero. Exige o flag extra `--confirmar` (ex.: `php migrate.php --fresh --confirmar`) para evitar execução acidental — ação destrutiva, apaga todos os dados do banco conectado.
+  - [x] Workflow `.github/workflows/database-migrations.yml` ganhou a opção `fresh`, disponível apenas via disparo manual direto no GitHub Actions (não pelo painel de Configurações do Symo, que continua restrito a `status`/`migrate`/`seed`). Exige preencher o campo `confirmacao_fresh` com o texto exato `RESETAR`. Requer os Secrets `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL` e `SYSTEM_DEV_PASSWORD` no repositório para que o seed do usuário `dev` seja recriado automaticamente após o reset.
+- **Próximas etapas planejadas:** (2) autocadastro local `/registrar`; (3) isolamento de dados nos Models/Controllers existentes + validação de propriedade cruzada (IDOR); (4) segmentação de RBAC/menu (Auditoria e Gestão de Usuários exclusivos do `dev`, Configurações divididas); (5) login com Google (OAuth via cURL nativo, sem Composer); (6) testes manuais completos e atualização final da documentação.

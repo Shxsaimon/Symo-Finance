@@ -44,6 +44,17 @@ return [
         'store_id'    => getenv('symo_finance_STORE_ID') ?: (getenv('BLOB_STORE_ID') ?: ''),
         'proxy_secret' => getenv('BLOB_PROXY_SECRET') ?: '',
         'proxy_url'   => rtrim((string) (getenv('BLOB_PROXY_URL') ?: ''), '/'),
-    ]
+    ],
+    // Usuário administrador do sistema (perfil 'dev'), criado via seed. Não confundir com admin de conta de usuário comum.
+    'dev' => [
+        'nome'  => getenv('SYSTEM_DEV_NAME') ?: 'Administrador do Sistema',
+        'email' => getenv('SYSTEM_DEV_EMAIL') ?: '',
+        'senha' => getenv('SYSTEM_DEV_PASSWORD') ?: '',
+    ],
+    'google_oauth' => [
+        'client_id'     => getenv('GOOGLE_CLIENT_ID') ?: '',
+        'client_secret' => getenv('GOOGLE_CLIENT_SECRET') ?: '',
+        'redirect_uri'  => getenv('GOOGLE_REDIRECT_URI') ?: '',
+    ],
 ];
 

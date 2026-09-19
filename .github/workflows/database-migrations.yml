@@ -11,7 +11,12 @@ on:
           - status
           - migrate
           - seed
+          - fresh
         default: status
+      confirmacao_fresh:
+        description: "Obrigatorio apenas para 'fresh': digite RESETAR para confirmar a exclusao de TODOS os dados"
+        required: false
+        type: string
 
 jobs:
   database:
@@ -45,6 +50,15 @@ jobs:
           php -m | grep -E '^pdo_pgsql$'
           php -l migrate.php
 
+      - name: Validar confirmacao do fresh
+        if: inputs.action == 'fresh'
+        shell: bash
+        run: |
+          if [ "${{ inputs.confirmacao_fresh }}" != "RESETAR" ]; then
+            echo "Confirmacao invalida. Preencha 'confirmacao_fresh' com o texto exato RESETAR para prosseguir."
+            exit 1
+          fi
+
       - name: Ver status das migracoes
         if: inputs.action == 'status'
         run: php migrate.php --status
@@ -56,3 +70,12 @@ jobs:
       - name: Executar seed inicial
         if: inputs.action == 'seed'
         run: php migrate.php --seed
+
+      - name: Resetar banco de dados (fresh) e recriar tudo
+        if: inputs.action == 'fresh'
+        env:
+          SYSTEM_DEV_NAME: ${{ secrets.SYSTEM_DEV_NAME }}
+          SYSTEM_DEV_EMAIL: ${{ secrets.SYSTEM_DEV_EMAIL }}
+          SYSTEM_DEV_PASSWORD: ${{ secrets.SYSTEM_DEV_PASSWORD }}
+        run: php migrate.php --fresh --confirmar
+
