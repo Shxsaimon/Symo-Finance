@@ -22,9 +22,10 @@ class PaymentMethod extends Model
     public function getActive(): array
     {
         $sql = "SELECT * FROM `meios_pagamento` 
-                WHERE status = 'ativo' AND excluido_em IS NULL 
+            WHERE usuario_id = :usuario_id AND status = 'ativo' AND excluido_em IS NULL
                 ORDER BY nome ASC";
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -50,10 +51,11 @@ class PaymentMethod extends Model
     {
         $ehCredito = !empty($data['eh_credito']) ? 1 : 0;
 
-        $sql = "INSERT INTO `meios_pagamento` (nome, eh_credito, status, criado_em, atualizado_em)
-                VALUES (:nome, :eh_credito, :status, NOW(), NOW())";
+        $sql = "INSERT INTO `meios_pagamento` (usuario_id, nome, eh_credito, status, criado_em, atualizado_em)
+            VALUES (:usuario_id, :nome, :eh_credito, :status, NOW(), NOW())";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
         $stmt->bindValue(':eh_credito', $ehCredito, PDO::PARAM_INT);
         $stmt->bindValue(':status', $data['status'] ?? 'ativo', PDO::PARAM_STR);
@@ -92,10 +94,11 @@ class PaymentMethod extends Model
                     eh_credito = :eh_credito, 
                     status = :status, 
                     atualizado_em = NOW() 
-                WHERE id = :id AND excluido_em IS NULL";
+                WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
         $stmt->bindValue(':eh_credito', $ehCredito, PDO::PARAM_INT);
         $stmt->bindValue(':status', $data['status'] ?? $antigo['status'], PDO::PARAM_STR);
@@ -125,10 +128,11 @@ class PaymentMethod extends Model
 
         $novoStatus = ($item['status'] === 'ativo') ? 'inativo' : 'ativo';
 
-        $sql = "UPDATE `meios_pagamento` SET status = :status, atualizado_em = NOW() WHERE id = :id";
+        $sql = "UPDATE `meios_pagamento` SET status = :status, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':status', $novoStatus, PDO::PARAM_STR);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $success = $stmt->execute();
 
         if ($success) {
@@ -146,9 +150,10 @@ class PaymentMethod extends Model
      */
     public function hasTransactions(int $id): bool
     {
-        $sql = "SELECT COUNT(*) as total FROM `transacoes` WHERE meio_pagamento_id = :id AND excluido_em IS NULL";
+        $sql = "SELECT COUNT(*) as total FROM `transacoes` WHERE meio_pagamento_id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $res = $stmt->fetch();
         return ((int) ($res['total'] ?? 0)) > 0;

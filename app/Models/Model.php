@@ -15,6 +15,14 @@ abstract class Model
     protected string $tabela = '';
     protected string $chavePrimaria = 'id';
 
+    /** @var array<int, string> */
+    private const TABELAS_COM_PROPRIETARIO = [
+        'contas',
+        'categorias',
+        'meios_pagamento',
+        'cartoes_credito',
+    ];
+
     /**
      * Construtor da camada Model. Inicializa a instância Singleton do PDO.
      */
@@ -81,10 +89,20 @@ abstract class Model
             $sql .= " AND excluido_em IS NULL";
         }
 
+        $usuarioId = $this->usuarioLogadoParaEscopo();
+        if ($usuarioId !== null) {
+            $sql .= " AND usuario_id = :usuario_escopo";
+        } elseif ($this->tabelaComProprietario()) {
+            return null;
+        }
+
         $sql .= " LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        if ($usuarioId !== null) {
+            $stmt->bindValue(':usuario_escopo', $usuarioId, PDO::PARAM_INT);
+        }
         $stmt->execute();
 
         $result = $stmt->fetch();
@@ -131,9 +149,21 @@ abstract class Model
             $sql .= " WHERE excluido_em IS NULL";
         }
 
+        $usuarioId = $this->usuarioLogadoParaEscopo();
+        if ($this->tabelaComProprietario()) {
+            if ($usuarioId === null) {
+                return [];
+            }
+            $sql .= $this->temSoftDelete() ? " AND" : " WHERE";
+            $sql .= " usuario_id = :usuario_escopo";
+        }
+
         $sql .= " ORDER BY " . $this->sanitizeOrderBy($orderBy);
 
         $stmt = $this->db->prepare($sql);
+        if ($usuarioId !== null && $this->tabelaComProprietario()) {
+            $stmt->bindValue(':usuario_escopo', $usuarioId, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -160,9 +190,12 @@ abstract class Model
                 SET excluido_em = NOW(), excluido_por = :usuario_id, atualizado_em = NOW() 
                 WHERE `{$this->chavePrimaria}` = :id AND excluido_em IS NULL";
 
+        $sql .= " AND usuario_id = :usuario_escopo";
+
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':usuario_id', $usuarioId, PDO::PARAM_INT);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_escopo', $usuarioId, PDO::PARAM_INT);
         $sucesso = $stmt->execute();
 
         if ($sucesso && $stmt->rowCount() > 0) {
@@ -171,6 +204,16 @@ abstract class Model
         }
 
         return false;
+    }
+
+    protected function tabelaComProprietario(): bool
+    {
+        return in_array($this->tabela, self::TABELAS_COM_PROPRIETARIO, true);
+    }
+
+    protected function usuarioLogadoParaEscopo(): ?int
+    {
+        return $this->tabelaComProprietario() ? AuthHelper::id() : null;
     }
 
     /**

@@ -30,10 +30,15 @@ class CreditCard extends Model
         $cor = !empty($data['cor']) ? trim((string) $data['cor']) : '#3BD7D7';
         $status = $data['status'] ?? 'ativo';
 
-        $sql = "INSERT INTO `cartoes_credito` (nome, limite_credito, dia_fechamento, dia_vencimento, conta_padrao_id, cor, status, criado_em, atualizado_em)
-                VALUES (:nome, :limite_credito, :dia_fechamento, :dia_vencimento, :conta_padrao_id, :cor, :status, NOW(), NOW())";
+        if ($contaPadraoId !== null && !$this->accountBelongsToUser($contaPadraoId, $userId)) {
+            throw new InvalidArgumentException('A conta padrão selecionada não pertence ao usuário autenticado.');
+        }
+
+        $sql = "INSERT INTO `cartoes_credito` (usuario_id, nome, limite_credito, dia_fechamento, dia_vencimento, conta_padrao_id, cor, status, criado_em, atualizado_em)
+            VALUES (:usuario_id, :nome, :limite_credito, :dia_fechamento, :dia_vencimento, :conta_padrao_id, :cor, :status, NOW(), NOW())";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
         $stmt->bindValue(':limite_credito', $limiteCredito);
         $stmt->bindValue(':dia_fechamento', $diaFechamento, PDO::PARAM_INT);
@@ -81,11 +86,15 @@ class CreditCard extends Model
         $cor = isset($data['cor']) ? trim((string) $data['cor']) : $oldData['cor'];
         $status = isset($data['status']) ? (string) $data['status'] : $oldData['status'];
 
+        if ($contaPadraoId !== null && !$this->accountBelongsToUser($contaPadraoId, $userId)) {
+            return false;
+        }
+
         $sql = "UPDATE `cartoes_credito`
                 SET nome = :nome, limite_credito = :limite_credito, dia_fechamento = :dia_fechamento,
                     dia_vencimento = :dia_vencimento, conta_padrao_id = :conta_padrao_id, cor = :cor,
                     status = :status, atualizado_em = NOW()
-                WHERE id = :id AND excluido_em IS NULL";
+                WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
@@ -96,6 +105,7 @@ class CreditCard extends Model
         $stmt->bindValue(':cor', $cor, PDO::PARAM_STR);
         $stmt->bindValue(':status', $status, PDO::PARAM_STR);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $success = $stmt->execute();
 
         if ($success) {
@@ -141,10 +151,11 @@ class CreditCard extends Model
         $sql = "SELECT c.*, cp.nome as conta_padrao_nome
                 FROM `cartoes_credito` c
                 LEFT JOIN `contas` cp ON c.conta_padrao_id = cp.id
-                WHERE c.excluido_em IS NULL
+            WHERE c.usuario_id = :usuario_id AND c.excluido_em IS NULL
                 ORDER BY c.status ASC, c.nome ASC";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $cards = $stmt->fetchAll();
 
@@ -170,11 +181,12 @@ class CreditCard extends Model
         $sql = "SELECT c.*, cp.nome as conta_padrao_nome
                 FROM `cartoes_credito` c
                 LEFT JOIN `contas` cp ON c.conta_padrao_id = cp.id
-                WHERE c.id = :id AND c.excluido_em IS NULL
+                WHERE c.id = :id AND c.usuario_id = :usuario_id AND c.excluido_em IS NULL
                 LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $card = $stmt->fetch();
 
@@ -219,6 +231,13 @@ class CreditCard extends Model
             'limite_disponivel' => $limiteDisponivel,
             'porcentagem_usada' => $porcentagemUsada,
         ];
+    }
+
+    private function accountBelongsToUser(int $accountId, int $userId): bool
+    {
+        $stmt = $this->db->prepare('SELECT 1 FROM `contas` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1');
+        $stmt->execute(['id' => $accountId, 'usuario_id' => $userId]);
+        return $stmt->fetchColumn() !== false;
     }
 
     /**

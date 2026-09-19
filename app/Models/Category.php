@@ -24,7 +24,7 @@ class Category extends Model
     public function getByType(string $tipo, bool $apenasAtivas = true): array
     {
         $sql = "SELECT * FROM `categorias` 
-                WHERE tipo = :tipo AND excluido_em IS NULL";
+            WHERE usuario_id = :usuario_id AND tipo = :tipo AND excluido_em IS NULL";
 
         if ($apenasAtivas) {
             $sql .= " AND status = 'ativa'";
@@ -33,6 +33,7 @@ class Category extends Model
         $sql .= " ORDER BY nome ASC";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll();
@@ -46,9 +47,10 @@ class Category extends Model
     public function getActiveCategories(): array
     {
         $sql = "SELECT * FROM `categorias` 
-                WHERE status = 'ativa' AND excluido_em IS NULL 
+                WHERE usuario_id = :usuario_id AND status = 'ativa' AND excluido_em IS NULL
                 ORDER BY tipo ASC, nome ASC";
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -62,10 +64,11 @@ class Category extends Model
      */
     public function createCategory(array $data, int $userId): int
     {
-        $sql = "INSERT INTO `categorias` (nome, tipo, icone, cor, status, criado_em, atualizado_em)
-                VALUES (:nome, :tipo, :icone, :cor, :status, NOW(), NOW())";
+        $sql = "INSERT INTO `categorias` (usuario_id, nome, tipo, icone, cor, status, criado_em, atualizado_em)
+            VALUES (:usuario_id, :nome, :tipo, :icone, :cor, :status, NOW(), NOW())";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
         $stmt->bindValue(':tipo', $data['tipo'] === 'receita' ? 'receita' : 'despesa', PDO::PARAM_STR);
         $stmt->bindValue(':icone', !empty($data['icone']) ? trim((string) $data['icone']) : 'bi-tag', PDO::PARAM_STR);
@@ -108,10 +111,11 @@ class Category extends Model
                     cor = :cor, 
                     status = :status, 
                     atualizado_em = NOW() 
-                WHERE id = :id AND excluido_em IS NULL";
+                WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
         $stmt->bindValue(':tipo', $data['tipo'] === 'receita' ? 'receita' : 'despesa', PDO::PARAM_STR);
         $stmt->bindValue(':icone', !empty($data['icone']) ? trim((string) $data['icone']) : $antiga['icone'], PDO::PARAM_STR);
@@ -143,10 +147,11 @@ class Category extends Model
 
         $novoStatus = ($cat['status'] === 'ativa') ? 'inativa' : 'ativa';
 
-        $sql = "UPDATE `categorias` SET status = :status, atualizado_em = NOW() WHERE id = :id";
+        $sql = "UPDATE `categorias` SET status = :status, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':status', $novoStatus, PDO::PARAM_STR);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $success = $stmt->execute();
 
         if ($success) {
@@ -164,9 +169,10 @@ class Category extends Model
      */
     public function hasTransactions(int $id): bool
     {
-        $sql = "SELECT COUNT(*) as total FROM `transacoes` WHERE categoria_id = :id AND excluido_em IS NULL";
+        $sql = "SELECT COUNT(*) as total FROM `transacoes` WHERE categoria_id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $res = $stmt->fetch();
         return ((int) ($res['total'] ?? 0)) > 0;

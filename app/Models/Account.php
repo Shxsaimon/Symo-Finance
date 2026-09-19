@@ -22,9 +22,10 @@ class Account extends Model
     public function getActiveAccounts(): array
     {
         $sql = "SELECT * FROM `contas` 
-                WHERE status = 'ativa' AND excluido_em IS NULL 
+                WHERE usuario_id = :usuario_id AND status = 'ativa' AND excluido_em IS NULL
                 ORDER BY nome ASC";
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -38,8 +39,9 @@ class Account extends Model
     {
         $sql = "SELECT COALESCE(SUM(saldo_atual), 0) AS saldo_total 
                 FROM `contas` 
-                WHERE status = 'ativa' AND excluido_em IS NULL";
+            WHERE usuario_id = :usuario_id AND status = 'ativa' AND excluido_em IS NULL";
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $result = $stmt->fetch();
         return (float) ($result['saldo_total'] ?? 0.0);
@@ -56,10 +58,11 @@ class Account extends Model
     {
         $saldoInicial = (float) ($data['saldo_inicial'] ?? 0.0);
 
-        $sql = "INSERT INTO `contas` (nome, instituicao, tipo, saldo_inicial, saldo_atual, cor, status, criado_em, atualizado_em)
-                VALUES (:nome, :instituicao, :tipo, :saldo_inicial, :saldo_atual, :cor, :status, NOW(), NOW())";
+        $sql = "INSERT INTO `contas` (usuario_id, nome, instituicao, tipo, saldo_inicial, saldo_atual, cor, status, criado_em, atualizado_em)
+            VALUES (:usuario_id, :nome, :instituicao, :tipo, :saldo_inicial, :saldo_atual, :cor, :status, NOW(), NOW())";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
         $stmt->bindValue(':instituicao', !empty($data['instituicao']) ? trim((string) $data['instituicao']) : null, !empty($data['instituicao']) ? PDO::PARAM_STR : PDO::PARAM_NULL);
         $stmt->bindValue(':tipo', $data['tipo'] ?? 'corrente', PDO::PARAM_STR);
@@ -106,10 +109,11 @@ class Account extends Model
                     cor = :cor, 
                     status = :status, 
                     atualizado_em = NOW() 
-                WHERE id = :id AND excluido_em IS NULL";
+                WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
         $stmt->bindValue(':instituicao', !empty($data['instituicao']) ? trim((string) $data['instituicao']) : null, !empty($data['instituicao']) ? PDO::PARAM_STR : PDO::PARAM_NULL);
         $stmt->bindValue(':tipo', $data['tipo'] ?? $contaAntiga['tipo'], PDO::PARAM_STR);
@@ -141,10 +145,11 @@ class Account extends Model
 
         $novoStatus = ($conta['status'] === 'ativa') ? 'inativa' : 'ativa';
 
-        $sql = "UPDATE `contas` SET status = :status, atualizado_em = NOW() WHERE id = :id";
+        $sql = "UPDATE `contas` SET status = :status, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':status', $novoStatus, PDO::PARAM_STR);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $success = $stmt->execute();
 
         if ($success) {
@@ -163,9 +168,10 @@ class Account extends Model
     public function hasTransactions(int $id): bool
     {
         // 1. Checa na tabela transacoes
-        $sqlTrans = "SELECT COUNT(*) as total FROM `transacoes` WHERE conta_id = :id AND excluido_em IS NULL";
+        $sqlTrans = "SELECT COUNT(*) as total FROM `transacoes` WHERE conta_id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
         $stmt = $this->db->prepare($sqlTrans);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $resTrans = $stmt->fetch();
         if ((int) ($resTrans['total'] ?? 0) > 0) {
@@ -174,10 +180,11 @@ class Account extends Model
 
         // 2. Checa na tabela transferencias (origem ou destino)
         $sqlTransf = "SELECT COUNT(*) as total FROM `transferencias` 
-                      WHERE (conta_origem_id = :id_origem OR conta_destino_id = :id_destino) AND excluido_em IS NULL";
+                  WHERE (conta_origem_id = :id_origem OR conta_destino_id = :id_destino) AND usuario_id = :usuario_id AND excluido_em IS NULL";
         $stmtTransf = $this->db->prepare($sqlTransf);
         $stmtTransf->bindValue(':id_origem', $id, PDO::PARAM_INT);
         $stmtTransf->bindValue(':id_destino', $id, PDO::PARAM_INT);
+        $stmtTransf->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmtTransf->execute();
         $resTransf = $stmtTransf->fetch();
         return ((int) ($resTransf['total'] ?? 0)) > 0;

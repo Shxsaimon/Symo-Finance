@@ -33,9 +33,9 @@ class Report extends Model
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
                 LEFT JOIN `usuarios` u ON t.usuario_id = u.id
-                WHERE t.excluido_em IS NULL";
+                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
 
-        $params = [];
+        $params = [':usuario_id' => AuthHelper::id()];
         $this->applyFilters($sql, $params, $filters);
 
         $sql .= " ORDER BY t.data_transacao DESC, t.data_vencimento DESC, t.id DESC";
@@ -75,9 +75,9 @@ class Report extends Model
                 LEFT JOIN `meios_pagamento` mp ON t.meio_pagamento_id = mp.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
-                WHERE t.excluido_em IS NULL";
+                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
 
-        $params = [];
+        $params = [':usuario_id' => AuthHelper::id()];
         $this->applyFilters($sql, $params, $filters);
 
         $stmt = $this->db->prepare($sql);
@@ -133,9 +133,9 @@ class Report extends Model
                 LEFT JOIN `meios_pagamento` mp ON t.meio_pagamento_id = mp.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
-                WHERE t.excluido_em IS NULL";
+                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
 
-        $params = [];
+        $params = [':usuario_id' => AuthHelper::id()];
         $this->applyFilters($sql, $params, $filters);
 
         $sql .= " GROUP BY cat.id, cat.nome, cat.tipo, cat.cor, cat.icone

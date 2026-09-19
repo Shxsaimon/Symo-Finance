@@ -13,6 +13,16 @@ class CreditCardInvoice extends Model
     protected string $tabela = 'faturas_cartao';
     protected string $chavePrimaria = 'id';
 
+    public function find(int $id): ?array
+    {
+        $stmt = $this->db->prepare("SELECT f.* FROM faturas_cartao f
+            INNER JOIN cartoes_credito c ON c.id = f.cartao_credito_id
+            WHERE f.id = :id AND c.usuario_id = :usuario_id LIMIT 1");
+        $stmt->execute(['id' => $id, 'usuario_id' => AuthHelper::id()]);
+        $result = $stmt->fetch();
+        return $result !== false ? $result : null;
+    }
+
     /**
      * Obtém ou cria a fatura de um cartão para o mês e ano de referência especificados.
      *
@@ -24,13 +34,15 @@ class CreditCardInvoice extends Model
     public function getOrCreateInvoice(int $cardId, int $mesRef, int $anoRef): array
     {
         $sql = "SELECT * FROM `faturas_cartao`
-                WHERE cartao_credito_id = :card_id 
-                  AND mes_referencia = :mes 
+                                WHERE cartao_credito_id = :card_id
+                                    AND EXISTS (SELECT 1 FROM cartoes_credito WHERE id = cartao_credito_id AND usuario_id = :usuario_id)
+                                    AND mes_referencia = :mes
                   AND ano_referencia = :ano
                 LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':card_id', $cardId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->bindValue(':mes', $mesRef, PDO::PARAM_INT);
         $stmt->bindValue(':ano', $anoRef, PDO::PARAM_INT);
         $stmt->execute();
@@ -122,11 +134,13 @@ class CreditCardInvoice extends Model
         $sql = "SELECT f.*, cp.nome as conta_pagamento_nome
                 FROM `faturas_cartao` f
                 LEFT JOIN `contas` cp ON f.conta_pagamento_id = cp.id
-                WHERE f.cartao_credito_id = :card_id
+                                WHERE f.cartao_credito_id = :card_id
+                                    AND EXISTS (SELECT 1 FROM cartoes_credito WHERE id = f.cartao_credito_id AND usuario_id = :usuario_id)
                 ORDER BY f.ano_referencia DESC, f.mes_referencia DESC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':card_id', $cardId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -144,11 +158,12 @@ class CreditCardInvoice extends Model
                 FROM `faturas_cartao` f
                 JOIN `cartoes_credito` c ON f.cartao_credito_id = c.id
                 LEFT JOIN `contas` cp ON f.conta_pagamento_id = cp.id
-                WHERE f.id = :id
+                WHERE f.id = :id AND c.usuario_id = :usuario_id
                 LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':id', $invoiceId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $invoice = $stmt->fetch();
 

@@ -67,19 +67,21 @@ class Transfer extends Model
             // 1. Debita o valor na conta de origem
             $sqlDebito = "UPDATE `contas` 
                           SET saldo_atual = saldo_atual - :valor, atualizado_em = NOW() 
-                          WHERE id = :conta_id";
+                          WHERE id = :conta_id AND usuario_id = :usuario_id";
             $stmtDeb = $this->db->prepare($sqlDebito);
             $stmtDeb->bindValue(':valor', $valor);
             $stmtDeb->bindValue(':conta_id', $contaOrigemId, PDO::PARAM_INT);
+            $stmtDeb->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtDeb->execute();
 
             // 2. Credita o valor na conta de destino
             $sqlCredito = "UPDATE `contas` 
                            SET saldo_atual = saldo_atual + :valor, atualizado_em = NOW() 
-                           WHERE id = :conta_id";
+                           WHERE id = :conta_id AND usuario_id = :usuario_id";
             $stmtCred = $this->db->prepare($sqlCredito);
             $stmtCred->bindValue(':valor', $valor);
             $stmtCred->bindValue(':conta_id', $contaDestinoId, PDO::PARAM_INT);
+            $stmtCred->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtCred->execute();
 
             // 3. Registra a transferência na tabela transferencias
@@ -149,19 +151,21 @@ class Transfer extends Model
             // 1. Estorna a conta de origem (devolve o saldo)
             $sqlEstornoOrigem = "UPDATE `contas` 
                                  SET saldo_atual = saldo_atual + :valor, atualizado_em = NOW() 
-                                 WHERE id = :conta_id";
+                                 WHERE id = :conta_id AND usuario_id = :usuario_id";
             $stmtOrigem = $this->db->prepare($sqlEstornoOrigem);
             $stmtOrigem->bindValue(':valor', $valor);
             $stmtOrigem->bindValue(':conta_id', $contaOrigemId, PDO::PARAM_INT);
+            $stmtOrigem->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtOrigem->execute();
 
             // 2. Estorna a conta de destino (remove o saldo creditado)
             $sqlEstornoDestino = "UPDATE `contas` 
                                   SET saldo_atual = saldo_atual - :valor, atualizado_em = NOW() 
-                                  WHERE id = :conta_id";
+                                  WHERE id = :conta_id AND usuario_id = :usuario_id";
             $stmtDestino = $this->db->prepare($sqlEstornoDestino);
             $stmtDestino->bindValue(':valor', $valor);
             $stmtDestino->bindValue(':conta_id', $contaDestinoId, PDO::PARAM_INT);
+            $stmtDestino->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtDestino->execute();
 
             // 3. Executa o Soft Delete
@@ -193,7 +197,7 @@ class Transfer extends Model
                 JOIN `contas` co ON t.conta_origem_id = co.id
                 JOIN `contas` cd ON t.conta_destino_id = cd.id
                 JOIN `usuarios` u ON t.usuario_id = u.id
-                WHERE t.excluido_em IS NULL";
+                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
 
         $params = [];
 
@@ -221,6 +225,7 @@ class Transfer extends Model
         $sql .= " ORDER BY t.data_transferencia DESC, t.id DESC";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         foreach ($params as $k => $v) {
             if (is_int($v)) {
                 $stmt->bindValue($k, $v, PDO::PARAM_INT);

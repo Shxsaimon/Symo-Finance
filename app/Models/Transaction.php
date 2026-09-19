@@ -37,6 +37,8 @@ class Transaction extends Model
         $observacoes = !empty($data['observacoes']) ? trim((string) $data['observacoes']) : null;
         $faturaId = null;
 
+        $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, $cartaoCreditoId);
+
         // INÍCIO DA TRANSAÇÃO ATÔMICA
         $this->db->beginTransaction();
         try {
@@ -141,6 +143,8 @@ class Transaction extends Model
         $contaId = !empty($data['conta_id']) ? (int) $data['conta_id'] : null;
         $cartaoCreditoId = !empty($data['cartao_credito_id']) ? (int) $data['cartao_credito_id'] : null;
         $observacoes = !empty($data['observacoes']) ? trim((string) $data['observacoes']) : null;
+
+        $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, $cartaoCreditoId);
 
         // Cálculo de parcelas com ajuste de dízima residual na 1ª parcela
         $valorBase = floor(($valorTotal / $totalParcelas) * 100) / 100;
@@ -270,6 +274,8 @@ class Transaction extends Model
         $contaId = array_key_exists('conta_id', $data) ? (!empty($data['conta_id']) ? (int) $data['conta_id'] : null) : (!empty($old['conta_id']) ? (int) $old['conta_id'] : null);
         $observacoes = isset($data['observacoes']) ? trim((string) $data['observacoes']) : $old['observacoes'];
         $dataPagamento = ($status === 'pago' || $status === 'recebido') ? ($data['data_pagamento'] ?? $old['data_pagamento'] ?? date('Y-m-d')) : null;
+
+        $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, null);
 
         $this->db->beginTransaction();
         try {
@@ -454,6 +460,9 @@ class Transaction extends Model
                 LEFT JOIN `usuarios` u ON t.usuario_id = u.id
                 WHERE t.excluido_em IS NULL";
 
+            $sql .= " AND t.usuario_id = :usuario_id";
+            $params[':usuario_id'] = AuthHelper::id();
+
         $params = [];
 
         if (!empty($filters['mes'])) {
@@ -529,7 +538,7 @@ class Transaction extends Model
                     SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas,
                     SUM(CASE WHEN tipo = 'despesa' AND status = 'pendente' THEN valor ELSE 0 END) as despesas_pendentes
                 FROM `transacoes`
-                WHERE excluido_em IS NULL
+                WHERE usuario_id = :usuario_id AND excluido_em IS NULL
                   AND MONTH(data_vencimento) = :mes
                   AND YEAR(data_vencimento) = :ano";
 
@@ -540,6 +549,7 @@ class Transaction extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':mes', $mes, PDO::PARAM_INT);
         $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         if ($contaId !== null) {
             $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
         }
@@ -616,7 +626,7 @@ class Transaction extends Model
                     SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END) as total_despesas,
                     SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas
                 FROM `transacoes`
-                WHERE excluido_em IS NULL
+                WHERE usuario_id = :usuario_id AND excluido_em IS NULL
                   AND data_vencimento BETWEEN :data_inicio AND :data_fim
                 GROUP BY YEAR(data_vencimento), MONTH(data_vencimento)
                 ORDER BY ano ASC, mes ASC";
@@ -624,6 +634,7 @@ class Transaction extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':data_inicio', $dataInicio, PDO::PARAM_STR);
         $stmt->bindValue(':data_fim', $dataFim, PDO::PARAM_STR);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $registros = $stmt->fetchAll();
 
@@ -658,6 +669,7 @@ class Transaction extends Model
                 FROM `transacoes` t
                 JOIN `categorias` c ON t.categoria_id = c.id
                 WHERE t.excluido_em IS NULL
+                                    AND t.usuario_id = :usuario_id
                   AND t.tipo = 'despesa'
                   AND MONTH(t.data_vencimento) = :mes
                   AND YEAR(t.data_vencimento) = :ano
@@ -667,6 +679,7 @@ class Transaction extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':mes', $mes, PDO::PARAM_INT);
         $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
         $categorias = $stmt->fetchAll();
 
@@ -703,6 +716,7 @@ class Transaction extends Model
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
                 WHERE t.excluido_em IS NULL
+                                    AND t.usuario_id = :usuario_id
                   AND t.status = 'pendente'
                   AND COALESCE(fc.data_vencimento, t.data_vencimento) <= (CURRENT_DATE + (:dias * INTERVAL '1 day'))
                 ORDER BY data_vencimento_efetiva ASC, t.id ASC
@@ -710,6 +724,7 @@ class Transaction extends Model
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':dias', $dias, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
         $stmt->execute();
 
@@ -727,11 +742,35 @@ class Transaction extends Model
     {
         $sql = "UPDATE `contas` 
                 SET saldo_atual = saldo_atual + :valor, atualizado_em = NOW() 
-                WHERE id = :conta_id";
+                WHERE id = :conta_id AND usuario_id = :usuario_id";
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':valor', $valor);
         $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
+    }
+
+    private function validateRelatedOwnership(int $userId, int $categoriaId, int $meioPagamentoId, ?int $contaId, ?int $cartaoCreditoId): void
+    {
+        $checks = [
+            ['categorias', $categoriaId, 'Categoria'],
+            ['meios_pagamento', $meioPagamentoId, 'Meio de pagamento'],
+        ];
+
+        if ($contaId !== null) {
+            $checks[] = ['contas', $contaId, 'Conta'];
+        }
+        if ($cartaoCreditoId !== null) {
+            $checks[] = ['cartoes_credito', $cartaoCreditoId, 'Cartão de crédito'];
+        }
+
+        foreach ($checks as [$table, $id, $label]) {
+            $stmt = $this->db->prepare("SELECT 1 FROM `{$table}` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1");
+            $stmt->execute(['id' => $id, 'usuario_id' => $userId]);
+            if ($stmt->fetchColumn() === false) {
+                throw new InvalidArgumentException("{$label} inválido ou não pertence ao usuário autenticado.");
+            }
+        }
     }
 }
 

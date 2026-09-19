@@ -7,8 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 18/09/2026
-- **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 1/6 concluída)
-- **Próximo Passo Recomendado:** Etapa 2 — Autocadastro local (`/registrar`) e botão "Criar conta" na tela de login
+- **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 3/6 concluída)
+- **Próximo Passo Recomendado:** Etapa 4 — Segmentação de RBAC e menus (`dev`, Configurações, Auditoria e Gestão de Usuários)
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
@@ -173,4 +173,11 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
   - [x] Nova view `app/Views/auth/register.php` (nome, e-mail, senha, confirmação de senha).
   - [x] Botão "Criar conta" adicionado em `app/Views/auth/login.php`, com link recíproco "Entrar" na tela de cadastro.
   - [x] Login automático após cadastro bem-sucedido, redirecionando para `/dashboard`.
-- **Próximas etapas planejadas:** (3) isolamento de dados nos Models/Controllers existentes + validação de propriedade cruzada (IDOR); (4) segmentação de RBAC/menu (Auditoria e Gestão de Usuários exclusivos do `dev`, Configurações divididas); (5) login com Google (OAuth via cURL nativo, sem Composer); (6) testes manuais completos e atualização final da documentação.
+- **Etapa 3/6 — Isolamento de dados e validação contra IDOR (Concluída):**
+  - [x] `Model` aplica escopo automático por `usuario_id` em `find`, `all` e `softDelete` para contas, categorias, meios de pagamento e cartões.
+  - [x] Cadastros de contas, categorias, meios de pagamento e cartões gravam `usuario_id` e filtram alterações/status pelo proprietário.
+  - [x] Cartões validam a propriedade da conta padrão; transações validam conta, categoria, meio de pagamento e cartão antes da escrita.
+  - [x] Transferências validam contas do mesmo usuário e restringem os ajustes de saldo ao proprietário.
+  - [x] Dashboard, relatórios, histórico de transferências e faturas passaram a filtrar o usuário autenticado.
+  - [x] Lixeira filtra contagens/listagens/restauração/expurgo por `usuario_id`.
+- **Próximas etapas planejadas:** (4) segmentação de RBAC/menu (Auditoria e Gestão de Usuários exclusivos do `dev`, Configurações divididas); (5) login com Google (OAuth via cURL nativo, sem Composer); (6) testes manuais completos e atualização final da documentação.
