@@ -269,7 +269,7 @@ class User extends Model
             $stmtAudit->bindValue(':registro_id', $newId, PDO::PARAM_INT);
             $stmtAudit->bindValue(':valores_novos', json_encode(['nome' => $nome, 'email' => $email, 'perfil' => 'admin'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), PDO::PARAM_STR);
             $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
-            $stmtAudit->execute();
+            $stmtAudit->execute();  
 
             $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
             $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
