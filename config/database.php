@@ -98,7 +98,14 @@ class Database
                     . ';sslmode=require';
                 $username = rawurldecode((string) ($parts['user'] ?? ''));
                 $password = rawurldecode((string) ($parts['pass'] ?? ''));
-                self::$instance = new SymoPostgresConnection($dsn, $username, $password, $options);
+
+                // O Neon usa um pooler (PgBouncer) em modo "transaction", que não suporta
+                // prepared statements nativos do servidor entre comandos diferentes na mesma
+                // transação. Emular os prepares no cliente evita abortos de transação (SQLSTATE 25P02).
+                $pgsqlOptions = $options;
+                $pgsqlOptions[PDO::ATTR_EMULATE_PREPARES] = true;
+
+                self::$instance = new SymoPostgresConnection($dsn, $username, $password, $pgsqlOptions);
             } else {
                 if ($driver !== 'mysql') {
                     throw new InvalidArgumentException('DB_DRIVER deve ser mysql quando DATABASE_URL não estiver definida.');
