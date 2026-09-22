@@ -166,6 +166,7 @@ Router::post('/registrar', [AuthController::class, 'register']);
 
 // Rota de Dashboard (Protegida por Autenticação com Layout Mestre)
 Router::get('/dashboard', [DashboardController::class, 'index']);
+Router::post('/feedback/salvar', [FeedbackController::class, 'store']);
 
 // -------------------------------------------------------------
 // FASE 6: CADASTROS BÁSICOS (Contas, Categorias, Meios de Pagamento)

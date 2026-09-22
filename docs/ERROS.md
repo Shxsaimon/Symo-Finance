@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-09-21 - Validação da migration de feedback bloqueada por MySQL indisponível
+
+- **Sintoma:** O comando `php migrate.php --status` não conseguiu verificar a migration `016_criar_tabela_feedback.php` porque a conexão local foi recusada.
+- **Causa:** O serviço MySQL local não estava aceitando conexões na porta configurada para o Symo.
+- **Solução aplicada:** A migration foi validada por lint PHP e permaneceu pendente de execução; nenhuma alteração de banco ou configuração foi realizada.
+- **Como evitar no futuro:** Iniciar o MySQL antes de executar `php migrate.php` e confirmar o status da migration após o serviço ficar disponível.
+
 ## 2026-09-16 - Modal de logs inicializado antes do Bootstrap
 
 - **Sintoma:** O console informava `window.carregarLogGitHub is not a function` ao clicar em `Ver log`.

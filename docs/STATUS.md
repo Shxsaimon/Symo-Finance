@@ -6,7 +6,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 18/09/2026
+- **Data da Última Atualização:** 21/09/2026
 - **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
 - **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
@@ -24,6 +24,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Painel GitHub Actions:** A tela de Configurações dispara `status`, `migrate` e `seed` pelo workflow via API do GitHub, acompanha jobs e disponibiliza os logs para administradores. Requer `GITHUB_ACTIONS_TOKEN` na Vercel.
 - **Logs GitHub Actions:** O download dos logs trata o redirecionamento temporário `302` da API e exibe o conteúdo completo em modal dentro da tela de Configurações.
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
+- **Feedback Beta:** Adicionado aviso clicável no topo, modal de envio com tela e tipo, rota protegida por CSRF e migration `016_criar_tabela_feedback.php`. A tabela também mantém status de triagem e data de atualização para acompanhamento posterior.
 
 ---
 

@@ -8,9 +8,9 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  */
 $user = AuthHelper::user();
 $mesesNomes = [
-    1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril',
-    5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto',
-    9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro'
+    1 => 'Jan', 2 => 'Fev', 3 => 'Mar', 4 => 'Abr',
+    5 => 'Mai', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+    9 => 'Set', 10 => 'Out', 11 => 'Nov', 12 => 'Dez'
 ];
 $anoAtual = (int) date('Y');
 $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
@@ -19,7 +19,7 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
         <h1 class="h3 fw-bold mb-1" style="color: var(--symo-on-surface);">
-            Olá, <?= htmlspecialchars(explode(' ', $user['nome'] ?? 'Usuário')[0], ENT_QUOTES, 'UTF-8') ?> 👋
+            Olá, <?= htmlspecialchars(explode(' ', $user['nome'] ?? 'Usuário')[0], ENT_QUOTES, 'UTF-8') ?>
         </h1>
         <p class="text-muted mb-0" style="font-size: 0.95rem;">
             Visão panorâmica em tempo real da saúde financeira do ambiente <strong>Symo</strong>.
@@ -53,11 +53,11 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
 
 <!-- 1. CARDS DE INDICADORES FINANCEIROS (KPIS) -->
 <div class="row g-3 mb-4">
-    <!-- Card 1: Saldo Consolidado -->
+    <!-- Card 1: Saldo Atual -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="label-caps">Saldo Atual Consolidado</span>
+                <span class="label-caps">Saldo Atual</span>
                 <div class="icon-box" style="background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                     <i class="bi bi-wallet2 fs-5"></i>
                 </div>

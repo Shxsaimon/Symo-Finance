@@ -26,6 +26,10 @@ $pageTitle   = $title ?? 'Painel Financeiro';
     </div>
 
     <div class="navbar-actions">
+        <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold" data-bs-toggle="modal" data-bs-target="#modalFeedback" style="font-size: 0.75rem; color: var(--symo-primary-brand);">
+            Versão BETA
+        </button>
+
         <!-- Badge de Perfil -->
         <span class="<?= AuthHelper::isAdmin() ? 'badge-role-admin' : 'badge-role-operador' ?> d-none d-md-inline-block">
             <?= htmlspecialchars(strtoupper($currentUser['perfil'] ?? 'OPERADOR'), ENT_QUOTES, 'UTF-8') ?>
@@ -80,3 +84,52 @@ $pageTitle   = $title ?? 'Painel Financeiro';
         </div>
     </div>
 </header>
+
+<div class="modal fade" id="modalFeedback" tabindex="-1" aria-labelledby="modalFeedbackLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content symo-modal-content">
+            <form action="<?= BASE_URL ?>/feedback/salvar" method="POST">
+                <?= CsrfHelper::inputField() ?>
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="modalFeedbackLabel">Enviar feedback</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="feedbackTela" class="form-label fw-semibold">Tela</label>
+                        <select class="form-select" id="feedbackTela" name="tela" required>
+                            <option value="" selected disabled>Selecione a tela</option>
+                            <option value="dashboard">Dashboard</option>
+                            <option value="lancamentos">Lançamentos</option>
+                            <option value="contas">Contas bancárias</option>
+                            <option value="categorias">Categorias</option>
+                            <option value="meios_pagamento">Meios de pagamento</option>
+                            <option value="cartoes">Cartões de crédito</option>
+                            <option value="transferencias">Transferências</option>
+                            <option value="relatorios">Relatórios</option>
+                            <option value="configuracoes">Configurações</option>
+                            <option value="perfil">Perfil</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="feedbackTipo" class="form-label fw-semibold">Tipo de feedback</label>
+                        <select class="form-select" id="feedbackTipo" name="tipo" required>
+                            <option value="" selected disabled>Selecione o tipo</option>
+                            <option value="correcao">Correção</option>
+                            <option value="melhoria">Melhoria</option>
+                            <option value="duvida">Dúvida</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="feedbackTexto" class="form-label fw-semibold">Feedback</label>
+                        <textarea class="form-control" id="feedbackTexto" name="texto" rows="5" minlength="10" maxlength="3000" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-symo-primary">Enviar feedback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
