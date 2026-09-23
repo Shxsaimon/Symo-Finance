@@ -6,7 +6,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 22/09/2026
+- **Data da Última Atualização:** 23/09/2026
 - **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
 - **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0; a especificação de contas compartilhadas deve preceder sua implementação.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
@@ -26,6 +26,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
 - **Feedback Beta:** Adicionado aviso clicável no topo, modal de envio com tela e tipo, rota protegida por CSRF e migration `016_criar_tabela_feedback.php`. A tabela também mantém status de triagem e data de atualização para acompanhamento posterior.
 - **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
+- **Atualização do Contexto para Agentes:** `AGENTS.md` revisado para refletir o FSD aprovado, com Vercel/Neon/Blob/GitHub Actions como stack oficial, PostgreSQL como banco principal, RBAC `admin` individual + `dev` global + `operador` legado, isolamento por `usuario_id`, segredos por variáveis de ambiente e obrigação de atualizar o próprio AGENTS quando suas regras mudarem.
 
 ---
 

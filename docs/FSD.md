@@ -1,21 +1,25 @@
-# DOCUMENTO DE ESPECIFICAÇÃO FUNCIONAL (FSD)
+# DOCUMENTO DE ESPECIFICAÇÃO FUNCIONAL E TÉCNICA (FSD)
 
 ---
 
+> **Versão 2.0 — 22/09/2026.** Este documento preserva a estrutura integral de 28 seções do FSD original, mas descreve o estado real do Symo Finance: dados isolados por usuário, operação serverless com Vercel, PostgreSQL no Neon e arquivos privados no Vercel Blob. Recursos em planejamento são identificados explicitamente e não devem ser tratados como entregues.
+
 ## 1. Visão Geral
 
-* **Nome do Sistema:** Symo — Gestão Financeira Pessoal e Compartilhada.
-* **Objetivo Principal:** Fornecer uma plataforma web intuitiva, colaborativa e de alta usabilidade para controlo financeiro centralizado, permitindo que pessoas físicas, famílias e pequenos negócios realizem a gestão completa de receitas, despesas, transferências bancárias e compras parceladas no cartão de crédito em tempo real, com clareza absoluta sobre saldos realizados e projeções futuras.
-* **Resumo do Funcionamento:** O sistema opera como um painel financeiro compartilhado e multiusuário baseado no conceito de conta única colaborativa (orçamento familiar ou empresarial comum). Os utilizadores autenticam-se com perfis distintos (Administrador e Operador), registam transações à vista ou parceladas, acompanham saldos consolidados por conta financeira, gerem o ciclo de faturas de cartão de crédito e visualizam dashboards com indicadores gráficos e alertas visuais de vencimento. Todas as ações críticas contam com rastreabilidade por auditoria, proteção por exclusão lógica (*soft delete*) com lixeira recuperável e relatórios tabulares exportáveis para CSV.
+* **Nome do Sistema:** Symo Finance — Gestão Financeira Pessoal e Compartilhada.
+* **Objetivo Principal:** Fornecer uma plataforma web intuitiva para pessoas, casais, famílias, freelancers e MEIs registrarem receitas, despesas, transferências e faturas, com clareza entre saldos realizados e compromissos futuros.
+* **Resumo do Funcionamento Atual:** Cada pessoa cria sua própria conta Symo. Contas financeiras, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira são isolados pelo identificador do usuário autenticado. O sistema oferece lançamentos à vista ou parcelados, acompanhamento de faturas, dashboard, auditoria, exclusão lógica e exportação CSV.
+* **Visão de Colaboração:** A evolução planejada permitirá compartilhar seletivamente uma conta financeira com outro usuário por convite. O proprietário definirá visualização, lançamento, edição dos próprios lançamentos e visibilidade do histórico. O compartilhamento não concede acesso ao perfil financeiro inteiro do proprietário.
 * **Público Usuário:**
 * Pessoas físicas que buscam organizar o orçamento pessoal e planeamento financeiro;
-* Famílias que necessitam de um ambiente conjunto para acompanhar despesas domésticas e receitas partilhadas;
-* Microempreendedores e pequenas empresas que demandam um controlo de fluxo de caixa operacional simples, sem complexidades burocráticas ou termos contábeis avançados.
+* Casais e famílias que desejam colaborar futuramente apenas em contas selecionadas, como reserva ou investimento;
+* Freelancers e MEIs que demandam um controlo de fluxo de caixa operacional simples, sem complexidades burocráticas ou termos contábeis avançados.
 
 
 * **Contexto de Uso:** Aplicação web responsiva, otimizada para navegação em computadores, notebooks, tablets e smartphones. Os acessos ocorrem em rotinas diárias e semanais de lançamento e conferência de saldos, bem como no fecho mensal de faturas e análise de relatórios.
 * **Observações Relevantes para Implementação:**
-* A aplicação adota o modelo de ambiente único compartilhado (*single-tenant* compartilhado), onde todos os utilizadores autenticados operam sobre a mesma base de contas e movimentações, sendo o acesso a funções administrativas restringido pelo perfil de acesso.
+* A aplicação adota isolamento lógico por usuário nas entidades financeiras. Não existe orçamento global compartilhado no estado atual.
+* O perfil técnico `dev` opera funções globais da plataforma; o perfil `admin` administra os próprios dados. O perfil `operador` continua suportado apenas por compatibilidade das regras legadas.
 * A interface segue estritamente o tema *Symo* definido no `docs/DESIGN.md`, utilizando a tipografia *Inter* com numerais tabulares (`tabular-nums`) para perfeito alinhamento financeiro e paleta cromática corporativa moderna (Electric Violet `#6F02FF`, Deep Lavender `#793CFE`, Bright Teal `#3BD7D7` e tons neutros balanceados).
 * O código-fonte é estruturado segundo o padrão arquitetural MVC em PHP 8 nativo, com isolamento total de responsabilidades, independência de caminho de instalação e proteção estrita de arquivos internos.
 
@@ -36,8 +40,8 @@ O presente FSD consolida e substitui todas as discussões e documentos prévios 
 
 ## 3. Stack Definida
 
-* **Linguagem de Back-end:** PHP 8.1+ (utilizando tipagem estrita `declare(strict_types=1);`, recursos modernos da linguagem e execução nativa sem dependência de frameworks pesados).
-* **Banco de Dados Relacional:** MySQL 8.0+ ou MariaDB 10.4+ com motor de armazenamento obrigatório `InnoDB`, conjunto de caracteres `utf8mb4` e collation `utf8mb4_unicode_ci`.
+* **Linguagem de Back-end:** PHP 8.1+ com tipagem estrita, execução nativa e PDO. O workflow de migrations usa PHP 8.2 com `pdo_pgsql`.
+* **Banco de Dados Relacional Oficial:** PostgreSQL no Neon, configurado por `DATABASE_URL` e SSL obrigatório. MySQL/MariaDB é compatibilidade temporária para instalações legadas quando `DATABASE_URL` não está definida; não é o caminho de novos ambientes.
 * **Tecnologias de Front-end:**
 * HTML5 semântico e estruturado;
 * CSS3 moderno com variáveis CSS (Design Tokens);
@@ -48,15 +52,17 @@ O presente FSD consolida e substitui todas as discussões e documentos prévios 
 
 
 * **Dependências e Bibliotecas Externas:**
-* Nenhuma dependência externa via CDN em tempo de execução. Todos os assets (CSS, JS, WebFonts e Ícones) devem residir localmente no diretório de assets públicos do projeto, garantindo funcionamento autônomo e seguro offline/intranet.
+* Não há CDN de interface em tempo de execução. CSS, JavaScript, fontes e ícones residem em `public/`.
+* `@vercel/blob` é usado apenas pela Function `api/blob.js` para armazenamento privado de avatares e logotipo.
 
 
-* **Padrão Arquitetural:** MVC (*Model-View-Controller*) desacoplado, com roteamento centralizado (*Front Controller*), injeção de dependência simplificada e camada de acesso a dados via PDO (*PHP Data Objects*).
+* **Padrão Arquitetural:** MVC desacoplado com Front Controller, roteamento centralizado, sessão persistida no banco e PDO. Em produção, `api/index.php` adapta o Front Controller ao runtime `vercel-php`.
 * **Restrições Técnicas:**
-* Proibido o uso de arquivo `.env` para credenciais sensíveis (utilizar arquivo PHP dedicado em `config/config.php`);
+* Segredos são fornecidos por variáveis de ambiente e lidos em `config/config.php`; nenhum `.env` com credenciais deve ser versionado;
 * Proibida a execução de comandos SQL diretos sem *Prepared Statements*;
 * Proibido o acesso direto via URL a qualquer arquivo ou pasta que não seja o ponto de entrada da aplicação ou assets públicos permitidos;
-* Proibida a instanciação de conexões MySQL desprotegidas ou uso de extensões legadas (`mysql_*` ou `mysqli_*` procedural).
+* O token do Vercel Blob e o token do GitHub não podem chegar ao navegador;
+* Proibida a instanciação de conexões desprotegidas ou uso de extensões legadas (`mysql_*` ou `mysqli_*` procedural).
 
 
 
@@ -66,25 +72,26 @@ O presente FSD consolida e substitui todas as discussões e documentos prévios 
 
 ### 4.1. Desenvolvimento Local
 
-* **Ambiente Padronizado:** XAMPP (Apache + PHP 8.x + MySQL/MariaDB) ou ambiente local similar (WampServer, Laragon, Docker LAMP básico).
-* **Estrutura de Caminho Local:** O projeto será hospedado tipicamente em uma subpasta dentro de `htdocs/`, por exemplo: `http://localhost/Sistema_Financeiro/` ou `http://localhost/symo/`.
-* **Configuração de Banco Local:** Host `localhost`, porta `3306`, usuário `root`, senha vazia (ou definida localmente), base de dados `symo_db`.
+* **Ambiente Recomendado:** PHP 8.2+ com `pdo_pgsql`, PostgreSQL acessível por `DATABASE_URL` e servidor embutido com `php -S localhost:8000 index.php`.
+* **Configuração:** `APP_BASE_URL` pode apontar para a URL local e `DATABASE_URL` deve apontar para um PostgreSQL de desenvolvimento ou Neon não produtivo.
+* **Compatibilidade Legada:** MySQL/MariaDB e variáveis `DB_*` são aceitos apenas sem `DATABASE_URL`. XAMPP não é ambiente de referência.
 
 ### 4.2. Testes e Homologação
 
-* **Ambiente:** Servidor web Apache com suporte a mod_rewrite e PHP 8.x, simulando fielmente o ambiente de produção.
-* **Objetivo:** Validação de migrations, testes de regressão de permissões (RBAC), auditoria de logs e validação cruzada de relatórios.
+* **Ambiente:** Preview na Vercel, banco Neon separado de produção e Blob de teste quando uploads forem validados.
+* **Objetivo:** Validar migrations, isolamento por usuário, sessão, assets, uploads privados, rotas autenticadas e relatórios no mesmo modelo da produção.
 
 ### 4.3. Produção
 
-* **Ambiente Padronizado:** Hospedagem Compartilhada cPanel / Hostnet ou Servidor VPS Linux (Debian/Ubuntu) rodando Apache 2.4+ e PHP 8.x.
-* **Estrutura de Caminho em Produção:** O projeto poderá ser instalado na raiz pública (ex: `www/` ou `public_html/`) ou dentro de um subdiretório específico (ex: `www/financas/` ou `public_html/app/`).
-* **Configuração de Banco em Produção:** Credenciais fornecidas pelo painel da hospedagem, com usuário dedicado e privilégios estritos.
+* **Ambiente Padronizado:** Vercel para execução HTTP, Neon PostgreSQL para persistência, Vercel Blob privado para arquivos e GitHub Actions para migrations remotas.
+* **Entrada Serverless:** `api/index.php` entrega assets permitidos e inclui o `index.php` principal; o rewrite exclui `/public/` e `/api/`.
+* **Configuração:** Credenciais ficam nas variáveis da Vercel e nos Secrets do GitHub. O banco remoto não é criado por uma requisição web.
 
 ### 4.4. Diretrizes de Deploy e Portabilidade
 
 * A aplicação não deve conter URLs absolutas fixas em código (*hardcoded*). Todas as rotas internas, links de assets e redirecionamentos devem utilizar uma constante base (`BASE_URL` ou `APP_URL`) calculada dinamicamente pelo sistema a partir do ambiente de execução ou definida em `config/config.php`.
-* A estrutura deve ser 100% agnóstica quanto ao nome da subpasta de instalação, permitindo coexistir múltiplos sistemas no mesmo servidor.
+* `BASE_URL` continua dinâmica ou definida por `APP_BASE_URL`; em Vercel, `ASSET_URL` usa a URL base sem o prefixo local `/public`.
+* O filesystem da Function não é persistente: arquivos privados usam Blob e logs usam banco ou `error_log()`.
 
 ---
 
@@ -95,13 +102,16 @@ O presente FSD consolida e substitui todas as discussões e documentos prévios 
 Toda a arquitetura do sistema toma como referência estrutural o:
 `[Diretório do Projeto - Repositório]`
 
-Este diretório representa a pasta raiz versionada da aplicação, a qual pode ser alocada dentro de `htdocs/nome-do-projeto/` (XAMPP), `www/nome-do-projeto/` (Hostnet) ou `public_html/nome-do-projeto/`.
+Este diretório representa a raiz versionada enviada à Vercel e executável localmente pelo PHP. Ele não depende de `htdocs`, Hostnet, cPanel ou de qualquer painel de hospedagem compartilhada.
 
 ### 5.2. Estrutura de Diretórios Proposta
 
 ```text
 [Diretório do Projeto - Repositório]/
 │
+├── api/
+│   ├── index.php                # Adaptador PHP da Vercel e entrega segura de assets
+│   └── blob.js                  # Function privada para Vercel Blob
 ├── config/
 │   ├── .htaccess                # Bloqueio total de acesso HTTP direto (Require all denied)
 │   ├── config.php               # Credenciais de BD, parâmetros técnicos e fallback
@@ -123,7 +133,9 @@ Este diretório representa a pasta raiz versionada da aplicação, a qual pode s
 │   │   ├── TrashController.php
 │   │   ├── AuditController.php
 │   │   ├── SettingsController.php
-│   │   └── MigrationController.php # Rotina interna protegida de execução
+│   │   ├── ProfileController.php
+│   │   ├── BlobController.php
+│   │   └── FeedbackController.php
 │   │
 │   ├── Models/                  # Camada de Dados e Regras de Negócio (PDO)
 │   │   ├── User.php
@@ -134,9 +146,9 @@ Este diretório representa a pasta raiz versionada da aplicação, a qual pode s
 │   │   ├── CreditCardInvoice.php
 │   │   ├── Transfer.php
 │   │   ├── AuditLog.php
-│   │   ├── SecurityLog.php
 │   │   ├── Setting.php
-│   │   └── Migration.php
+│   │   ├── Feedback.php
+│   │   └── Trash.php
 │   │
 │   ├── Views/                   # Telas e Templates da Aplicação
 │   │   ├── layouts/             # Layouts mestres (header, sidebar, footer, alerts)
@@ -164,7 +176,10 @@ Este diretório representa a pasta raiz versionada da aplicação, a qual pode s
 │       ├── CsrfHelper.php
 │       ├── FlashHelper.php
 │       ├── FormatHelper.php
-│       └── LoggerHelper.php
+│       ├── LoggerHelper.php
+│       ├── DatabaseSessionHandler.php
+│       ├── DefaultDataHelper.php
+│       └── GitHubActionsHelper.php
 │
 ├── database/
 │   ├── .htaccess                # Bloqueio total de acesso HTTP direto
@@ -204,25 +219,27 @@ Este diretório representa a pasta raiz versionada da aplicação, a qual pode s
 │   ├── fonts/                   # WebFonts locais (Inter e Bootstrap Icons)
 │   └── img/                     # Favicons e imagens estáticas de interface
 │
-├── .htaccess                    # Roteador principal Apache (Reescrita para index.php)
 ├── index.php                    # Ponto de entrada único (Front Controller)
 ├── migrate.php                  # Script CLI para execução segura de migrations
+├── vercel.json                  # Runtime, rewrite, headers e bundle Vercel
+├── package.json                 # Dependência @vercel/blob
+├── .github/workflows/           # Workflow manual de migrations remotas
 └── README.md                    # Instruções de instalação e ambiente
 ```
 
 ### 5.3. Fluxo de Requisição no Padrão MVC
 
-1. **Entrada (*Front Controller*):** Todas as requisições HTTP são capturadas pelo arquivo `index.php` na raiz do projeto através de regras de reescrita no `.htaccess`.
+1. **Entrada (*Front Controller*):** Na Vercel, o rewrite encaminha a aplicação a `api/index.php`; localmente, o servidor PHP pode usar diretamente o `index.php`.
 2. **Inicialização do Core:** O `index.php` inicializa a sessão segura, carrega as configurações de `config/config.php`, inicializa o manipulador de erros global e instancia o roteador.
 3. **Roteamento e Autenticação:** O roteador identifica a URI solicitada, verifica a autenticação do utilizador (`AuthHelper`) e valida se o perfil possui autorização para a rota (`RBAC`).
 4. **Acionamento do Controller:** O Controller correspondente é instanciado. O método da ação valida tokens CSRF em requisições `POST`, sanitiza os parâmetros de entrada e solicita os dados à camada Model.
-5. **Camada Model e Dados:** Os Models executam as regras de negócio de persistência, efetuam cálculos financeiros e interagem com o MySQL exclusivamente via PDO com *Prepared Statements*.
+5. **Camada Model e Dados:** Os Models executam regras de persistência, cálculos financeiros e escopo por `usuario_id` via PDO e *Prepared Statements*. PostgreSQL é o driver oficial; MySQL é compatibilidade legado.
 6. **Auditoria e Logs:** Se a operação for uma mutação (`INSERT`, `UPDATE`, `DELETE`), o model aciona a gravação automática na tabela de auditoria (`audit_logs`) e atualiza o histórico.
 7. **Renderização da View:** O Controller passa os dados tratados para a View correspondente, que monta a interface HTML com os componentes do *Symo* e a entrega ao navegador.
 
 ### 5.4. Proteção de Diretórios Internos
 
-* Todas as pastas sensíveis (`config/`, `app/`, `database/`, `storage/logs/`) contêm arquivos `.htaccess` dedicados com a instrução `Require all denied` (Apache 2.4+) e `Deny from all` (Apache 2.2).
+* Em Apache legado, diretórios sensíveis podem manter `.htaccess`; na Vercel, eles não são expostos como arquivos estáticos públicos.
 * Em nível de código, todos os arquivos PHP internos possuem uma guarda inicial que impede execução isolada:
 ```php
 <?php
@@ -231,51 +248,51 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ```
 
 
-* O diretório `storage/uploads/` possui regras no `.htaccess` que desabilitam completamente a execução de scripts (`php_flag engine off` e `RemoveHandler .php .phtml`), servindo arquivos estritamente como imagens estáticas.
+* Uploads não são entregues pelo disco da Function: o Vercel Blob é privado e as imagens passam pelas rotas autenticadas `/media/avatar/{id}` e `/media/logo`.
 
 ---
 
-## 6. Escopo Funcional da Primeira Versão
+## 6. Escopo Funcional Atual e Evolução Planejada
 
 ### 6.1. Módulo de Autenticação e Gestão de Sessão
 
-* **Objetivo:** Garantir acesso seguro e controlado aos utilizadores da conta compartilhada.
-* **Usuários Envolvidos:** Administradores e Operadores.
-* **Ações Permitidas:** Login com e-mail e senha, logout seguro, alteração de senha própria no perfil e bloqueio automático após sucessivas tentativas inválidas.
-* **Resultado Esperado:** Estabelecimento de sessão criptografada com isolamento de privilégios e encerramento após 60 minutos de inatividade.
+* **Objetivo:** Garantir acesso individual seguro, criação autônoma de conta e isolamento financeiro.
+* **Usuários Envolvidos:** Visitantes, `admin`, `operador` legado e `dev` técnico.
+* **Ações Entregues:** Autocadastro, login e logout, perfil, senha, avatar, sessão persistida no banco e bloqueio por tentativas inválidas.
+* **Planejado:** OAuth Google, verificação de e-mail e recuperação de senha por e-mail. A tela de esqueci a senha ainda não conclui uma redefinição.
 
 ### 6.2. Módulo de Dashboard Financeiro
 
-* **Objetivo:** Apresentar uma visão panorâmica e imediata da saúde financeira do ambiente compartilhado.
-* **Usuários Envolvidos:** Administradores e Operadores.
+* **Objetivo:** Apresentar a saúde financeira do escopo permitido ao usuário autenticado, sem expor dados de terceiros.
+* **Usuários Envolvidos:** Todos os usuários autenticados.
 * **Ações Permitidas:** Filtragem por mês/ano corrente e seleção de contas financeiras; visualização rápida de cards de indicadores (Saldo Atual Consolidado, Total de Receitas do Mês, Total de Despesas do Mês, Balanço Mensal Líquido); gráficos interativos de evolução mensal e distribuição de gastos por categoria; widgets de contas pendentes e faturas de cartão próximas do vencimento.
 * **Resultado Esperado:** Resposta instantânea sobre saldos realizados e compromissos futuros com atualização em tempo real.
 
 ### 6.3. Módulo de Transações Financeiras (Receitas e Despesas)
 
 * **Objetivo:** Registar, consultar, editar e gerir todas as entradas e saídas financeiras.
-* **Usuários Envolvidos:** Administradores (acesso total) e Operadores (inserção, edição e exclusão de lançamentos próprios).
+* **Usuários Envolvidos:** `admin` administra os próprios dados; `operador` legado edita apenas lançamentos próprios; `dev` possui acesso operacional global.
 * **Ações Permitidas:**
 * Registo de Receita (à vista, com data de recebimento, conta bancária, categoria e status 'recebido' ou 'pendente');
 * Registo de Despesa (à vista, com data de vencimento/pagamento, conta ou cartão de crédito, categoria, status 'pago' ou 'pendente');
 * Registo de Compras Parceladas (geração automática de $N$ lançamentos vinculados com sufixo numérico `[1/N]`, calculando datas de vencimento mensais e valores com tratamento de dízima residual na primeira parcela);
-* Filtros avançados por período, tipo, conta, categoria, meio de pagamento, status e usuário autor;
+* Filtros por período, tipo, conta, categoria, meio de pagamento, cartão, status, texto e autor quando permitido;
 * Alteração e exclusão lógica de transações.
 
 
-* **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa e histórico financeiro compartilhado.
+* **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa individual, preservando a autoria necessária à futura colaboração por conta.
 
 ### 6.4. Módulo de Transferências entre Contas
 
-* **Objetivo:** Registar movimentações internas de valores entre contas bancárias e carteiras do mesmo ambiente sem distorcer as receitas e despesas operacionais.
-* **Usuários Envolvidos:** Administradores e Operadores.
+* **Objetivo:** Registar movimentações entre contas do mesmo usuário sem distorcer receitas e despesas operacionais.
+* **Usuários Envolvidos:** Proprietário das contas; no roadmap, participantes deverão ter permissão nas duas contas.
 * **Ações Permitidas:** Seleção de conta de origem, conta de destino, valor, data e observação.
 * **Resultado Esperado:** Criação de transação pareada em banco de dados com dedução no saldo da conta de origem e crédito correspondente na conta de destino sob transação atômica (`DB Transaction`).
 
 ### 6.5. Módulo de Cartões de Crédito e Fechamento de Faturas
 
 * **Objetivo:** Controlar os limites de crédito, despesas agrupadas por fatura e pagamento consolidado mensal.
-* **Usuários Envolvidos:** Administradores e Operadores.
+* **Usuários Envolvidos:** Proprietário do cartão; cartões não são compartilhados na primeira fase colaborativa.
 * **Ações Permitidas:** Cadastro de cartões com limite total, dia de fecho e dia de vencimento; lançamento de despesas no cartão; agrupamento de faturas (Aberta, Fechada, Paga); liquidação da fatura gerando a dedução em uma conta bancária de escolha.
 * **Resultado Esperado:** Previsibilidade do montante da fatura do mês sem duplicar débitos em conta corrente antes do pagamento efetivo.
 
@@ -283,8 +300,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 * **Objetivo:** Estruturar a base cadastral de suporte aos lançamentos financeiros.
 * **Usuários Envolvidos:**
-* Contas Financeiras: Administradores e Operadores (visualização de saldos; criação e edição restritas ao Administrador);
-* Categorias e Meios de Pagamento: Gestão exclusiva do Administrador; visualização por Operadores.
+* Contas, Categorias e Meios de Pagamento: pertencem ao usuário autenticado; `admin` os administra e `operador` mantém as restrições legadas.
 
 
 * **Ações Permitidas:** Criação, edição, inativação e reativação de itens cadastrais.
@@ -299,31 +315,31 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 ### 6.8. Módulo de Gestão de Usuários (Administrativo)
 
-* **Objetivo:** Administrar os acessos dos membros que compartilham o painel financeiro.
-* **Usuários Envolvidos:** Administrador.
-* **Ações Permitidas:** Cadastro de novos utilizadores, atribuição de perfil (Administrador ou Operador), inativação de contas de acesso (com revogação imediata de sessão ativa) e redefinição administrativa de senhas.
-* **Resultado Esperado:** Controlo rigoroso de credenciais e membros autorizados.
+* **Objetivo:** Administrar contas de acesso da plataforma.
+* **Usuários Envolvidos:** Exclusivamente `dev`.
+* **Ações Permitidas:** Consultar, criar, alterar, inativar, redefinir senha e excluir usuários. O autocadastro é o caminho normal para usuários finais.
+* **Resultado Esperado:** Operação global sem confundir `dev` com o administrador de uma conta financeira individual.
 
 ### 6.9. Módulo de Lixeira e Recuperação (*Soft Delete*)
 
 * **Objetivo:** Proteger os dados contra exclusões acidentais e permitir restauração controlada.
-* **Usuários Envolvidos:** Administrador (acesso exclusivo à tela de lixeira).
+* **Usuários Envolvidos:** Usuários autenticados para seus registros; `dev` para visão global.
 * **Ações Permitidas:** Consulta de itens excluídos logicamente (transações, categorias, contas), restauração individual com restauração de saldos, e expurgo/exclusão definitiva.
 * **Resultado Esperado:** Segurança operacional e recuperação de dados sem necessidade de intervenção direta no banco de dados.
 
 ### 6.10. Módulo de Auditoria e Histórico
 
 * **Objetivo:** Rastrear quem criou, alterou ou excluiu cada registo financeiro.
-* **Usuários Envolvidos:** Administrador (visualização dos logs de auditoria e do histórico de modificações no modal de detalhes).
+* **Usuários Envolvidos:** Exclusivamente `dev` para a trilha global.
 * **Ações Permitidas:** Consulta a trilha de auditoria contendo dados anteriores e novos em formato JSON, data/hora exata, endereço IP e utilizador autor.
 * **Resultado Esperado:** Transparência completa no uso colaborativo da plataforma.
 
 ### 6.11. Módulo de Configurações Globais do Sistema
 
-* **Objetivo:** Customizar parâmetros de funcionamento do sistema.
-* **Usuários Envolvidos:** Administrador.
-* **Ações Permitidas:** Definição do nome do sistema/empresa, moeda padrão (símbolo e decimais), itens por página nas tabelas e upload do logotipo da aplicação.
-* **Resultado Esperado:** Personalização do ambiente visual e operacional.
+* **Objetivo:** Separar preferências pessoais de operação global.
+* **Usuários Envolvidos:** Todos para moeda, separadores e paginação; `dev` para identidade visual, migrations e GitHub Actions.
+* **Ações Permitidas:** Preferências em `configuracoes_usuario`; parâmetros globais em `configuracoes` exclusivamente para `dev`.
+* **Resultado Esperado:** Personalização individual sem vazar dados ou dar privilégio global ao `admin` comum.
 
 ---
 
@@ -338,7 +354,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 5. **Integração Direta com APIs Bancárias (Open Finance):** Não haverá sincronização automática de saldos ou extratos bancários via webhooks ou APIs.
 6. **Emissão de Boletos, Cobranças ou Gateways de Pagamento:** Não haverá emissão de cobranças, links de pagamento, integração com Stripe, Asaas, Mercado Pago ou geração de boletos.
 7. **Conversão Multi-Moeda em Tempo Real:** O sistema operará em moeda única selecionada nas configurações globais (padrão BRL `R$`), sem conversão cambial dinâmica no mesmo painel.
-8. **Arquitetura SaaS Multi-Tenant com Isolamento de Bases:** O sistema é concebido como ambiente compartilhado único (*single-tenant* multiusuário para uma família ou empresa).
+8. **Compartilhamento amplo de todo o perfil financeiro:** O estado atual é individual por usuário. A futura colaboração será restrita a contas financeiras selecionadas, por convite e permissão; não haverá compartilhamento automático de todas as entidades.
 9. **Exportação Nativa em PDF com Layout Gráfico:** Não haverá gerador interno de relatórios em formato PDF (apenas exportação em formato tabular CSV).
 10. **Envio Ativo de Notificações por E-mail (Lembretes de Vencimento):** Não haverá rotinas agendadas (Cron Jobs) para disparo de e-mails diários de contas a vencer.
 
@@ -348,22 +364,19 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 8.1. Perfil Administrador (`admin`)
 
-* **Descrição:** Gestor financeiro titular, proprietário da empresa ou responsável principal pelo orçamento familiar.
-* **Permissões Globais:** Acesso irrestrito a todas as telas, funcionalidades e configurações da aplicação.
+* **Descrição:** Proprietário da própria conta financeira individual.
+* **Permissões:** Acesso integral apenas aos seus dados financeiros e preferências pessoais. Não é administrador global da plataforma.
 * **Ações Exclusivas:**
-* Gestão completa de utilizadores (criar, inativar, alterar senhas e perfis);
-* Gestão de cadastros básicos (criar, editar e inativar categorias, contas bancárias e meios de pagamento);
-* Acesso à tela de Lixeira e execução de restaurações ou exclusões definitivas de registros;
-* Visualização da Trilha de Auditoria completa e logs de segurança;
-* Alteração das Configurações Globais do sistema e upload de logotipo;
-* Edição e exclusão de transações criadas por qualquer utilizador;
-* Execução controlada de migrations do banco de dados.
+* Gestão de contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira próprios;
+* Atualização do próprio perfil, senha e avatar;
+* Alteração de preferências individuais de moeda, separadores e paginação;
+* Futuramente, gestão de convites e permissões das contas financeiras de sua propriedade.
 
 
 
 ### 8.2. Perfil Operador (`operador`)
 
-* **Descrição:** Membro da família, funcionário operacional ou colaborador autorizado a movimentar o painel compartilhado.
+* **Descrição:** Perfil de compatibilidade para cenários legados; não é concedido pelo autocadastro atual.
 * **Permissões:**
 * Lançamento de receitas, despesas, transferências e compras parceladas;
 * Visualização do Dashboard com indicadores financeiros consolidados;
@@ -376,7 +389,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 * **Restrições Estritas:**
 * Bloqueio total de acesso ao módulo de Gestão de Usuários;
-* Bloqueio total de acesso à Lixeira do sistema e impossibilidade de restaurar itens excluídos;
+* Lixeira limitada ao escopo que o código permitir para dados próprios;
 * Bloqueio total de acesso à tela de Auditoria, Logs de Erros e Logs de Segurança;
 * Bloqueio de edição e exclusão de categorias, meios de pagamento e contas bancárias;
 * Bloqueio de alteração ou exclusão de transações criadas por outros utilizadores;
@@ -384,25 +397,24 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 
 
-### 8.3. Matriz de Permissões (RBAC)
+### 8.3. Perfil Técnico (`dev`) e Matriz de Permissões
 
-| Módulo / Ação | Administrador (`admin`) | Operador (`operador`) |
+* **Descrição:** Operador interno da plataforma, criado pelo seed com `SYSTEM_DEV_*`. Não representa um administrador de orçamento de usuário.
+* **Permissões Globais:** Gestão de usuários, trilha de auditoria, identidade visual, status/migrations, GitHub Actions e visão global operacional da lixeira. Herda a capacidade operacional de `admin` nos módulos financeiros.
+
+| Módulo / Ação | `admin` individual | `operador` legado | `dev` |
 | --- | --- | --- |
-| Visualizar Dashboard e Saldos | Sim | Sim |
-| Criar Receitas / Despesas / Transferências | Sim | Sim |
-| Editar / Excluir Transações Próprias | Sim | Sim |
-| Editar / Excluir Transações de Outros Usuários | Sim | **Não** |
-| Cadastrar / Editar Contas Bancárias | Sim | **Não** (Apenas consulta) |
-| Cadastrar / Editar Categorias e Meios | Sim | **Não** (Apenas consulta) |
-| Gerenciar Cartões e Faturas | Sim | Sim |
-| Emitir Relatórios e Exportar CSV | Sim | Sim |
-| Acessar Lixeira e Restaurar Registros | Sim | **Não** |
-| Exclusão Definitiva de Registros (*Hard Delete*) | Sim | **Não** |
-| Visualizar Histórico de Auditoria | Sim | **Não** |
-| Visualizar Logs do Sistema | Sim | **Não** |
-| Gerenciar Usuários do Sistema | Sim | **Não** |
-| Alterar Configurações Globais e Logotipo | Sim | **Não** |
-| Alterar Própria Senha e Avatar | Sim | Sim |
+| Visualizar Dashboard e Saldos | Próprios | Conforme legado | Global operacional |
+| Criar Receitas / Despesas / Transferências | Próprios | Sim | Sim |
+| Editar / Excluir Transações Próprias | Sim | Sim | Sim |
+| Editar / Excluir Transações de Outros Usuários | Não | Não | Sim |
+| Cadastrar / Editar Contas, Categorias e Meios | Próprios | Consulta | Sim |
+| Gerenciar Cartões e Faturas | Próprios | Conforme legado | Sim |
+| Emitir Relatórios e Exportar CSV | Próprios | Sim | Sim |
+| Lixeira | Própria | Conforme legado | Global |
+| Auditoria e Gestão de Usuários | Não | Não | Sim |
+| Configurações globais, logotipo e migrations | Não | Não | Sim |
+| Alterar Própria Senha e Avatar | Sim | Sim | Sim |
 
 ---
 
@@ -414,7 +426,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * Destruição e invalidação imediata de sessão no logout.
 * Tempo limite de inatividade de sessão de **60 minutos**, com expiração automática e redirecionamento para a tela de login.
 * Proteção contra ataques de força bruta com bloqueio temporário de 15 minutos após 5 tentativas consecutivas de senha inválida por IP/E-mail.
-* Revogação instantânea de acesso em caso de inativação de conta de usuário pelo Administrador.
+* Revogação instantânea de acesso em caso de inativação de conta pelo `dev`.
 
 ### 9.2. Controle de Acesso Baseado em Papéis (RBAC)
 
@@ -434,25 +446,25 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * Nenhuma movimentação financeira, conta ou categoria é apagada definitivamente do banco de dados na exclusão inicial.
 * A aplicação utiliza as colunas `deleted_at` (timestamp da exclusão) e `deleted_by` (ID do usuário autor da exclusão).
 * As consultas padrão do sistema incluem obrigatoriamente a cláusula `WHERE deleted_at IS NULL`.
-* Uma interface administrativa de Lixeira permite ao Administrador auditar registros excluídos, restaurá-los (recalculando saldos) ou efetuar o expurgo definitivo (*Hard Delete*).
+* A lixeira filtra registros pelo proprietário para usuários comuns; o `dev` possui visão global, restauração e expurgo globais.
 
 ### 9.5. Sistema de Logs e Contingência em Arquivo
 
-* Registro detalhado de exceções e erros de execução em banco de dados (`error_logs`).
-* **Mecanismo de Contingência:** Em caso de indisponibilidade ou falha de conexão com o banco MySQL, a camada de log redireciona automaticamente a gravação para o arquivo físico local `storage/logs/error.log`.
+* Registro detalhado de exceções e erros em `erros_logs` quando o banco estiver disponível.
+* **Mecanismo de Contingência:** Em runtime Vercel, a camada usa `error_log()`; em execução local/legada, pode gravar em `storage/logs/error.log`.
 * Tratamento de falhas de segurança (`security_logs`) para tentativas de invasão, acessos negados (403), falhas repetidas de login e adulteração de tokens CSRF.
 
 ### 9.6. Configurações Globais Dinâmicas
 
-* Armazenamento de parâmetros gerais na tabela `settings` com chave-valor e tipagem associada.
+* Preferências individuais ficam em `configuracoes_usuario`; configurações globais de plataforma ficam em `configuracoes` e são restritas ao `dev`.
 * Mecanismo de fallback em código (`config/config.php`) garantindo o funcionamento do sistema caso a tabela esteja vazia ou inacessível.
 
 ### 9.7. Upload Seguro de Imagens
 
 * Upload restrito a **Avatares de Usuários** e **Logotipo da Aplicação**.
 * Limite máximo de arquivo: **2 MB**.
-* Extensões aceitas: `.jpg`, `.jpeg`, `.png`, `.webp`.
-* Validação rigorosa no servidor via extensão `finfo` (verificação real de MIME-Type / *Magic Bytes*), renomeação com hash randômico (ex: `avatar_a1b2c3d4e5.webp`) e remoção de scripts ou metadados maliciosos.
+* Tipos aceitos incluem imagens validadas pelo servidor; SVG sanitizado é suportado no fluxo Blob quando aplicável.
+* Validação rigorosa via `finfo`, renomeação segura e remoção do objeto anterior. O arquivo é gravado no Vercel Blob privado, não no disco persistente da Function.
 
 ### 9.8. Exportação Estruturada em CSV
 
@@ -466,14 +478,14 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 10.1. Usuário (`User`)
 
 * **Finalidade:** Representa os membros com acesso ao sistema.
-* **Informações:** Nome completo, e-mail, hash da senha, perfil (`admin` ou `operador`), status (`ativo` ou `inativo`), avatar e timestamps de criação/atualização.
-* **Regras:** E-mail único; inativação imediata revoga acesso; não pode excluir a si próprio.
+* **Informações:** Nome, e-mail, hash de senha anulável para OAuth futuro, `google_id` único anulável, perfil (`admin`, `operador` ou `dev`), status, avatar Blob e timestamps.
+* **Regras:** E-mail único; autocadastro cria `admin` ativo e dados padrão; inativação revoga acesso; o usuário não pode excluir/inativar a si próprio.
 
 ### 10.2. Conta Financeira (`Account`)
 
 * **Finalidade:** Representa contas correntes, poupanças, contas de investimento ou carteiras de dinheiro físico.
-* **Informações:** Nome da conta, instituição financeira, tipo de conta, saldo inicial, saldo atual consolidado, cor/identificador visual, status (`ativa` ou `inativa`), timestamps e soft delete.
-* **Regras:** Saldo atual é atualizado a cada transação confirmada; contas com transações ativas não podem sofrer exclusão física direta.
+* **Informações:** `usuario_id` proprietário, nome, instituição, tipo, saldos, cor, status, timestamps e soft delete.
+* **Regras:** Saldo atual é atualizado por transação confirmada; no roadmap a conta poderá ter participantes e permissões sem alterar o proprietário.
 
 ### 10.3. Categoria (`Category`)
 
@@ -528,17 +540,20 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ---
 
-## 11. Modelo de Dados Proposto
+## 11. Modelo de Dados Atual e Evolução Proposta
 
 ### 11.1. Especificação das Tabelas e Campos
 
-#### Tabela `users`
+#### Tabela `usuarios`
+
+> A nomenclatura física atual está em português. No PostgreSQL, identificadores usam `INTEGER GENERATED BY DEFAULT AS IDENTITY`, datas usam `TIMESTAMP` e valores monetários usam `NUMERIC(15,2)`; a adaptação MySQL legada preserva os conceitos equivalentes.
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `name`: VARCHAR(120) NOT NULL
+* `nome`: VARCHAR(120) NOT NULL
 * `email`: VARCHAR(150) NOT NULL UNIQUE
-* `password`: VARCHAR(255) NOT NULL
-* `role`: ENUM('admin', 'operador') NOT NULL DEFAULT 'operador'
+* `senha`: VARCHAR(255) NULL, permitindo futura conta exclusivamente OAuth
+* `google_id`: VARCHAR(255) UNIQUE NULL
+* `perfil`: CHECK em `admin`, `operador` ou `dev`; autocadastro cria `admin`
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
 * `avatar`: VARCHAR(255) NULL
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -547,9 +562,10 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `deleted_by`: INT UNSIGNED NULL
 * *Índices:* `idx_users_email (email)`, `idx_users_status (status)`, `idx_users_deleted_at (deleted_at)`
 
-#### Tabela `accounts`
+#### Tabela `contas`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INTEGER NOT NULL, FK para `usuarios`, proprietário da conta
 * `name`: VARCHAR(100) NOT NULL
 * `bank_name`: VARCHAR(100) NULL
 * `type`: ENUM('corrente', 'poupanca', 'investimento', 'dinheiro', 'outros') NOT NULL DEFAULT 'corrente'
@@ -563,9 +579,10 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `deleted_by`: INT UNSIGNED NULL
 * *Índices:* `idx_accounts_status (status)`, `idx_accounts_deleted_at (deleted_at)`
 
-#### Tabela `categories`
+#### Tabela `categorias`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INTEGER NOT NULL, FK para `usuarios`
 * `name`: VARCHAR(100) NOT NULL
 * `type`: ENUM('receita', 'despesa') NOT NULL
 * `icon`: VARCHAR(50) NOT NULL DEFAULT 'bi-tag'
@@ -577,9 +594,10 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `deleted_by`: INT UNSIGNED NULL
 * *Índices:* `idx_categories_type (type)`, `idx_categories_status (status)`, `idx_categories_deleted_at (deleted_at)`
 
-#### Tabela `payment_methods`
+#### Tabela `meios_pagamento`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INTEGER NOT NULL, FK para `usuarios`
 * `name`: VARCHAR(80) NOT NULL
 * `is_credit`: TINYINT(1) NOT NULL DEFAULT 0
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
@@ -589,9 +607,10 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `deleted_by`: INT UNSIGNED NULL
 * *Índices:* `idx_payment_methods_status (status)`, `idx_payment_methods_deleted_at (deleted_at)`
 
-#### Tabela `credit_cards`
+#### Tabela `cartoes_credito`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INTEGER NOT NULL, FK para `usuarios`
 * `name`: VARCHAR(100) NOT NULL
 * `credit_limit`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
 * `closing_day`: TINYINT UNSIGNED NOT NULL
@@ -606,7 +625,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * *Foreign Keys:* `fk_credit_cards_account (default_account_id) REFERENCES accounts(id) ON DELETE SET NULL`
 * *Índices:* `idx_credit_cards_status (status)`, `idx_credit_cards_deleted_at (deleted_at)`
 
-#### Tabela `credit_card_invoices`
+#### Tabela `faturas_cartao`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `credit_card_id`: INT UNSIGNED NOT NULL
@@ -627,7 +646,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 * *Índices:* `idx_invoices_card_period (credit_card_id, reference_year, reference_month)`, `idx_invoices_status (status)`
 
-#### Tabela `transactions`
+#### Tabela `transacoes`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `user_id`: INT UNSIGNED NOT NULL
@@ -673,7 +692,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 
 
-#### Tabela `transfers`
+#### Tabela `transferencias`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `user_id`: INT UNSIGNED NOT NULL
@@ -696,7 +715,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 * *Índices:* `idx_transfers_date (transfer_date)`, `idx_transfers_deleted_at (deleted_at)`
 
-#### Tabela `audit_logs`
+#### Tabela `auditoria_logs`
 
 * `id`: BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `user_id`: INT UNSIGNED NULL
@@ -710,7 +729,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * *Foreign Keys:* `fk_audit_user (user_id) REFERENCES users(id) ON DELETE SET NULL`
 * *Índices:* `idx_audit_table_record (table_name, record_id)`, `idx_audit_created_at (created_at)`
 
-#### Tabela `security_logs`
+#### Tabela `seguranca_logs`
 
 * `id`: BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `event`: VARCHAR(80) NOT NULL
@@ -721,11 +740,11 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 * *Índices:* `idx_sec_event (event)`, `idx_sec_ip (ip_address)`, `idx_sec_created_at (created_at)`
 
-#### Tabela `settings`
+#### Tabela `configuracoes` e `configuracoes_usuario`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `setting_key`: VARCHAR(64) NOT NULL UNIQUE
-* `setting_value`: TEXT NULL
+* `configuracoes`: dados globais da plataforma, acessíveis ao `dev`.
+* `configuracoes_usuario`: `usuario_id`, chave, valor e tipo, com unicidade por usuário e chave; armazena moeda, separadores e paginação.
 * `type`: ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string'
 * `description`: VARCHAR(255) NULL
 * `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -738,11 +757,22 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `batch`: INT UNSIGNED NOT NULL
 * `executed_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 
+#### Tabela `feedback`
+
+* `usuario_id`: usuário autenticado que enviou o item.
+* `texto`: conteúdo entre 10 e 3.000 caracteres.
+* `tela`: tela de origem validada e `tipo`: `correcao`, `melhoria` ou `duvida`.
+* `status`: `novo`, `em_analise`, `concluido` ou `descartado`, com timestamps de criação e atualização.
+
+#### Evolução Planejada: Tabela de Participantes de Conta
+
+Antes do compartilhamento, deverá ser criada uma tabela como `conta_participantes`, sem remover `contas.usuario_id`. Ela deverá conter `conta_id`, `usuario_id`, `pode_visualizar`, `pode_lancar`, `pode_editar_proprios`, `visualiza_historico`, `convidado_em`, `aceito_em` e `revogado_em`. Consultas e validações contra IDOR deverão aceitar proprietário ou participante ativo com a permissão adequada.
+
 ---
 
 ### 11.2. Estratégia de Migrations do Projeto
 
-1. **Objetivo:** Automatizar a criação e modificação de tabelas, índices e restrições de integridade sem demandar intervenção manual no phpMyAdmin ou no terminal do servidor.
+1. **Objetivo:** Automatizar tabelas, índices e restrições sem intervenção manual no banco remoto.
 2. **Localização Segura:** Todos os scripts de migration residem em `database/migrations/`, bloqueados para acesso web via `.htaccess`.
 3. **Mecanismo de Controle de Execução:**
 * A tabela `migrations` rastreia o histórico de cada arquivo executado com sucesso.
@@ -750,8 +780,8 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 
 4. **Execução Controlada:**
-* **Via Linha de Comando (CLI):** Executando `php migrate.php` a partir do diretório raiz da aplicação.
-* **Via Rota Administrativa Protegida:** Apenas utilizadores autenticados com perfil `admin` podem disparar a verificação de migrations pelo painel de controle (ex: botão restrito em Configurações), sendo expressamente proibida qualquer rota pública desprotegida para esse fim.
+* **Via CLI:** `php migrate.php`, `--status`, `--seed` e `--fresh --confirmar` em ambiente com `pdo_pgsql`.
+* **Via GitHub Actions:** Workflow manual `database-migrations.yml`, com Secret `NEON_DATABASE_URL`. O painel do `dev` só dispara `status`, `migrate` e `seed`; `fresh` exige confirmação `RESETAR` diretamente no workflow.
 
 
 
@@ -759,18 +789,18 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ## 12. Módulos e Telas
 
-### 12.1. Tela de Login e Recuperação (`/login`, `/recuperar-senha`)
+### 12.1. Tela de Login, Cadastro e Recuperação (`/login`, `/registrar`, `/esqueci-senha`)
 
 * **Objetivo:** Ponto de entrada do sistema para identificação de credenciais.
 * **Usuários:** Todos (público não autenticado).
-* **Campos/Informações:** Campos de E-mail, Senha, Opção "Lembrar de mim", Botão "Entrar" (Electric Violet), link "Esqueci minha senha" e mensagens de erro contextuais.
+* **Campos/Informações:** Login por e-mail e senha, link de autocadastro e link de esqueci a senha. Não existe "lembrar de mim" nem envio funcional de recuperação no estado atual.
 * **Estados:** Formulário inicial, estado de carregamento do botão com indicador visual (*spinner*), alerta de credenciais inválidas ou conta inativada, e aviso de bloqueio temporário por excesso de tentativas.
 * **Aderência ao Design System:** Layout limpo com fundo `Surface` (`#FAF9F9`), card centralizado em elevação tonal `Surface-Container-Lowest` (`#FFFFFF`), borda sutil de 1px `Neutral 300` e cantos arredondados de 16px.
 
 ### 12.2. Dashboard Principal (`/dashboard`)
 
 * **Objetivo:** Central de comando com métricas em tempo real, saldo consolidado e previsibilidade financeira.
-* **Usuários:** Administrador e Operador.
+* **Usuários:** Usuários autenticados, com dados filtrados por `usuario_id`.
 * **Informações e Componentes:**
 * Seletor de Período (Mês e Ano corrente) e filtro rápido de conta;
 * 4 Cards de Indicadores Principais (KPIs com numerais tabulares):
@@ -791,7 +821,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 12.3. Módulo de Transações (`/transacoes`)
 
 * **Objetivo:** Listagem geral, busca filtrada, auditoria e manutenção de receitas e despesas.
-* **Usuários:** Administrador (gestão total) e Operador (gestão dos lançamentos próprios).
+* **Usuários:** `admin` para seus dados, `operador` legado para próprios lançamentos e `dev` operacional global.
 * **Filtros e Buscas:** Período de datas (de/até), Tipo (Receita/Despesa), Categoria, Conta Financeira, Meio de Pagamento, Status (Pendente/Pago/Recebido) e Busca textual por descrição.
 * **Tabela de Dados:** Alta densidade com linhas zebradas sutis (`Surface-Container-Low`), colunas para Data, Tipo (badge semântico), Descrição (com identificação de parcela `[1/12]`), Categoria, Conta/Cartão, Valor (numerais tabulares), Status e Botões de Ação (Visualizar Detalhes, Editar, Excluir).
 * **Modais Interativos:**
@@ -804,7 +834,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 12.4. Módulo de Contas Bancárias (`/contas`)
 
 * **Objetivo:** Gestão de instituições financeiras, caixas e saldos.
-* **Usuários:** Administrador (criar, editar, inativar) e Operador (visualização de saldos).
+* **Usuários:** Proprietário da conta; compartilhamento de conta ainda não está implementado.
 * **Informações:** Grid de Cards de Contas com logotipo/ícone do banco, tipo, saldo atual e badge de status. Modal de criação e edição com seletor de cor personalizada.
 
 ### 12.5. Módulo de Cartões de Crédito e Faturas (`/cartoes`)
@@ -834,25 +864,25 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 12.9. Módulo de Usuários (`/usuarios`)
 
 * **Objetivo:** Administração de contas de acesso ao sistema compartilhado.
-* **Usuários:** Exclusivo Administrador.
+* **Usuários:** Exclusivo `dev`.
 * **Informações:** Listagem de usuários com avatar, nome, e-mail, perfil (badge roxo para Admin, badge azul para Operador), status e ações (Editar Perfil, Inativar/Reativar, Redefinir Senha).
 
 ### 12.10. Módulo de Lixeira do Sistema (`/lixeira`)
 
 * **Objetivo:** Auditoria e recuperação de itens excluídos logicamente.
-* **Usuários:** Exclusivo Administrador.
+* **Usuários:** Registros próprios para usuários comuns; visão global para `dev`.
 * **Informações:** Abas separadas para Transações Excluídas, Categorias Excluídas e Contas Excluídas. Tabela detalhada informando data da exclusão, usuário que excluiu, dados originais e botões de ação: "Restaurar" e "Excluir Definitivamente".
 
 ### 12.11. Módulo de Auditoria (`/auditoria`)
 
 * **Objetivo:** Inspeção de segurança e conformidade das ações executadas.
-* **Usuários:** Exclusivo Administrador.
+* **Usuários:** Exclusivo `dev`.
 * **Informações:** Tabela com busca avançada por tabela, ação (`INSERT`, `UPDATE`, `SOFT_DELETE`, `RESTORE`), usuário e período. Modal com visualizador JSON lado a lado (*Diff* entre dados antigos e novos).
 
 ### 12.12. Módulo de Configurações Globais (`/configuracoes`)
 
 * **Objetivo:** Ajuste de preferências do sistema e logotipo.
-* **Usuários:** Exclusivo Administrador.
+* **Usuários:** Todos para preferências pessoais; `dev` para funções globais.
 * **Informações:** Formulário de configurações gerais (Nome do Sistema, Moeda, Itens por Página, Fuso Horário), área de upload de logotipo com pré-visualização instantânea e botão de verificação de migrations do banco de dados.
 
 ---
@@ -861,7 +891,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 13.1. Fluxo de Lançamento de Despesa Parcelada
 
-1. **Perfil:** Administrador ou Operador.
+1. **Perfil:** Usuário autorizado no próprio escopo; regras futuras de conta compartilhada deverão validar a permissão de lançamento.
 2. **Pré-condições:** Estar autenticado; existirem categorias de despesa e contas/cartões cadastrados e ativos.
 3. **Passo a Passo:**
 * O utilizador clica em "+ Nova Despesa" no Dashboard ou na tela de Transações;
@@ -878,13 +908,13 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 13.2. Fluxo de Transferência entre Contas
 
-1. **Perfil:** Administrador ou Operador.
+1. **Perfil:** Proprietário das duas contas no estado atual.
 2. **Pré-condições:** Haver pelo menos duas contas bancárias ativas cadastradas.
 3. **Passo a Passo:**
 * O utilizador acessa o modal de "+ Transferência";
 * Seleciona a Conta de Origem (ex: "Conta Corrente Itaú") e a Conta de Destino (ex: "Reserva Nubank");
 * Informa o Valor (ex: `R$ 1.000,00`), a Data e uma Observação opcional;
-* O sistema valida se Conta de Origem e Destino são distintas e se o valor é estritamente positivo (> 0);
+* O sistema valida contas distintas, valor positivo, propriedade das duas contas e saldo suficiente na origem;
 * O backend inicia uma transação PDO (`beginTransaction`);
 * Cria o registro mestre na tabela `transfers`;
 * Atualiza o saldo da Conta de Origem deduzindo o valor (`current_balance = current_balance - 1000.00`);
@@ -897,7 +927,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 13.3. Fluxo de Fechamento e Pagamento de Fatura de Cartão
 
-1. **Perfil:** Administrador ou Operador.
+1. **Perfil:** Proprietário do cartão e da conta de pagamento.
 2. **Pré-condições:** Existirem faturas fechadas com valor consolidado > 0 e conta corrente ativa com saldo disponível.
 3. **Passo a Passo:**
 * O utilizador acessa o módulo de Cartões e visualiza a fatura fechada do mês;
@@ -915,8 +945,8 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 13.4. Fluxo de Exclusão Lógica e Restauração via Lixeira
 
-1. **Perfil de Exclusão:** Operador (apenas transações próprias) ou Administrador (qualquer registro).
-2. **Perfil de Restauração:** Exclusivo Administrador.
+1. **Perfil de Exclusão:** Usuário no próprio escopo; `operador` legado apenas em lançamentos próprios; `dev` global.
+2. **Perfil de Restauração:** Usuário para seus registros e `dev` global.
 3. **Passo a Passo:**
 * O utilizador solicita a exclusão de uma transação confirmada;
 * O sistema executa o *Soft Delete*, gravando `deleted_at = NOW()` e `deleted_by = ID_USER`;
@@ -933,7 +963,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 14.1. Validações Gerais de Dados
 
-* **Valores Monetários:** Devem ser sempre estritamente positivos ($> 0.00$), com validação de precisão em 2 casas decimais e armazenamento em colunas `DECIMAL(15,2)`.
+* **Valores Monetários:** Devem ser estritamente positivos ($> 0.00$), com precisão de 2 casas e armazenamento em `NUMERIC(15,2)` no PostgreSQL.
 * **Datas:** Não é permitido o lançamento de transações com formatos inválidos. Datas de vencimento devem ser coerentes com o ciclo da movimentação.
 * **Sanitização de Strings:** Toda entrada textual é sanitizada contra espaços excessivos e tags HTML. Toda saída renderizada nas Views passa obrigatoriamente por `htmlspecialchars($var, ENT_QUOTES, 'UTF-8')`.
 * **Proteção contra CSRF:** Todo formulário HTML deve incluir um token anti-CSRF oculto (`<input type="hidden" name="csrf_token" value="...">`), validado obrigatoriamente pelo Controller antes do processamento.
@@ -949,6 +979,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 3. **Regra de Parcelamento:** O somatório de todas as $N$ parcelas geradas deve ser matematicamente idêntico ao valor total informado no formulário. Quaisquer frações residuais de centavos geradas pela divisão devem ser somadas à primeira parcela.
 4. **Exclusão de Contas e Categorias com Histórico:** Não é permitida a exclusão física (*Hard Delete*) de contas bancárias ou categorias que possuam transações financeiras vinculadas. O sistema aplica inativação ou exclusão lógica, preservando a integridade dos relatórios históricos.
 5. **Transferência entre Mesma Conta:** É terminantemente proibido selecionar a mesma conta como Origem e Destino em uma transferência.
+6. **Isolamento de Dados:** Conta, categoria, meio de pagamento e cartão usados em um lançamento precisam pertencer ao usuário autenticado. A futura conta compartilhada deverá substituir essa regra por uma checagem explícita de participação e permissão.
 
 ---
 
@@ -984,16 +1015,17 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 O controle de acesso é aplicado de forma centralizada através de métodos auxiliares no `AuthHelper` e em classes base de controle:
 
 * `AuthHelper::requireLogin()`: Interrompe a execução e redireciona para o login caso não haja sessão ativa.
-* `AuthHelper::requireRole('admin')`: Interrompe a execução com código `HTTP 403 Forbidden` se o perfil logado não for Administrador.
+* `AuthHelper::requireRole(...)`: valida perfis permitidos, com `dev` herdando permissões operacionais de `admin`.
+* `AuthHelper::requireDev()`: protege usuários, auditoria, operações globais, migrations e GitHub Actions.
 
-### 16.2. Regra de Isolamento de Edição para Operador
+### 16.2. Regra de Isolamento por Usuário e Edição de Operador
 
 * Ao tentar editar ou excluir uma transação financeira, o `TransactionController` executa a seguinte validação:
 ```php
-if ($user->role !== 'admin' && $transaction->user_id !== $user->id) {
+if (!$isAdmin && $transaction->usuario_id !== $userId) {
     FlashHelper::set('error', 'Acesso negado: Você só pode alterar lançamentos criados por você.');
     LoggerHelper::security('UNAUTHORIZED_TRANSACTION_EDIT_ATTEMPT', ['trans_id' => $id]);
-    ResponseHelper::redirect('/transacoes');
+    $this->redirect('/transacoes');
 }
 
 ```
@@ -1006,7 +1038,7 @@ if ($user->role !== 'admin' && $transaction->user_id !== $user->id) {
 
 ### 17.1. Escopo da Auditoria
 
-A auditoria abrange obrigatoriamente as tabelas: `transactions`, `transfers`, `accounts`, `categories`, `credit_cards`, `users` e `settings`.
+A auditoria abrange entidades financeiras, cadastros, usuários e configurações. A tela global de consulta é exclusiva do `dev`; a autoria é preservada em `usuario_id`.
 
 ### 17.2. Estrutura de Armazenamento
 
@@ -1017,7 +1049,7 @@ Os dados anteriores e novos são serializados em JSON padrão:
 
 ### 17.3. Exibição da Trilha de Auditoria
 
-* O Administrador tem acesso à tela dedicada `/auditoria` para consultar todos os eventos com filtros por usuário, tabela e período.
+* O `dev` tem acesso à tela `/auditoria` para consultar todos os eventos com filtros por usuário, tabela e período.
 * No modal de detalhes de cada transação, é exibida a aba "Histórico de Alterações" listando as modificações ocorridas naquele registro específico.
 
 ---
@@ -1036,8 +1068,8 @@ Os dados anteriores e novos são serializados em JSON padrão:
 
 ### 18.2. Regras de Restauração e Expurgo
 
-* **Restauração:** Apenas o Administrador pode restaurar itens na tela `/lixeira`. A restauração de transações recalcula e revalida os saldos de contas associadas.
-* **Expurgo Definitivo (*Hard Delete*):** Apenas o Administrador pode acionar a exclusão definitiva na Lixeira. O expurgo remove fisicamente o registro do banco de dados após gravar o evento `PURGE` na auditoria com cópia completa dos dados deletados em JSON.
+* **Restauração:** Usuários restauram itens próprios; o `dev` pode operar globalmente. A restauração de transações recalcula os saldos associados.
+* **Expurgo Definitivo (*Hard Delete*):** O escopo é aplicado por usuário comum e globalmente para `dev`; o evento `PURGE` é auditado com cópia dos dados relevantes.
 
 ---
 
@@ -1048,7 +1080,7 @@ Os dados anteriores e novos são serializados em JSON padrão:
 * **Erros Registrados:** Exceções não tratadas (`PDOException`, `Throwable`), erros de execução fatal, falhas de I/O em upload e falhas em consultas SQL.
 * **Informações Gravadas:** Mensagem de erro, código, arquivo, linha, *stack trace* sanitizado, URL requisitada, método HTTP, IP e ID do usuário autenticado.
 * **Mensagens Amigáveis:** O utilizador final nunca visualiza mensagens de erro brutas do banco de dados ou detalhes de código. O sistema exibe telas de erro genéricas e elegantes (ex: "Ocorreu um erro temporário ao processar sua solicitação. O incidente foi registrado para análise.").
-* **Contingência em Arquivo:** Se a gravação na tabela `error_logs` falhar (ex: queda da conexão com o banco MySQL), a classe `LoggerHelper` grava automaticamente a ocorrência em `storage/logs/error.log` com formatação padrão:
+* **Contingência:** Se a gravação no banco falhar, a Function usa `error_log()` na Vercel; no ambiente local/legado, `LoggerHelper` pode gravar em `storage/logs/error.log`:
 `[YYYY-MM-DD HH:II:SS] [CRITICAL] [IP: 127.0.0.1] Mensagem: ... em Arquivo:Linha`
 
 ### 19.2. Log de Eventos de Segurança
@@ -1062,12 +1094,8 @@ Os dados anteriores e novos são serializados em JSON padrão:
 
 ### 20.1. Parâmetros Editáveis pelo Painel Administrativo
 
-1. `app_name`: Nome da Aplicação / Família / Empresa (Texto, Padrão: "Symo");
-2. `currency_symbol`: Símbolo Monetário (Texto, Padrão: "R$");
-3. `decimal_separator`: Separador Decimal (Texto, Padrão: ",");
-4. `thousands_separator`: Separador de Milhar (Texto, Padrão: ".");
-5. `records_per_page`: Quantidade padrão de registros em tabelas (Inteiro, Padrão: 25, Opções: 10, 25, 50, 100);
-6. `app_logo`: Caminho do arquivo de logotipo da interface (Texto, Padrão: NULL).
+1. Preferências por usuário em `configuracoes_usuario`: símbolo da moeda, separadores e registros por página.
+2. Configurações globais em `configuracoes`, exclusivas do `dev`: nome da aplicação, identidade visual, logotipo, status de migrations e integração com GitHub Actions.
 
 ### 20.2. Arquivo de Configuração Técnica em Código (`config/config.php`)
 
@@ -1087,12 +1115,9 @@ return [
         'session_ttl' => 3600,           // 60 minutos
     ],
     'database' => [
-        'host'     => 'localhost',
-        'port'     => 3306,
-        'dbname'   => 'symo_db',
-        'username' => 'root',
-        'password' => '',
-        'charset'  => 'utf8mb4',
+        'url'      => getenv('DATABASE_URL') ?: '',
+        'driver'   => getenv('DB_DRIVER') ?: 'mysql', // compatibilidade legado
+        'host'     => getenv('DB_HOST') ?: 'localhost',
     ],
     'upload' => [
         'max_size'    => 2097152, // 2 MB em bytes
@@ -1102,10 +1127,20 @@ return [
             'logos'   => dirname(__DIR__) . '/storage/uploads/logos/',
         ],
     ],
-    'logs' => [
-        'file_fallback' => dirname(__DIR__) . '/storage/logs/error.log',
-        'security_file' => dirname(__DIR__) . '/storage/logs/security.log',
-    ]
+    'storage' => [
+        'proxy_secret' => getenv('BLOB_PROXY_SECRET') ?: '',
+        'proxy_url' => getenv('BLOB_PROXY_URL') ?: '',
+    ],
+    'dev' => [
+        'nome' => getenv('SYSTEM_DEV_NAME') ?: '',
+        'email' => getenv('SYSTEM_DEV_EMAIL') ?: '',
+        'senha' => getenv('SYSTEM_DEV_PASSWORD') ?: '',
+    ],
+    'google_oauth' => [
+        'client_id' => getenv('GOOGLE_CLIENT_ID') ?: '',
+        'client_secret' => getenv('GOOGLE_CLIENT_SECRET') ?: '',
+        'redirect_uri' => getenv('GOOGLE_REDIRECT_URI') ?: '',
+    ],
 ];
 
 ```
@@ -1121,7 +1156,7 @@ return [
 
 ### 21.2. Diretrizes de Armazenamento e Segurança
 
-* **Diretório Físico:** Armazenados em `storage/uploads/avatars/` e `storage/uploads/logos/`.
+* **Armazenamento Oficial:** Vercel Blob privado, por meio da Function `api/blob.js`, sem exposição do token no navegador. Os diretórios `storage/uploads/` permanecem somente como compatibilidade local.
 * **Validação de Arquivo:**
 1. Verificação do tamanho máximo de **2 MB** (`$_FILES['file']['size'] <= 2097152`);
 2. Validação da extensão real (`pathinfo`) e validação rigorosa de MIME-Type através do `finfo_file` (aceitando apenas `image/jpeg`, `image/png`, `image/webp`);
@@ -1129,8 +1164,8 @@ return [
 `$novoNome = bin2hex(random_bytes(16)) . '.' . $extensao;`
 
 
-* **Exclusão de Arquivos:** Ao atualizar o avatar ou logotipo, o arquivo antigo anterior é fisicamente removido do disco para evitar acúmulo de arquivos órfãos.
-* **Proteção:** O diretório de upload possui regras de `.htaccess` impedindo expressamente a interpretação e execução de scripts PHP.
+* **Exclusão de Arquivos:** Ao atualizar avatar ou logotipo, o objeto anterior é removido pelo SDK do Blob para evitar arquivos órfãos.
+* **Proteção:** URLs do Blob permanecem privadas; o PHP as lê por proxy e as entrega somente em rota autenticada.
 
 ---
 
@@ -1165,9 +1200,9 @@ return [
 
 ### 23.1. Definição do Escopo de Integrações
 
-* O sistema é completamente **autônomo e autocontido**.
-* Não há consumo nem exposição de endpoints de APIs externas (sem integrações bancárias Open Finance, sem webhooks de gateways de pagamento, sem envio de e-mails via APIs transacionais externas).
-* Todas as operações e manipulações de dados ocorrem localmente no banco de dados da aplicação.
+* O núcleo financeiro é autocontido e não possui Open Finance, gateways de pagamento ou importação bancária.
+* A operação usa integrações de infraestrutura: Vercel Blob privado, API GitHub Actions para migrations e Neon PostgreSQL.
+* OAuth Google é uma integração planejada; as variáveis e colunas foram preparadas, mas não existem rotas ou fluxo OAuth ativos.
 
 ---
 
@@ -1185,6 +1220,8 @@ return [
 * `X-Content-Type-Options: nosniff`
 * `X-XSS-Protection: 1; mode=block`
 * `Referrer-Policy: strict-origin-when-cross-origin`
+7. **Isolamento e IDOR:** Models e controllers devem validar `usuario_id` e propriedade de entidades relacionadas antes de leitura, alteração ou exclusão. A futura participação em conta deverá passar por validação de permissão no servidor.
+8. **Segredos Serverless:** `BLOB_READ_WRITE_TOKEN`, `BLOB_PROXY_SECRET`, credenciais do Neon e `GITHUB_ACTIONS_TOKEN` ficam apenas no ambiente de execução ou Secrets do GitHub.
 
 
 
@@ -1194,7 +1231,7 @@ return [
 
 A implementação da aplicação pela IA codificadora deve seguir uma sequência modular, progressiva e testável:
 
-1. **Etapa 1 - Preparação do Ambiente e Estrutura de Pastas:**
+1. **Etapa 1 a 13 - Fundação Financeira:**
 * Criação do `[Diretório do Projeto - Repositório]`;
 * Montagem da estrutura de pastas (`app/`, `config/`, `database/`, `storage/`, `public/`);
 * Implementação dos arquivos de proteção `.htaccess` nos diretórios internos.
@@ -1259,6 +1296,11 @@ A implementação da aplicação pela IA codificadora deve seguir uma sequência
 13. **Etapa 13 - Revisão de Segurança, Testes Finais e Homologação:**
 * Verificação de proteção de rotas, injeção de parâmetros, validações CSRF/XSS e contingência de logs.
 
+14. **Etapa 14 - Multiusuário, Operação Serverless e Colaboração:**
+* Migrations 012 a 016, isolamento por `usuario_id`, perfil `dev`, autocadastro e preferências individuais já foram implementados;
+* OAuth Google, recuperação/verificação de e-mail e testes manuais completos permanecem pendentes;
+* Antes de implementar contas compartilhadas, criar a especificação de convite, participação, histórico e permissões da seção 27.
+
 
 
 ---
@@ -1267,36 +1309,63 @@ A implementação da aplicação pela IA codificadora deve seguir uma sequência
 
 Para que o sistema seja considerado homologado e pronto para entrega, os seguintes critérios devem ser integralmente atendidos:
 
-* [ ] **Estrutura e Portabilidade:** O projeto executa a partir do `[Diretório do Projeto - Repositório]`, operando perfeitamente em subpastas locais no XAMPP ou em ambiente de produção (Hostnet/cPanel) sem URLs fixas em código.
-* [ ] **Configuração em Código:** Ausência de arquivos `.env`; credenciais e parâmetros residem em `config/config.php` protegido.
+* [ ] **Execução Serverless:** O deploy Vercel atende rotas, assets e headers; `api/index.php` não expõe arquivos internos.
+* [ ] **Banco Oficial:** `DATABASE_URL` conecta ao Neon com `pdo_pgsql`, SSL e migrations executadas pelo workflow controlado.
+* [ ] **Configuração:** Ausência de segredos versionados; variáveis de ambiente e Secrets do GitHub são suficientes para banco, Blob, `dev` e operação.
 * [ ] **Proteção de Pastas Internas:** Arquivos em `config/`, `app/`, `database/` e `storage/logs/` são inacessíveis diretamente via navegador.
 * [ ] **Migrations Automatizadas:** Toda a estrutura de banco de dados é criada e atualizada via migrations versionadas com controle anti-duplicação na tabela `migrations`.
 * [ ] **Padrão MVC Desacoplado:** Separação estrita entre Models (PDO), Views (HTML/CSS/JS) e Controllers, com roteamento centralizado.
 * [ ] **Design System Fiel:** A interface adere rigorosamente aos componentes, cores e tipografia do tema *Symo* definido no `docs/DESIGN.md`.
 * [ ] **Autenticação e Segurança de Senhas:** Senhas criptografadas com BCRYPT, proteção de sessão com expiração em 60 minutos, e bloqueio de tentativas de força bruta.
-* [ ] **Controle de Acesso RBAC:** Operadores não conseguem acessar menus administrativos, lixeira, auditoria, configurações ou editar transações de outros membros.
+* [ ] **Isolamento e RBAC:** Usuários comuns não leem ou mutam dados de terceiros; `dev` é obrigatório em usuários, auditoria e configurações globais; `operador` legado não edita lançamentos de outros autores.
 * [ ] **Integridade nos Lançamentos e Parcelamentos:** Compras parceladas geram $N$ lançamentos consistentes, com centavos residuais ajustados na primeira parcela.
 * [ ] **Atomicidade nas Transferências e Pagamentos:** Transferências entre contas e liquidações de fatura executam sob transações atômicas de banco (`BEGIN ... COMMIT/ROLLBACK`).
 * [ ] **Soft Delete e Lixeira Operacional:** Exclusões lógicas alimentam a lixeira; restaurações reprocessam os saldos financeiros corretamente.
 * [ ] **Auditoria Completa:** Alterações financeiras e cadastrais geram registros detalhados com snapshots em JSON anterior e posterior.
-* [ ] **Logs de Contingência:** Falhas de banco são registradas com sucesso no arquivo físico `storage/logs/error.log`.
+* [ ] **Logs de Contingência:** Falhas de banco são registradas por `error_log()` na Vercel e possuem fallback local quando aplicável.
 * [ ] **Exportação CSV Funcional:** Download de relatórios em CSV compatível com Excel (UTF-8 com BOM e delimitador `;`).
-* [ ] **Uploads Seguros:** Avatares e logotipos são validados por tamanho (máx 2MB), extensão e MIME-type real, com nomes hasheados e sem execução de scripts.
+* [ ] **Uploads Seguros:** Avatares e logotipos são validados por tamanho e MIME real, armazenados privadamente no Blob e entregues apenas por rotas autenticadas.
 * [ ] **Sem Recursos Fora de Escopo:** Ausência de códigos ou telas para itens confirmados fora de escopo (sem anexos de comprovantes, sem metas, sem APIs bancárias, sem OFX).
 
 ---
 
 ## 27. Pontos Pendentes e Decisões Futuras
 
-Não foram identificadas pendências para iniciar a codificação com base neste FSD.
+1. **OAuth Google:** Implementar autorização, callback, validação de identidade, vínculo por `google_id`, login e criação de conta com dados padrão.
+2. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
+3. **Contas Compartilhadas:** Criar convite por e-mail, aceite ou recusa, revogação, permissões `visualizar`, `lancar` e `editar_proprios`, e a escolha do proprietário sobre visibilidade do histórico existente.
+4. **Regras de Colaboração:** Categorias, meios de pagamento, cartões e preferências permanecem pessoais na primeira versão. Transferências deverão validar permissão ativa nas duas contas; dashboards e relatórios devem combinar apenas escopos visíveis.
+5. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
+
+### 27.1. Critérios Funcionais para Contas Compartilhadas
+
+1. **Convite:** O proprietário informa o e-mail do participante e seleciona as permissões antes de enviar. O convite não pode conceder acesso a uma conta inexistente, inativa ou excluída.
+2. **Identidade do Participante:** O convite deverá vincular um usuário existente ou permanecer pendente até que a pessoa se cadastre com o mesmo e-mail. A aceitação jamais poderá criar acesso para e-mail diferente do convidado.
+3. **Aceite e Recusa:** O participante deve aceitar ou recusar explicitamente. Enquanto pendente, não pode visualizar saldo, histórico ou metadados financeiros da conta.
+4. **Leitura:** A permissão `visualizar` concede acesso ao saldo, aos lançamentos autorizados e às informações mínimas da conta. Sem ela, nenhuma rota, JSON ou agregação poderá revelar a existência da conta.
+5. **Histórico:** O proprietário define `visualiza_historico` no convite. Quando falso, o participante pode visualizar apenas lançamentos criados após sua aceitação ou aqueles de sua própria autoria, conforme a regra final definida na implementação.
+6. **Lançamento:** A permissão `lancar` permite criar movimentações na conta. O lançamento conserva o `usuario_id` de quem o criou e usa categorias e meios de pagamento do autor, salvo decisão futura documentada de criar cadastros compartilhados.
+7. **Edição Própria:** A permissão `editar_proprios` permite alterar, alternar status ou excluir somente lançamentos cujo autor seja o participante. Ela não concede alteração em lançamentos do proprietário ou de outros participantes.
+8. **Administração:** Na primeira versão, somente o proprietário convida, altera permissões, revoga acesso, reativa convite e decide a visibilidade histórica. Participantes não podem delegar acesso.
+9. **Revogação:** Ao revogar, o sistema deve encerrar o acesso imediatamente em consultas, dashboard, relatórios e ações mutáveis. Os lançamentos anteriores permanecem com autoria e auditoria preservadas.
+10. **Lixeira e Auditoria:** A restauração ou o expurgo de um lançamento compartilhado deve respeitar o proprietário e a autoria. A auditoria deve registrar conta, ator, ação e contexto de participação.
+
+### 27.2. Critérios Técnicos para Contas Compartilhadas
+
+* Toda query que hoje usa apenas `usuario_id = :usuario_id` deverá ser revisada para uma política explícita: proprietário da conta ou participante ativo com permissão adequada.
+* A política de autorização precisa residir no backend. Ocultar botões na View não substitui a validação em controller/model.
+* Consultas agregadas de dashboard, relatórios, faturas, pendências e lixeira devem receber o escopo de visibilidade de forma consistente, para não produzir totais que revelem dados indevidos.
+* A migração da tabela de participantes deve possuir índices por `conta_id`, `usuario_id`, estado do convite e `revogado_em`; deve impedir duas participações ativas duplicadas para o mesmo usuário e conta.
+* A implementação deve incluir testes de IDOR para leitura, criação, atualização, exclusão, transferência, exportação CSV e restauração de dados compartilhados.
+* Cartões de crédito, faturas, categorias, meios de pagamento e preferências não devem ganhar compartilhamento implícito. Qualquer expansão desse escopo exigirá decisão funcional e migration própria.
 
 ---
 
 ## 28. Conclusão
 
-Este Documento de Especificação Funcional e Técnica (FSD) consolida de forma integral, estruturada e autossuficiente todas as regras de negócio, definições arquiteturais, modelo de dados, fluxos de uso, padrões visuais e critérios de qualidade necessários para a construção do sistema **Symo**.
+Este Documento de Especificação Funcional e Técnica consolida regras de negócio, arquitetura, modelo de dados, fluxos, padrões visuais e critérios de qualidade do **Symo Finance** sem confundir o que está entregue com a visão futura.
 
-O documento está **100% pronto** para orientar a IA codificadora e a equipe de desenvolvimento.
+O documento orienta manutenção e evolução do código atual. Recursos assinalados como planejados exigem especificação complementar e critérios de aceite antes de implementação.
 
 ### Documentos Oficiais para a Fase de Codificação:
 
