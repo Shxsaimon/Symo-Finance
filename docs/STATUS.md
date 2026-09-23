@@ -6,9 +6,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 21/09/2026
+- **Data da Última Atualização:** 22/09/2026
 - **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
-- **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0
+- **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0; a especificação de contas compartilhadas deve preceder sua implementação.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
@@ -25,6 +25,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Logs GitHub Actions:** O download dos logs trata o redirecionamento temporário `302` da API e exibe o conteúdo completo em modal dentro da tela de Configurações.
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
 - **Feedback Beta:** Adicionado aviso clicável no topo, modal de envio com tela e tipo, rota protegida por CSRF e migration `016_criar_tabela_feedback.php`. A tabela também mantém status de triagem e data de atualização para acompanhamento posterior.
+- **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
 
 ---
 
@@ -187,4 +188,4 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
   - [x] Lixeira ficou disponível aos usuários autenticados com dados próprios; o `dev` possui visão global, restauração e expurgo globais.
   - [x] Configurações comuns usam exclusivamente `configuracoes_usuario`; identidade visual, status de migrations e GitHub Actions ficaram exclusivos do `dev`.
   - [x] Sidebar passou a exibir Gestão de Usuários/Auditoria apenas para `dev` e Configurações/Lixeira conforme o perfil.
-- **Próximas etapas planejadas:** (5) login Google via OAuth 2.0 (cURL nativo, sem Composer); (6) testes manuais completos e atualização final da documentação.
+- **Próximas etapas planejadas:** (5) login Google via OAuth 2.0 (cURL nativo, sem Composer); (6) testes manuais completos; (7) especificar e implementar contas compartilhadas por convite, permissao e visibilidade opcional do historico.
