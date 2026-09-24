@@ -96,7 +96,7 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="feedbackTela" class="form-label fw-semibold">Tegit la</label>
+                        <label for="feedbackTela" class="form-label fw-semibold">Tela</label>
                         <select class="form-select" id="feedbackTela" name="tela" required>
                             <option value="" selected disabled>Selecione a tela</option>
                             <option value="sistema">Sistema (geral)</option>
