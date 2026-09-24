@@ -78,7 +78,11 @@ class UploadHelper
         }
 
         // 4. Sanitização e Geração de Nome Seguro com Hash Randômico
-        $prefix = ($subfolder === 'avatars') ? 'avatar_' : 'logo_';
+        $prefix = match ($subfolder) {
+            'avatars' => 'avatar_',
+            'feedback' => 'feedback_',
+            default => 'logo_',
+        };
         $randomHex = bin2hex(random_bytes(16));
         $newFilename = "{$prefix}{$randomHex}.{$extension}";
 

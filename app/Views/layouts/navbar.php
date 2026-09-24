@@ -88,7 +88,7 @@ $pageTitle   = $title ?? 'Painel Financeiro';
 <div class="modal fade" id="modalFeedback" tabindex="-1" aria-labelledby="modalFeedbackLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content symo-modal-content">
-            <form action="<?= BASE_URL ?>/feedback/salvar" method="POST">
+            <form action="<?= BASE_URL ?>/feedback/salvar" method="POST" enctype="multipart/form-data" id="formFeedback">
                 <?= CsrfHelper::inputField() ?>
                 <div class="modal-header border-bottom">
                     <h5 class="modal-title fw-bold" id="modalFeedbackLabel">Enviar feedback</h5>
@@ -96,9 +96,10 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="feedbackTela" class="form-label fw-semibold">Tela</label>
+                        <label for="feedbackTela" class="form-label fw-semibold">Tegit la</label>
                         <select class="form-select" id="feedbackTela" name="tela" required>
                             <option value="" selected disabled>Selecione a tela</option>
+                            <option value="sistema">Sistema (geral)</option>
                             <option value="dashboard">Dashboard</option>
                             <option value="lancamentos">Lançamentos</option>
                             <option value="contas">Contas bancárias</option>
@@ -107,6 +108,7 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                             <option value="cartoes">Cartões de crédito</option>
                             <option value="transferencias">Transferências</option>
                             <option value="relatorios">Relatórios</option>
+                            <option value="lixeira">Lixeira</option>
                             <option value="configuracoes">Configurações</option>
                             <option value="perfil">Perfil</option>
                         </select>
@@ -120,9 +122,19 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                             <option value="duvida">Dúvida</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="mb-3">
                         <label for="feedbackTexto" class="form-label fw-semibold">Feedback</label>
                         <textarea class="form-control" id="feedbackTexto" name="texto" rows="5" minlength="10" maxlength="3000" required></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold d-block">Imagens (opcional)</label>
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" id="btnAnexarImagensFeedback">
+                            <i class="bi bi-paperclip"></i>
+                            <span>Anexar imagens</span>
+                        </button>
+                        <input type="file" class="d-none" id="feedbackImagens" name="imagens[]" accept="image/jpeg,image/png,image/webp" multiple>
+                        <div id="feedbackPreviews" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        <div class="form-text">Até 5 imagens, JPEG/PNG/WebP, 2 MB cada.</div>
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light">
@@ -133,3 +145,73 @@ $pageTitle   = $title ?? 'Painel Financeiro';
         </div>
     </div>
 </div>
+
+<!-- Lightbox de Pré-visualização de Imagens Anexadas ao Feedback -->
+<div id="feedbackLightbox" class="d-none align-items-center justify-content-center" style="position: fixed; inset: 0; background: rgba(26,28,28,0.85); z-index: 2000; cursor: zoom-out;">
+    <img id="feedbackLightboxImg" src="" alt="Pré-visualização ampliada da imagem anexada" style="max-width: 90vw; max-height: 90vh; border-radius: 0.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4);">
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var inputImagens = document.getElementById('feedbackImagens');
+    var btnAnexar = document.getElementById('btnAnexarImagensFeedback');
+    var previewContainer = document.getElementById('feedbackPreviews');
+    var lightbox = document.getElementById('feedbackLightbox');
+    var lightboxImg = document.getElementById('feedbackLightboxImg');
+    var formFeedback = document.getElementById('formFeedback');
+    var modalFeedbackEl = document.getElementById('modalFeedback');
+    var MAX_IMAGENS = 5;
+
+    if (!inputImagens || !btnAnexar || !previewContainer || !lightbox || !lightboxImg) {
+        return;
+    }
+
+    function limparPreviews() {
+        previewContainer.querySelectorAll('img').forEach(function (img) {
+            URL.revokeObjectURL(img.src);
+        });
+        previewContainer.innerHTML = '';
+    }
+
+    function fecharLightbox() {
+        lightbox.classList.add('d-none');
+        lightbox.classList.remove('d-flex');
+        lightboxImg.src = '';
+    }
+
+    btnAnexar.addEventListener('click', function () {
+        inputImagens.click();
+    });
+
+    inputImagens.addEventListener('change', function () {
+        limparPreviews();
+
+        Array.from(inputImagens.files || []).slice(0, MAX_IMAGENS).forEach(function (arquivo) {
+            var url = URL.createObjectURL(arquivo);
+            var thumb = document.createElement('img');
+            thumb.src = url;
+            thumb.alt = 'Pré-visualização de imagem anexada';
+            thumb.title = 'Clique para ampliar';
+            thumb.style.cssText = 'width: 48px; height: 48px; object-fit: cover; border-radius: 0.5rem; border: 1px solid var(--symo-outline-variant); cursor: zoom-in;';
+            thumb.addEventListener('click', function () {
+                lightboxImg.src = url;
+                lightbox.classList.remove('d-none');
+                lightbox.classList.add('d-flex');
+            });
+            previewContainer.appendChild(thumb);
+        });
+    });
+
+    lightbox.addEventListener('click', fecharLightbox);
+
+    if (modalFeedbackEl) {
+        modalFeedbackEl.addEventListener('hidden.bs.modal', function () {
+            if (formFeedback) {
+                formFeedback.reset();
+            }
+            limparPreviews();
+            fecharLightbox();
+        });
+    }
+});
+</script>

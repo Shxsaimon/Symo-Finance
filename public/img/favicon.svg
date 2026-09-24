@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" fill="none">
+  <!-- Símbolo / Ícone do Symo (sem o texto "Symo"), usado como favicon -->
+  <rect x="2" y="4" width="36" height="36" rx="10" fill="url(#symo-grad)" />
+  <path d="M14 26C14 21.5817 17.5817 18 22 18H26C27.1046 18 28 17.1046 28 16C28 14.8954 27.1046 14 26 14H16" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+  <path d="M26 18C26 22.4183 22.4183 26 18 26H14C12.8954 26 12 26.8954 12 28C12 29.1046 12.8954 30 14 30H24" stroke="#3BD7D7" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Gradiente de Marca -->
+  <defs>
+    <linearGradient id="symo-grad" x1="2" y1="4" x2="38" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6F02FF" />
+      <stop offset="1" stop-color="#793CFE" />
+    </linearGradient>
+  </defs>
+</svg>

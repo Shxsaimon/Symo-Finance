@@ -25,7 +25,7 @@ $appName   = 'Symo';
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/custom.css">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/logo.svg">
+    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/favicon.svg">
 
     <style>
         body {
