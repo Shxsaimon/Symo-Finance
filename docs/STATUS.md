@@ -6,7 +6,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 23/09/2026
+- **Data da Última Atualização:** 28/09/2026
 - **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
 - **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0; a especificação de contas compartilhadas deve preceder sua implementação.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
@@ -28,6 +28,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Feedback com anexos:** O modal de feedback ganhou upload de até 5 imagens (JPEG/PNG/WebP, 2 MB cada) com pré-visualização em miniatura expansível por clique; as imagens são enviadas ao Vercel Blob privado via `UploadHelper` e suas URLs são gravadas na coluna `imagens` (JSON/JSONB) da própria tabela `feedback` (migration `017_adicionar_imagens_feedback.php`). O select de tela ganhou as opções "Sistema (geral)" e "Lixeira".
 - **Favicon dedicado:** Criado `public/img/favicon.svg` apenas com o ícone da marca (sem o texto "Symo"), usado nos layouts `main.php` e `auth.php`; o logo completo com texto continua sendo usado onde a marca é exibida por extenso.
 - **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
+- **Revisão Ortográfica do README:** `README.md` totalmente revisado quanto à grafia, acentuação e ortografia em português do Brasil (pt-BR), preservando o vocabulário, clareza técnica e estrutura originais.
 - **Atualização do Contexto para Agentes:** `AGENTS.md` revisado para refletir o FSD aprovado, com Vercel/Neon/Blob/GitHub Actions como stack oficial, PostgreSQL como banco principal, RBAC `admin` individual + `dev` global + `operador` legado, isolamento por `usuario_id`, segredos por variáveis de ambiente e obrigação de atualizar o próprio AGENTS quando suas regras mudarem.
 
 ---

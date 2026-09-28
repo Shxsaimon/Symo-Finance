@@ -1,27 +1,27 @@
 # Symo Finance
 
-O Symo Finance é uma aplicacao web de gestão financeira para pessoas, casais, familias, freelancers e MEIs. Cada pessoa possui seus dados financeiros por padrao e, na visao de evolucao do produto, podera compartilhar seletivamente contas financeiras com outras pessoas.
+O Symo Finance é uma aplicação web de gestão financeira para pessoas, casais, famílias, freelancers e MEIs. Cada pessoa possui seus dados financeiros por padrão e, na visão de evolução do produto, poderá compartilhar seletivamente contas financeiras com outras pessoas.
 
-O projeto usa PHP nativo com MVC, PostgreSQL no Neon, Vercel para execucao serverless e Vercel Blob para arquivos privados. O MySQL permanece como caminho de compatibilidade legado, nao como ambiente recomendado para novos deploys.
+O projeto usa PHP nativo com MVC, PostgreSQL no Neon, Vercel para execução serverless e Vercel Blob para arquivos privados. O MySQL permanece como caminho de compatibilidade legado, não como ambiente recomendado para novos deploys.
 
 ## Funcionalidades atuais
 
-- Autocadastro, login por e-mail e senha, sessoes persistidas no banco e protecao contra tentativas repetidas de login.
-- Isolamento dos dados financeiros por usuario: contas, categorias, meios de pagamento, cartoes, transacoes, transferencias, relatorios e lixeira.
-- Dashboard mensal com saldo consolidado, receitas, despesas, evolucao e despesas por categoria.
-- Contas financeiras, categorias, meios de pagamento, receitas, despesas, parcelamentos, transferencias e cartoes de credito com faturas.
-- Relatorios filtraveis e exportacao CSV compativel com planilhas.
-- Lixeira, auditoria, logs de seguranca e feedback beta.
+- Autocadastro, login por e-mail e senha, sessões persistidas no banco e proteção contra tentativas repetidas de login.
+- Isolamento dos dados financeiros por usuário: contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira.
+- Dashboard mensal com saldo consolidado, receitas, despesas, evolução e despesas por categoria.
+- Contas financeiras, categorias, meios de pagamento, receitas, despesas, parcelamentos, transferências e cartões de crédito com faturas.
+- Relatórios filtráveis e exportação CSV compatível com planilhas.
+- Lixeira, auditoria, logs de segurança e feedback beta.
 - Upload e entrega autenticada de avatares e logotipo por Vercel Blob.
-- Operacao de migrations por GitHub Actions para ambientes remotos.
+- Operação de migrations por GitHub Actions para ambientes remotos.
 
-## O que ainda esta planejado
+## O que ainda está planejado
 
 - Login com Google OAuth 2.0.
-- Verificacao de e-mail e recuperacao de senha por e-mail. A tela de esqueci a senha existe, mas o fluxo de redefinicao ainda nao esta implementado.
-- Contas compartilhadas por convite: o criador podera convidar outro usuario por e-mail, revogar o acesso e definir se o convidado pode visualizar, lancar movimentacoes e editar somente os proprios lancamentos. O criador tambem definira se o historico ja existente sera visivel.
+- Verificação de e-mail e recuperação de senha por e-mail. A tela de esqueci a senha existe, mas o fluxo de redefinição ainda não está implementado.
+- Contas compartilhadas por convite: o criador poderá convidar outro usuário por e-mail, revogar o acesso e definir se o convidado pode visualizar, lançar movimentações e editar somente os próprios lançamentos. O criador também definirá se o histórico já existente será visível.
 
-Esses itens sao direcao de produto, nao recursos disponiveis no estado atual do codigo.
+Esses itens são direção de produto, não recursos disponíveis no estado atual do código.
 
 ## Arquitetura
 
@@ -37,38 +37,38 @@ GitHub Actions
   -> Neon PostgreSQL
 ```
 
-- `index.php`: front controller, rotas, seguranca HTTP e sessao.
+- `index.php`: front controller, rotas, segurança HTTP e sessão.
 - `app/`: controllers, models, helpers e views.
-- `database/migrations/`: evolucao versionada do banco.
-- `api/index.php`: adaptador para o runtime PHP da Vercel e entrega de assets publicos.
-- `api/blob.js`: proxy privado para operacoes no Vercel Blob.
+- `database/migrations/`: evolução versionada do banco.
+- `api/index.php`: adaptador para o runtime PHP da Vercel e entrega de assets públicos.
+- `api/blob.js`: proxy privado para operações no Vercel Blob.
 - `.github/workflows/database-migrations.yml`: workflow manual de status, migrations, seed e reset controlado.
 
 ## Ambientes oficiais
 
-| Finalidade | Servicos |
+| Finalidade | Serviços |
 | --- | --- |
-| Producao e homologacao | Vercel + Neon PostgreSQL + Vercel Blob + GitHub Actions |
+| Produção e homologação | Vercel + Neon PostgreSQL + Vercel Blob + GitHub Actions |
 | Compatibilidade legado | PHP com PDO MySQL/MariaDB |
 
-Para o fluxo oficial, use PHP 8.2 ou superior com `pdo_pgsql`. O codigo mantem suporte condicional a MySQL para instalacoes antigas, mas novas configuracoes devem usar `DATABASE_URL` PostgreSQL.
+Para o fluxo oficial, use PHP 8.2 ou superior com `pdo_pgsql`. O código mantém suporte condicional ao MySQL para instalações antigas, mas novas configurações devem usar `DATABASE_URL` PostgreSQL.
 
-## Configuracao
+## Configuração
 
-O arquivo de referencia e [config/config.example.php](config/config.example.php). A aplicacao le variaveis de ambiente; nao armazena segredos no repositorio.
+O arquivo de referência é [config/config.example.php](config/config.example.php). A aplicação lê variáveis de ambiente; não armazena segredos no repositório.
 
-| Variavel | Finalidade |
+| Variável | Finalidade |
 | --- | --- |
 | `DATABASE_URL` | URL PostgreSQL do Neon; ativa o driver oficial. |
-| `APP_BASE_URL` | URL publica da aplicacao. |
-| `APP_ENV` e `APP_DEBUG` | Ambiente e diagnostico. Em producao, use `production` e `false`. |
-| `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL`, `SYSTEM_DEV_PASSWORD` | Usuario tecnico global criado pelo seed. |
+| `APP_BASE_URL` | URL pública da aplicação. |
+| `APP_ENV` e `APP_DEBUG` | Ambiente e diagnóstico. Em produção, use `production` e `false`. |
+| `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL`, `SYSTEM_DEV_PASSWORD` | Usuário técnico global criado pelo seed. |
 | `BLOB_PROXY_SECRET` | Segredo entre o PHP e a Function de Blob. |
 | `BLOB_PROXY_URL` | URL da Function `api/blob.js`. |
 | `BLOB_READ_WRITE_TOKEN` | Credencial do Vercel Blob usada pela Function Node. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Reservadas para o OAuth Google, ainda nao integrado. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Reservadas para o OAuth Google, ainda não integrado. |
 
-O perfil `dev` e operacional e deve ser restrito a quem administra a plataforma. Usuarios que se cadastram recebem o perfil `admin` de sua propria conta financeira.
+O perfil `dev` é operacional e deve ser restrito a quem administra a plataforma. Usuários que se cadastram recebem o perfil `admin` de sua própria conta financeira.
 
 ## Banco de dados e migrations
 
@@ -80,13 +80,13 @@ php migrate.php
 php migrate.php --seed
 ```
 
-Em producao, execute essas operacoes pelo workflow manual **Symo Database Migrations** no GitHub Actions, configurando os secrets `NEON_DATABASE_URL`, `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL` e `SYSTEM_DEV_PASSWORD`.
+Em produção, execute essas operações pelo workflow manual **Symo Database Migrations** no GitHub Actions, configurando os secrets `NEON_DATABASE_URL`, `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL` e `SYSTEM_DEV_PASSWORD`.
 
-`php migrate.php --fresh --confirmar` apaga todo o schema PostgreSQL conectado antes de recria-lo. Use somente em ambiente descartavel. No GitHub Actions, a acao `fresh` exige a confirmacao textual `RESETAR`.
+`php migrate.php --fresh --confirmar` apaga todo o schema PostgreSQL conectado antes de recriá-lo. Use somente em ambiente descartável. No GitHub Actions, a ação `fresh` exige a confirmação textual `RESETAR`.
 
 ## Desenvolvimento local
 
-1. Configure um PostgreSQL acessivel e exporte `DATABASE_URL`.
+1. Configure um PostgreSQL acessível e exporte `DATABASE_URL`.
 2. Garanta que o PHP tenha `pdo_pgsql`, `pdo`, `mbstring`, `fileinfo`, `json`, `session` e `curl` habilitados.
 3. Execute as migrations.
 4. Inicie o servidor PHP:
@@ -97,21 +97,21 @@ php -S localhost:8000 index.php
 
 5. Acesse `http://localhost:8000`.
 
-Para testar uploads privados fora da Vercel, configure tambem as variaveis do Blob e uma URL alcancavel para o proxy. Sem elas, o nucleo financeiro continua utilizavel, mas uploads remotos nao funcionam.
+Para testar uploads privados fora da Vercel, configure também as variáveis do Blob e uma URL alcançável para o proxy. Sem elas, o núcleo financeiro continua utilizável, mas uploads remotos não funcionam.
 
-## Seguranca
+## Segurança
 
 - Consultas usam PDO e statements preparados.
-- Formularios mutaveis usam CSRF.
+- Formulários mutáveis usam CSRF.
 - Senhas usam BCRYPT com custo 12.
-- Sessoes usam cookies `HttpOnly`, `SameSite=Lax` e `Secure` sob HTTPS.
-- Dados financeiros sao filtrados pelo usuario autenticado.
-- O Blob permanece privado; imagens sao servidas por rotas autenticadas.
+- Sessões usam cookies `HttpOnly`, `SameSite=Lax` e `Secure` sob HTTPS.
+- Dados financeiros são filtrados pelo usuário autenticado.
+- O Blob permanece privado; imagens são servidas por rotas autenticadas.
 
-## Documentacao
+## Documentação
 
-- [FSD](docs/FSD.md): especificacao funcional e tecnica, incluindo o roadmap de contas compartilhadas.
-- [STATUS](docs/STATUS.md): estado de implementacao e proximo passo tecnico.
-- [ERROS](docs/ERROS.md): problemas conhecidos e solucoes aplicadas.
+- [FSD](docs/FSD.md): especificação funcional e técnica, incluindo o roadmap de contas compartilhadas.
+- [STATUS](docs/STATUS.md): estado de implementação e próximo passo técnico.
+- [ERROS](docs/ERROS.md): problemas conhecidos e soluções aplicadas.
 - [DESIGN](docs/DESIGN.md): design system.
-- [AGENTS](AGENTS.md): convencoes para contribuidores automatizados.
+- [AGENTS](AGENTS.md): convenções para contribuidores automatizados.
