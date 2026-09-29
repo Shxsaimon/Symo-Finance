@@ -9,6 +9,8 @@
 .env
 .env.*
 !.env.example
+load-env.ps1
+
 
 # --- Logs e Arquivos de Contingência ---
 storage/logs/*.log
