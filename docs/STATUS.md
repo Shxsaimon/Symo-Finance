@@ -6,8 +6,12 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 28/09/2026
+- **Data da Última Atualização:** 29/09/2026
 - **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
+- **Massa de Dados para Demonstração:** Gerados 110 lançamentos, 14 transferências e 8 faturas de cartão no período de Março/2026 a Outubro/2026 para o perfil `dev` (ID 1). A operação limpa (DELETE) os dados anteriores do dev antes de recriar a massa. As transações de cartão vinculadas a faturas pagas (Março a Agosto) são marcadas com status `pago` e `data_pagamento`. Adicionada a opção `seed_demo` no GitHub Actions (`database-migrations.yml`), no helper `GitHubActionsHelper` e na tela de Configurações da aplicação.
+
+
+
 - **Próximo Passo Recomendado:** Etapa 5 — Login Google via OAuth 2.0; a especificação de contas compartilhadas deve preceder sua implementação.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.

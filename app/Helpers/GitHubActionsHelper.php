@@ -10,9 +10,10 @@ class GitHubActionsHelper
     /** @return array{success: bool, message: string, run?: array<string, mixed>} */
     public static function dispatch(string $action): array
     {
-        if (!in_array($action, ['status', 'migrate', 'seed'], true)) {
+        if (!in_array($action, ['status', 'migrate', 'seed', 'seed_demo', 'seed_dev'], true)) {
             return ['success' => false, 'message' => 'Operação de banco inválida.'];
         }
+
 
         $config = self::configuration();
         if ($config === null) {

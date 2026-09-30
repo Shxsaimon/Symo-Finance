@@ -11,7 +11,9 @@ on:
           - status
           - migrate
           - seed
+          - seed_demo
           - fresh
+
         default: status
       confirmacao_fresh:
         description: "Obrigatorio apenas para 'fresh': digite RESETAR para confirmar a exclusao de TODOS os dados"
@@ -79,7 +81,16 @@ jobs:
           SYSTEM_DEV_PASSWORD: ${{ secrets.SYSTEM_DEV_PASSWORD }}
         run: php migrate.php --seed
 
+      - name: Executar seed de demonstracao dev (ID 1)
+        if: inputs.action == 'seed_demo' || inputs.action == 'seed_dev'
+        env:
+          SYSTEM_DEV_NAME: ${{ secrets.SYSTEM_DEV_NAME }}
+          SYSTEM_DEV_EMAIL: ${{ secrets.SYSTEM_DEV_EMAIL }}
+          SYSTEM_DEV_PASSWORD: ${{ secrets.SYSTEM_DEV_PASSWORD }}
+        run: php migrate.php --seed-demo
+
       - name: Resetar banco de dados (fresh) e recriar tudo
+
         if: inputs.action == 'fresh'
         env:
           SYSTEM_DEV_NAME: ${{ secrets.SYSTEM_DEV_NAME }}

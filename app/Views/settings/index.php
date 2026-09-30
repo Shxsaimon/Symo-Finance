@@ -128,8 +128,10 @@ $githubConclusion = $githubRun['conclusion'] ?? null;
                     <select id="database_action" name="database_action" class="form-select form-select-sm" required>
                         <option value="status">Verificar status</option>
                         <option value="migrate">Executar migrations</option>
-                        <option value="seed">Executar seed</option>
+                        <option value="seed">Executar seed inicial</option>
+                        <option value="seed_demo">Executar seed Dev (Demonstração)</option>
                     </select>
+
                     <button type="submit" class="btn btn-outline-success btn-sm text-nowrap">
                         <i class="bi bi-play-circle me-1"></i>Enviar
                     </button>

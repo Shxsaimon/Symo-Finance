@@ -55,6 +55,7 @@ $schemaStatement->execute();
 $args = $argv ?? [];
 $isFresh  = in_array('--fresh', $args, true);
 $onlySeed = in_array('--seed', $args, true);
+$onlyDemo = in_array('--seed-demo', $args, true) || in_array('--demo', $args, true);
 $isStatus = in_array('--status', $args, true);
 
 if ($isFresh) {
@@ -103,15 +104,28 @@ if ($isFresh) {
     }
 }
 
-// Função para rodar seeds
+// Função para rodar seeds iniciais globais
 function runSeeds(PDO $pdo): void {
     $seedFile = __DIR__ . '/database/seeds/initial_data.php';
     if (file_exists($seedFile)) {
-        echo "\n[*] Executando seeds de dados iniciais...\n";
+        echo "\n[*] Executando seeds de dados iniciais do sistema...\n";
         $seeder = require $seedFile;
         if (is_object($seeder) && method_exists($seeder, 'run')) {
             $seeder->run($pdo);
-            echo "[OK] Seeds executados com sucesso!\n";
+            echo "[OK] Seeds iniciais globais executados com sucesso!\n";
+        }
+    }
+}
+
+// Função para rodar a massa de demonstração (dev ID 1)
+function runDemoSeeds(PDO $pdo): void {
+    $demoFile = __DIR__ . '/database/seeds/dev_demo_seeder.php';
+    if (file_exists($demoFile)) {
+        echo "\n[*] Executando massa de dados de demonstração (perfil dev ID 1)...\n";
+        $seeder = require $demoFile;
+        if (is_object($seeder) && method_exists($seeder, 'run')) {
+            $seeder->run($pdo);
+            echo "[OK] Massa de dados de demonstração atualizada com sucesso!\n";
         }
     }
 }
@@ -121,6 +135,13 @@ if ($onlySeed) {
     echo "\nConcluído com sucesso.\n";
     exit(0);
 }
+
+if ($onlyDemo) {
+    runDemoSeeds($pdo);
+    echo "\nConcluído com sucesso.\n";
+    exit(0);
+}
+
 
 // 1. Obter histórico de migrações já executadas
 $executedStatement = $pdo->prepare("SELECT `migracao` FROM `migracoes`");
