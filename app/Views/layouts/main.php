@@ -20,15 +20,13 @@ $appName = 'Symo';
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
 
-    <!-- Favicon — declarado antes dos CSS para ser processado com prioridade máxima -->
-    <!-- O shortcut icon (PNG) funciona como fallback mantido em cache durante navegação MPA -->
-    <link rel="shortcut icon" href="<?= ASSET_URL ?>/img/favicon.png" type="image/png">
-    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/favicon.svg">
-
     <!-- Assets Locais Obrigatórios (Sem CDNs externas) -->
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/custom.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/favicon.svg">
 </head>
 <body>
     <div class="app-layout">

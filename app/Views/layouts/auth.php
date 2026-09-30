@@ -19,15 +19,13 @@ $appName   = 'Symo';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     
-    <!-- Favicon — declarado antes dos CSS para ser processado com prioridade máxima -->
-    <link rel="shortcut icon" href="<?= ASSET_URL ?>/img/favicon.png" type="image/png">
-    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/favicon.svg">
-
     <!-- Assets Locais -->
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?= ASSET_URL ?>/css/custom.css">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="<?= ASSET_URL ?>/img/favicon.svg">
 
     <style>
         body {
