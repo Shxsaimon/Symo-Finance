@@ -22,7 +22,8 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 14:** Multiusuário e Autenticação Social (etapas já concluídas e pendentes registradas abaixo)
 - **Fase 15:** Consulta administrativa de feedbacks recebidos
 - **Fase 16:** Correção dos achados prioritários de isolamento e integridade financeira
-- **Fase 17:** Compartilhamento por conta e catálogo global de meios de pagamento (roadmap)
+- **Fase 17:** Catálogo global de meios de pagamento (prioridade atual)
+- **Fase 18:** Compartilhamento por conta (roadmap)
 
 ---
 
@@ -267,7 +268,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Criar autocadastro local com perfil `admin` e dados padrão do próprio usuário.
   - [x] Isolar contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira por proprietário.
   - [x] Reservar gestão de usuários, auditoria e configurações globais ao perfil `dev`, sem ampliar seu escopo financeiro próprio.
-  - [x] Registrar no plano as regras futuras de compartilhamento por conta e catálogo global de meios de pagamento.
+  - [x] Registrar separadamente o catálogo global de meios de pagamento (Fase 17) e o compartilhamento por conta (Fase 18).
   - [ ] Implementar login Google via OAuth 2.0.
   - [ ] Executar testes manuais completos dos fluxos de autenticação, isolamento e RBAC.
 - **Estado:** Em andamento; OAuth Google e testes manuais permanecem pendentes.
@@ -292,27 +293,51 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Validar saldo no `UPDATE` atômico da conta de origem para impedir saldo negativo por concorrência.
   - [x] Limitar listagem, restauração e expurgo da lixeira ao proprietário, inclusive para `dev`.
   - [x] Revalidar o status do usuário na sessão para encerrar o acesso após inativação.
+  - [x] Confirmar com outro usuário que o resumo de transferências não exibe dados alheios.
+  - [x] Confirmar que o Dashboard e a listagem de transações apresentam dados separados por usuário.
+  - [x] Confirmar que a lixeira e o estorno não afetam dados de outro usuário.
+  - [x] Confirmar que uma transferência acima do saldo é bloqueada com aviso.
+  - [x] Confirmar que uma transferência dentro do saldo debita a origem e credita o destino corretamente.
   - [x] Atualizar FSD, AGENTS, README, PLANO e STATUS para documentar o escopo financeiro próprio de `admin` e `dev`.
   - [x] Executar lint PHP, diagnósticos estáticos e `git diff --check`.
-  - [ ] Validar isolamento contra PostgreSQL com usuários distintos e testar transferências concorrentes.
-  - [ ] Testar em ambiente integrado a recusa de sessão de usuário inativado.
-- **Estado:** Correções implementadas; validações integradas dependem do ambiente de banco.
+  - [x] Testar acesso direto por ID com outro usuário: GET de transação alheia retorna 404; edição, mudança de status, exclusão e estorno não alteram registros nem saldos do proprietário.
+  - [x] Testar concorrência do débito condicional no PostgreSQL com duas conexões: ambas leem saldo de R$ 0,01; uma atualização afeta 1 linha, a outra 0, e o saldo final não fica negativo.
+  - [x] Testar concorrência end-to-end por `Transfer::createTransfer`: uma transferência foi criada, a concorrente recusada/rollback, origem debitada uma vez e destino creditado uma vez.
+  - [x] Inativar um usuário com sessão ativa e confirmar que a próxima requisição bloqueia o acesso.
+- **Estado:** Concluída; testes de isolamento e transferência concorrente end-to-end aprovados no PostgreSQL.
 
-### Fase 17 — Compartilhamento por conta e catálogo global de meios de pagamento
-- **Estado:** Roadmap; não implementar na demanda atual.
-- **Checklist de alinhamento prévio:**
-  - [ ] Detalhar o ciclo do convite: envio, aceite/recusa, revogação e identidade do participante.
-  - [ ] Confirmar qual perfil poderá ativar/desativar meios de pagamento, pois a alteração afeta o catálogo global.
-  - [ ] Definir a correspondência entre os meios de pagamento atuais e os IDs canônicos antes de migrar os vínculos existentes.
-  - [ ] Definir estratégia de implantação e reversão da migration de consolidação, preservando o histórico dos lançamentos.
+### Fase 17 — Catálogo global de meios de pagamento
+- **Prioridade:** Próxima correção a executar; esta fase não inclui compartilhamento por conta.
+- **Regras alinhadas:**
+  - O catálogo será global e começará com Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária.
+  - Somente o perfil `dev` poderá criar opções ou arquivá-las globalmente.
+  - O arquivamento é lógico: a opção deixa de estar disponível para novos lançamentos, mas permanece vinculada e visível no histórico, inclusive ao consultar ou editar lançamentos antigos.
+  - Cada usuário, inclusive `dev`, poderá ativar/inativar opções apenas para si. A preferência individual altera as opções oferecidas em novos lançamentos e não afeta outros usuários.
+  - Usuários comuns não poderão criar, editar os dados globais ou arquivar opções.
+  - Não há meios personalizados cadastrados atualmente; a migração ainda deverá verificar os registros e preservar todos os vínculos de transações.
 - **Checklist de implementação:**
-  - [ ] Criar vínculo de permissão por conta; não criar papel global `operador` para conceder acesso financeiro.
-  - [ ] Permitir ao proprietário conceder: somente visualização; lançamento com edição/exclusão dos registros da conta; ou lançamento com edição/exclusão apenas dos registros criados pelo participante.
-  - [ ] Restringir a visibilidade do participante aos lançamentos criados após o aceite e pertencentes à conta compartilhada; não mostrar histórico anterior.
-  - [ ] Restringir transferências a contas do mesmo proprietário e não oferecer no seletor contas de outro proprietário.
-  - [ ] Manter categorias, cartões, faturas e preferências pessoais; aplicar o escopo de contas compartilhadas somente onde autorizado em dashboard, relatórios e lixeira.
-  - [ ] Consolidar os meios de pagamento em catálogo global sem criação por usuários; oferecer somente ativação/desativação pela manutenção autorizada.
-  - [ ] Migrar transações existentes para os IDs canônicos, validar todos os vínculos e só então remover registros duplicados.
-  - [ ] Validar permissões e isolamento para leitura, lançamento, edição, exclusão, exportação, dashboard, relatórios, transferências e lixeira.
-- **Critérios de aceite:** Nenhum convite pendente concede acesso; o participante vê somente dados posteriores ao aceite e da conta autorizada; revogação encerra acesso; transferências nunca cruzam proprietários; e lançamentos existentes preservam o meio de pagamento correto após a consolidação.
+  - [ ] Criar migration compatível primeiro com PostgreSQL e, se mantida, com MySQL legado, separando catálogo global, arquivamento global e preferência individual.
+  - [ ] Consolidar os registros padrão existentes para IDs canônicos e preservar as referências de `transacoes.meio_pagamento_id`; não remover opção referenciada fisicamente.
+  - [ ] Atualizar cadastro de novos usuários para usar o catálogo global, sem clonar meios de pagamento por usuário.
+  - [ ] Atualizar model, controller, rotas e interface: manutenção global de criação/arquivamento exclusiva do `dev`; ativação/inativação individual para qualquer usuário autenticado.
+  - [ ] Garantir que formulários de novos lançamentos ofereçam apenas opções não arquivadas e não inativadas pelo usuário atual.
+  - [ ] Preservar a apresentação do meio associado em transações existentes, mesmo quando arquivado globalmente ou inativado pelo usuário.
+  - [ ] Auditar autorização, CSRF, isolamento por usuário e auditoria das operações administrativas e preferências individuais.
+  - [ ] Validar migration, cadastro, edição, histórico, relatório e exportação, além dos fluxos de ativação/inativação e arquivamento.
+- **Critérios de aceite:** A inativação de um usuário não altera as opções dos demais; o arquivamento pelo `dev` impede novos usos para todos; nenhum vínculo histórico é perdido; e somente o `dev` cria ou arquiva opções globais.
+
+### Fase 18 — Compartilhamento por conta
+- **Estado:** Roadmap; implementação posterior à Fase 17 e sujeita à especificação técnica detalhada.
+- **Regras já alinhadas:**
+  - Compartilhamento será concedido por vínculo de permissão à conta, nunca por papel global `operador`.
+  - Participantes verão somente lançamentos da conta compartilhada criados após o aceite.
+  - Transferências continuarão restritas a contas do mesmo proprietário.
+  - Categorias, cartões, faturas e preferências permanecerão pessoais.
+- **Checklist de detalhamento e implementação:**
+  - [ ] Definir ciclo do convite, aceite/recusa, identidade do participante, expiração e revogação.
+  - [ ] Definir níveis de visualização, lançamento, edição e exclusão, incluindo o alcance por autoria.
+  - [ ] Criar vínculo de permissão por conta sem remover `contas.usuario_id`.
+  - [ ] Aplicar o escopo autorizado a consultas, saldos, dashboard, relatórios, exportação, lixeira e auditoria.
+  - [ ] Testar IDOR, revogação imediata, autoria, permissões e isolamento em todos os fluxos afetados.
+- **Critérios de aceite:** Convites pendentes não concedem acesso; o participante vê apenas lançamentos posteriores ao aceite e da conta autorizada; revogação encerra o acesso; e transferências nunca cruzam proprietários.
 

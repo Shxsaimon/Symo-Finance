@@ -17,8 +17,8 @@ Este arquivo define o contexto técnico, as regras de segurança, os limites de 
 O **Symo Finance** é uma plataforma web de gestão financeira pessoal para pessoas, casais, famílias, freelancers e MEIs.
 
 - Cada usuário possui uma conta financeira individual e privada por padrão.
-- Contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios, preferências e lixeira são isolados por `usuario_id`.
-- O cadastro público cria um usuário `admin` da própria conta, com categorias, meios de pagamento e preferências padrão.
+- No estado atual, contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios, preferências e lixeira são isolados por `usuario_id`.
+- O cadastro público cria um usuário `admin` da própria conta, com categorias, meios de pagamento e preferências padrão; a Fase 17 removerá a clonagem de meios de pagamento por usuário.
 - O perfil `dev` é um usuário técnico criado pelo seed, responsável pela operação global da plataforma. Como usuário financeiro, mantém escopo próprio por `usuario_id`, igual ao `admin`.
 - O perfil `operador` permanece no código por compatibilidade, não é usado no produto atual e não será um papel global no modelo futuro.
 - A visão futura contempla compartilhar contas específicas por vínculo de permissões à conta. O participante verá apenas lançamentos posteriores ao aceite; esse recurso não existe no estado atual.
@@ -149,7 +149,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 - OAuth Google possui preparação de configuração e banco, mas não possui fluxo ativo.
 - A tela de esqueci a senha existe, mas não há recuperação por e-mail implementada.
 - Contas compartilhadas são roadmap. Não criar tabelas, rotas ou telas desse recurso sem especificação complementar e aprovação.
-- Na futura colaboração, apenas contas financeiras serão compartilháveis inicialmente. Categorias, cartões, faturas e preferências continuam pessoais. Meios de pagamento deverão se tornar um catálogo global após migração dos IDs existentes; usuários não criarão opções e a manutenção permitirá ativar/desativar. Nada disso está implementado no estado atual.
+- A Fase 17 prioriza o catálogo global de meios de pagamento: somente `dev` cria e arquiva opções globalmente; qualquer usuário autenticado, inclusive `dev`, pode ativar/inativar opções apenas para si. Arquivamento é lógico, não remove vínculos históricos e impede novos usos. A migration deve preservar os IDs referenciados por transações. A Fase 18 trata do compartilhamento por conta; categorias, cartões, faturas e preferências continuam pessoais. Nenhuma dessas evoluções está implementada no estado atual.
 - Fora de escopo: Open Finance, OFX, importação bancária, boletos, gateways de pagamento, anexos de comprovantes, metas orçamentárias, recorrência infinita, conversão cambial em tempo real, PDF nativo e notificações de vencimento por e-mail.
 
 ---
