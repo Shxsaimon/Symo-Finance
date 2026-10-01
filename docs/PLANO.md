@@ -279,6 +279,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Exibir miniaturas e ampliar imagens por rota autenticada, sem tornar o Blob público.
   - [x] Manter `novo` como status inicial e permitir ao `dev` alterar para `em_analise` ou `concluido` (exibido como Concluído), com CSRF e auditoria.
   - [x] Ordenar colunas como mensagem, imagens, status e ações; aplicar o botão de leitura do tema Symo.
+  - [x] Exibir ações de status como dois botões compactos, lado a lado, com ícones e indicação acessível.
   - [x] Adicionar a tela à navegação administrativa desktop e mobile.
   - [x] Validar sintaxe PHP e diagnósticos estáticos dos arquivos alterados.
   - [x] Validar listagem e leitura das imagens em ambiente integrado com banco e Vercel Blob.

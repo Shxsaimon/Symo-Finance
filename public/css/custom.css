@@ -417,6 +417,14 @@ body {
   color: var(--symo-primary-brand);
 }
 
+.btn-symo-status {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  justify-content: center;
+}
+
 /* Badges de Perfil e Status */
 .badge-role-admin {
   background-color: var(--symo-primary-fixed);

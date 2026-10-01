@@ -111,19 +111,24 @@ $statusClasses = [
                                 </span>
                             </td>
                             <td class="text-end">
-                                <form method="POST" action="<?= BASE_URL ?>/feedbacks/status/<?= (int) $feedback['id'] ?>" class="d-inline-flex align-items-center justify-content-end gap-2">
-                                    <?= CsrfHelper::inputField() ?>
-                                    <input type="hidden" name="pagina" value="<?= (int) $paginaAtual ?>">
-                                    <label class="visually-hidden" for="feedback-status-<?= (int) $feedback['id'] ?>">Novo status</label>
-                                    <select class="form-select form-select-sm" id="feedback-status-<?= (int) $feedback['id'] ?>" name="status" required style="min-width: 130px;">
-                                        <option value="" selected disabled>Alterar status</option>
-                                        <option value="em_analise">Em análise</option>
-                                        <option value="concluido">Concluído</option>
-                                    </select>
-                                    <button type="submit" class="btn-symo-primary btn-sm" title="Salvar status" aria-label="Salvar status">
-                                        <i class="bi bi-check-lg"></i>
-                                    </button>
-                                </form>
+                                <div class="d-inline-flex align-items-center gap-1" role="group" aria-label="Alterar status do feedback">
+                                    <form method="POST" action="<?= BASE_URL ?>/feedbacks/status/<?= (int) $feedback['id'] ?>" class="d-inline">
+                                        <?= CsrfHelper::inputField() ?>
+                                        <input type="hidden" name="pagina" value="<?= (int) $paginaAtual ?>">
+                                        <input type="hidden" name="status" value="em_analise">
+                                        <button type="submit" class="btn-symo-secondary btn-symo-status" title="Marcar como em análise" aria-label="Marcar como em análise" <?= $status === 'em_analise' ? 'disabled' : '' ?>>
+                                            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="<?= BASE_URL ?>/feedbacks/status/<?= (int) $feedback['id'] ?>" class="d-inline">
+                                        <?= CsrfHelper::inputField() ?>
+                                        <input type="hidden" name="pagina" value="<?= (int) $paginaAtual ?>">
+                                        <input type="hidden" name="status" value="concluido">
+                                        <button type="submit" class="btn-symo-primary btn-symo-status" title="Marcar como concluído" aria-label="Marcar como concluído" <?= $status === 'concluido' ? 'disabled' : '' ?>>
+                                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

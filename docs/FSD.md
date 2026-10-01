@@ -874,7 +874,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Objetivo:** Permitir a triagem operacional das sugestões, dúvidas e correções enviadas pelos usuários.
 * **Usuários:** Exclusivamente o perfil `dev`, com autorização também validada no Controller.
 * **Informações:** Tabela paginada em ordem cronológica decrescente com autor, data, tela de origem, tipo, mensagem, imagens, status e ações. Feedback novo recebe status `novo`; `concluido` é exibido como **Concluído**.
-* **Ações:** O `dev` pode mudar o status para `em_analise` (Em análise) ou `concluido` (Concluído). A alteração exige CSRF e gera evento de auditoria. O texto e as imagens podem ser ampliados para leitura.
+* **Ações:** O `dev` pode mudar o status para `em_analise` (Em análise) ou `concluido` (Concluído) usando botões compactos lado a lado. A alteração exige CSRF e gera evento de auditoria. O texto e as imagens podem ser ampliados para leitura.
 * **Segurança:** A leitura das imagens passa por rota autenticada exclusiva do `dev`; URLs privadas e credenciais do Vercel Blob não são expostas à interface.
 
 ---
