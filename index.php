@@ -155,6 +155,7 @@ Router::get('/', function (): void {
 // Arquivos privados armazenados no Vercel Blob
 Router::get('/media/avatar/{id}', [BlobController::class, 'avatar']);
 Router::get('/media/logo', [BlobController::class, 'logo']);
+Router::get('/feedback/imagem/{id}/{index}', [BlobController::class, 'feedbackImage']);
 
 // Rotas de Autenticação e Gestão de Acesso
 Router::get('/login', [AuthController::class, 'showLogin']);
@@ -260,6 +261,7 @@ Router::get('/configuracoes/github-actions/logs/{id}', [SettingsController::clas
 // Perfil Pessoal (Qualquer Usuário Autenticado)
 Router::get('/perfil', [ProfileController::class, 'index']);
 Router::post('/perfil/salvar', [ProfileController::class, 'update']);
+Router::get('/feedbacks', [FeedbackController::class, 'index']);
 
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {

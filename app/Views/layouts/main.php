@@ -101,6 +101,12 @@ $appName = 'Symo';
                             <i class="bi bi-shield-check"></i>
                             <span>Trilha de Auditoria</span>
                         </a>
+                        <?php if (AuthHelper::isDev()): ?>
+                            <a href="<?= BASE_URL ?>/feedbacks" class="sidebar-nav-link <?= str_starts_with($currentUri, '/feedbacks') ? 'active' : '' ?>">
+                                <i class="bi bi-chat-left-text-fill"></i>
+                                <span>Feedbacks Recebidos</span>
+                            </a>
+                        <?php endif; ?>
                         <a href="<?= BASE_URL ?>/configuracoes" class="sidebar-nav-link <?= str_starts_with($currentUri, '/configuracoes') ? 'active' : '' ?>">
                             <i class="bi bi-gear-fill"></i>
                             <span>Configurações</span>

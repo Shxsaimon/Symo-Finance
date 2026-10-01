@@ -14,6 +14,22 @@ class FeedbackController extends Controller
         $this->feedbackModel = new Feedback();
     }
 
+    public function index(): void
+    {
+        AuthHelper::requireDev();
+
+        $page = max(1, (int) ($_GET['pagina'] ?? 1));
+        $result = $this->feedbackModel->getPaginated($page);
+
+        $this->render('feedback/index', [
+            'title' => 'Feedbacks Recebidos — Symo',
+            'feedbacks' => $result['items'],
+            'paginaAtual' => $result['page'],
+            'totalPaginas' => $result['total_pages'],
+            'totalRegistros' => $result['total'],
+        ], 'layouts/main');
+    }
+
     public function store(): void
     {
         AuthHelper::requireLogin();

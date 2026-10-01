@@ -185,10 +185,8 @@ class TransactionController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        $isAdmin = AuthHelper::isAdmin();
-
-        // Operador não pode editar lançamentos de terceiros
-        if (!$isAdmin && (int) $transacao['usuario_id'] !== $userId) {
+        // A consulta por ID já está limitada ao proprietário autenticado.
+        if ((int) $transacao['usuario_id'] !== $userId) {
             http_response_code(403);
             echo json_encode(['error' => 'Sem permissão para acessar este registro.']);
             exit;
@@ -249,8 +247,6 @@ class TransactionController extends Controller
 
         $valor = FormatHelper::parseCurrency($valorRaw);
         $userId = (int) AuthHelper::id();
-        $isAdmin = AuthHelper::isAdmin();
-
         try {
             $updated = $this->transactionModel->updateTransaction($id, [
                 'descricao'         => $descricao,
@@ -262,7 +258,7 @@ class TransactionController extends Controller
                 'conta_id'          => $contaId,
                 'status'            => $status,
                 'observacoes'       => $observacoes,
-            ], $userId, $isAdmin);
+            ], $userId);
 
             if ($updated) {
                 FlashHelper::set('success', "Lançamento '{$descricao}' atualizado com sucesso!");
@@ -300,9 +296,7 @@ class TransactionController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        $isAdmin = AuthHelper::isAdmin();
-
-        $result = $this->transactionModel->toggleStatus($id, $userId, $isAdmin);
+        $result = $this->transactionModel->toggleStatus($id, $userId);
 
         if ($result['success']) {
             FlashHelper::set('success', $result['message']);
@@ -334,9 +328,7 @@ class TransactionController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        $isAdmin = AuthHelper::isAdmin();
-
-        $result = $this->transactionModel->deleteTransaction($id, $userId, $isAdmin);
+        $result = $this->transactionModel->deleteTransaction($id, $userId);
 
         if ($result['success']) {
             FlashHelper::set('success', $result['message']);

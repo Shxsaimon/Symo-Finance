@@ -14,6 +14,19 @@ class Transfer extends Model
     protected string $tabela = 'transferencias';
     protected string $chavePrimaria = 'id';
 
+    public function find(int $id): ?array
+    {
+        $statement = $this->db->prepare(
+            'SELECT * FROM transferencias WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1'
+        );
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
+        $statement->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $statement->execute();
+        $result = $statement->fetch();
+
+        return $result !== false ? $result : null;
+    }
+
     /**
      * Cria uma transferência interna entre duas contas bancárias distintas com transação atômica.
      *
@@ -67,22 +80,31 @@ class Transfer extends Model
             // 1. Debita o valor na conta de origem
             $sqlDebito = "UPDATE `contas` 
                           SET saldo_atual = saldo_atual - :valor, atualizado_em = NOW() 
-                          WHERE id = :conta_id AND usuario_id = :usuario_id";
+                                                    WHERE id = :conta_id AND usuario_id = :usuario_id
+                                                        AND status = 'ativa' AND excluido_em IS NULL AND saldo_atual >= :saldo_minimo";
             $stmtDeb = $this->db->prepare($sqlDebito);
             $stmtDeb->bindValue(':valor', $valor);
             $stmtDeb->bindValue(':conta_id', $contaOrigemId, PDO::PARAM_INT);
             $stmtDeb->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+            $stmtDeb->bindValue(':saldo_minimo', $valor);
             $stmtDeb->execute();
+            if ($stmtDeb->rowCount() !== 1) {
+                throw new InvalidArgumentException('O saldo da conta de origem foi alterado ou é insuficiente para esta transferência.');
+            }
 
             // 2. Credita o valor na conta de destino
             $sqlCredito = "UPDATE `contas` 
                            SET saldo_atual = saldo_atual + :valor, atualizado_em = NOW() 
-                           WHERE id = :conta_id AND usuario_id = :usuario_id";
+                                                     WHERE id = :conta_id AND usuario_id = :usuario_id
+                                                         AND status = 'ativa' AND excluido_em IS NULL";
             $stmtCred = $this->db->prepare($sqlCredito);
             $stmtCred->bindValue(':valor', $valor);
             $stmtCred->bindValue(':conta_id', $contaDestinoId, PDO::PARAM_INT);
             $stmtCred->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtCred->execute();
+            if ($stmtCred->rowCount() !== 1) {
+                throw new InvalidArgumentException('A conta de destino foi alterada durante a transferência.');
+            }
 
             // 3. Registra a transferência na tabela transferencias
             $sqlTransf = "INSERT INTO `transferencias` (
@@ -127,18 +149,17 @@ class Transfer extends Model
      *
      * @param int $id ID da transferência
      * @param int $userId ID do usuário solicitante
-     * @param bool $isAdmin Flag indicando se é administrador
      * @return array{success: bool, message: string}
      */
-    public function deleteTransfer(int $id, int $userId, bool $isAdmin): array
+    public function deleteTransfer(int $id, int $userId): array
     {
         $transferencia = $this->find($id);
         if (!$transferencia) {
             return ['success' => false, 'message' => 'Transferência não encontrada.'];
         }
 
-        // Restrição RBAC: operador só exclui transferências criadas por ele mesmo
-        if (!$isAdmin && (int) $transferencia['usuario_id'] !== $userId) {
+        // Estorno financeiro é limitado ao usuário proprietário da transferência.
+        if ((int) $transferencia['usuario_id'] !== $userId) {
             return ['success' => false, 'message' => 'Você não possui permissão para excluir transferências de outros usuários.'];
         }
 
@@ -157,6 +178,9 @@ class Transfer extends Model
             $stmtOrigem->bindValue(':conta_id', $contaOrigemId, PDO::PARAM_INT);
             $stmtOrigem->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtOrigem->execute();
+            if ($stmtOrigem->rowCount() !== 1) {
+                throw new RuntimeException('Não foi possível reverter o saldo da conta de origem.');
+            }
 
             // 2. Estorna a conta de destino (remove o saldo creditado)
             $sqlEstornoDestino = "UPDATE `contas` 
@@ -167,9 +191,14 @@ class Transfer extends Model
             $stmtDestino->bindValue(':conta_id', $contaDestinoId, PDO::PARAM_INT);
             $stmtDestino->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtDestino->execute();
+            if ($stmtDestino->rowCount() !== 1) {
+                throw new RuntimeException('Não foi possível reverter o saldo da conta de destino.');
+            }
 
             // 3. Executa o Soft Delete
-            $this->softDelete($id, $userId);
+            if (!$this->softDelete($id, $userId)) {
+                throw new RuntimeException('A transferência já foi alterada ou excluída.');
+            }
 
             $this->db->commit();
 
@@ -254,6 +283,8 @@ class Transfer extends Model
                   AND MONTH(data_transferencia) = :mes
                   AND YEAR(data_transferencia) = :ano";
 
+        $sql .= ' AND usuario_id = :usuario_id';
+
         if ($contaId !== null) {
             $sql .= " AND (conta_origem_id = :conta_origem_filtro OR conta_destino_id = :conta_destino_filtro)";
         }
@@ -261,6 +292,7 @@ class Transfer extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':mes', $mes, PDO::PARAM_INT);
         $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         if ($contaId !== null) {
             $stmt->bindValue(':conta_origem_filtro', $contaId, PDO::PARAM_INT);
             $stmt->bindValue(':conta_destino_filtro', $contaId, PDO::PARAM_INT);

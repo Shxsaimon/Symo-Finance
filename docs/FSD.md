@@ -9,7 +9,7 @@
 * **Nome do Sistema:** Symo Finance — Gestão Financeira Pessoal e Compartilhada.
 * **Objetivo Principal:** Fornecer uma plataforma web intuitiva para pessoas, casais, famílias, freelancers e MEIs registrarem receitas, despesas, transferências e faturas, com clareza entre saldos realizados e compromissos futuros.
 * **Resumo do Funcionamento Atual:** Cada pessoa cria sua própria conta Symo. Contas financeiras, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira são isolados pelo identificador do usuário autenticado. O sistema oferece lançamentos à vista ou parcelados, acompanhamento de faturas, dashboard, auditoria, exclusão lógica e exportação CSV.
-* **Visão de Colaboração:** A evolução planejada permitirá compartilhar seletivamente uma conta financeira com outro usuário por convite. O proprietário definirá visualização, lançamento, edição dos próprios lançamentos e visibilidade do histórico. O compartilhamento não concede acesso ao perfil financeiro inteiro do proprietário.
+* **Visão de Colaboração:** A evolução planejada permitirá compartilhar seletivamente uma conta financeira por convite e permissões vinculadas à conta, nunca por papel global. Após o aceite, o participante verá somente lançamentos posteriores e do escopo compartilhado; não receberá acesso ao perfil financeiro inteiro.
 * **Público Usuário:**
 * Pessoas físicas que buscam organizar o orçamento pessoal e planeamento financeiro;
 * Casais e famílias que desejam colaborar futuramente apenas em contas selecionadas, como reserva ou investimento;
@@ -19,7 +19,7 @@
 * **Contexto de Uso:** Aplicação web responsiva, otimizada para navegação em computadores, notebooks, tablets e smartphones. Os acessos ocorrem em rotinas diárias e semanais de lançamento e conferência de saldos, bem como no fecho mensal de faturas e análise de relatórios.
 * **Observações Relevantes para Implementação:**
 * A aplicação adota isolamento lógico por usuário nas entidades financeiras. Não existe orçamento global compartilhado no estado atual.
-* O perfil técnico `dev` opera funções globais da plataforma; o perfil `admin` administra os próprios dados. O perfil `operador` continua suportado apenas por compatibilidade das regras legadas.
+* O perfil técnico `dev` opera funções globais da plataforma, mas mantém dados financeiros próprios; o perfil `admin` também administra somente os próprios dados. O perfil `operador` continua no código apenas por compatibilidade legada.
 * A interface segue estritamente o tema *Symo* definido no `docs/DESIGN.md`, utilizando a tipografia *Inter* com numerais tabulares (`tabular-nums`) para perfeito alinhamento financeiro e paleta cromática corporativa moderna (Electric Violet `#6F02FF`, Deep Lavender `#793CFE`, Bright Teal `#3BD7D7` e tons neutros balanceados).
 * O código-fonte é estruturado segundo o padrão arquitetural MVC em PHP 8 nativo, com isolamento total de responsabilidades, independência de caminho de instalação e proteção estrita de arquivos internos.
 
@@ -271,7 +271,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.3. Módulo de Transações Financeiras (Receitas e Despesas)
 
 * **Objetivo:** Registar, consultar, editar e gerir todas as entradas e saídas financeiras.
-* **Usuários Envolvidos:** `admin` administra os próprios dados; `operador` legado edita apenas lançamentos próprios; `dev` possui acesso operacional global.
+* **Usuários Envolvidos:** `admin` e `dev` administram somente os próprios dados financeiros. O papel `operador` é legado e não representa compartilhamento ativo no estado atual.
 * **Ações Permitidas:**
 * Registo de Receita (à vista, com data de recebimento, conta bancária, categoria e status 'recebido' ou 'pendente');
 * Registo de Despesa (à vista, com data de vencimento/pagamento, conta ou cartão de crédito, categoria, status 'pago' ou 'pendente');
@@ -285,7 +285,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.4. Módulo de Transferências entre Contas
 
 * **Objetivo:** Registar movimentações entre contas do mesmo usuário sem distorcer receitas e despesas operacionais.
-* **Usuários Envolvidos:** Proprietário das contas; no roadmap, participantes deverão ter permissão nas duas contas.
+* **Usuários Envolvidos:** Proprietário das duas contas. Transferências só podem ocorrer entre contas do mesmo proprietário; o compartilhamento futuro não permitirá transferências entre proprietários diferentes.
 * **Ações Permitidas:** Seleção de conta de origem, conta de destino, valor, data e observação.
 * **Resultado Esperado:** Criação de transação pareada em banco de dados com dedução no saldo da conta de origem e crédito correspondente na conta de destino sob transação atômica (`DB Transaction`).
 
@@ -299,8 +299,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.6. Módulo de Cadastros Básicos (Contas, Categorias e Meios de Pagamento)
 
 * **Objetivo:** Estruturar a base cadastral de suporte aos lançamentos financeiros.
-* **Usuários Envolvidos:**
-* Contas, Categorias e Meios de Pagamento: pertencem ao usuário autenticado; `admin` os administra e `operador` mantém as restrições legadas.
+* **Usuários Envolvidos:** Contas, categorias, meios de pagamento e cartões pertencem ao usuário autenticado no estado atual; `admin` e `dev` administram os próprios itens.
 
 
 * **Ações Permitidas:** Criação, edição, inativação e reativação de itens cadastrais.
@@ -309,7 +308,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.7. Módulo de Relatórios e Exportação CSV
 
 * **Objetivo:** Disponibilizar extratos consolidados, relatórios analíticos de fluxo de caixa e exportação de dados para planilhas.
-* **Usuários Envolvidos:** Administradores e Operadores.
+* **Usuários Envolvidos:** `admin` e `dev`, cada um no próprio escopo financeiro; `operador` é legado até o compartilhamento por conta.
 * **Ações Permitidas:** Consulta a relatórios por período, categoria, conta e status; download instantâneo de arquivo estruturado em padrão CSV estruturado com separador `;` e codificação UTF-8 com BOM.
 * **Resultado Esperado:** Extração fidedigna de relatórios com consistência total entre a tabela visualizada na tela e os dados exportados.
 
@@ -318,12 +317,12 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 * **Objetivo:** Administrar contas de acesso da plataforma.
 * **Usuários Envolvidos:** Exclusivamente `dev`.
 * **Ações Permitidas:** Consultar, criar, alterar, inativar, redefinir senha e excluir usuários. O autocadastro é o caminho normal para usuários finais.
-* **Resultado Esperado:** Operação global sem confundir `dev` com o administrador de uma conta financeira individual.
+* **Resultado Esperado:** Operação global da plataforma sem ampliar o escopo financeiro individual do `dev`.
 
 ### 6.9. Módulo de Lixeira e Recuperação (*Soft Delete*)
 
 * **Objetivo:** Proteger os dados contra exclusões acidentais e permitir restauração controlada.
-* **Usuários Envolvidos:** Usuários autenticados para seus registros; `dev` para visão global.
+* **Usuários Envolvidos:** Cada usuário autenticado consulta, restaura e expurga apenas os próprios registros, inclusive o perfil `dev`.
 * **Ações Permitidas:** Consulta de itens excluídos logicamente (transações, categorias, contas), restauração individual com restauração de saldos, e expurgo/exclusão definitiva.
 * **Resultado Esperado:** Segurança operacional e recuperação de dados sem necessidade de intervenção direta no banco de dados.
 
@@ -376,42 +375,26 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 ### 8.2. Perfil Operador (`operador`)
 
-* **Descrição:** Perfil de compatibilidade para cenários legados; não é concedido pelo autocadastro atual.
-* **Permissões:**
-* Lançamento de receitas, despesas, transferências e compras parceladas;
-* Visualização do Dashboard com indicadores financeiros consolidados;
-* Visualização e consulta de extratos de contas e faturas de cartão;
-* Visualização das categorias e meios de pagamento disponíveis nos formulários;
-* Edição e exclusão lógica (*soft delete*) **exclusivamente de transações financeiras criadas pelo próprio operador**;
-* Emissão de relatórios e exportação de dados para CSV;
-* Atualização do próprio perfil de acesso (nome, avatar e senha pessoal).
-
-
-* **Restrições Estritas:**
-* Bloqueio total de acesso ao módulo de Gestão de Usuários;
-* Lixeira limitada ao escopo que o código permitir para dados próprios;
-* Bloqueio total de acesso à tela de Auditoria, Logs de Erros e Logs de Segurança;
-* Bloqueio de edição e exclusão de categorias, meios de pagamento e contas bancárias;
-* Bloqueio de alteração ou exclusão de transações criadas por outros utilizadores;
-* Bloqueio de acesso às Configurações Globais do sistema.
+* **Descrição:** Perfil legado, sem uso previsto no produto atual e não concedido pelo autocadastro. Não será a unidade de compartilhamento futuro.
+* **Evolução acordada:** O acesso futuro de outra pessoa será uma permissão vinculada a cada conta financeira compartilhada, não um papel global no usuário. A implementação desse vínculo permanece no roadmap.
 
 
 
 ### 8.3. Perfil Técnico (`dev`) e Matriz de Permissões
 
-* **Descrição:** Operador interno da plataforma, criado pelo seed com `SYSTEM_DEV_*`. Não representa um administrador de orçamento de usuário.
-* **Permissões Globais:** Gestão de usuários, trilha de auditoria, identidade visual, status/migrations, GitHub Actions e visão global operacional da lixeira. Herda a capacidade operacional de `admin` nos módulos financeiros.
+* **Descrição:** Usuário técnico interno, criado pelo seed com `SYSTEM_DEV_*`. Além de operar a plataforma, possui seus próprios dados financeiros como qualquer usuário `admin`.
+* **Permissões Globais:** Gestão de usuários, trilha de auditoria, identidade visual, status/migrations e GitHub Actions. Essas permissões administrativas não ampliam o escopo de dados financeiros: transações, transferências, contas, dashboard, relatórios e lixeira do `dev` são próprios.
 
 | Módulo / Ação | `admin` individual | `operador` legado | `dev` |
 | --- | --- | --- |
-| Visualizar Dashboard e Saldos | Próprios | Conforme legado | Global operacional |
-| Criar Receitas / Despesas / Transferências | Próprios | Sim | Sim |
-| Editar / Excluir Transações Próprias | Sim | Sim | Sim |
-| Editar / Excluir Transações de Outros Usuários | Não | Não | Sim |
-| Cadastrar / Editar Contas, Categorias e Meios | Próprios | Consulta | Sim |
-| Gerenciar Cartões e Faturas | Próprios | Conforme legado | Sim |
-| Emitir Relatórios e Exportar CSV | Próprios | Sim | Sim |
-| Lixeira | Própria | Conforme legado | Global |
+| Visualizar Dashboard e Saldos | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Criar Receitas / Despesas / Transferências | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Editar / Excluir Transações Próprias | Sim | Legado; sem compartilhamento ativo | Sim |
+| Editar / Excluir Transações de Outros Usuários | Não | Não | Não |
+| Cadastrar / Editar Contas, Categorias e Meios | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Gerenciar Cartões e Faturas | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Emitir Relatórios e Exportar CSV | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Lixeira | Própria | Legado; sem compartilhamento ativo | Própria |
 | Auditoria e Gestão de Usuários | Não | Não | Sim |
 | Configurações globais, logotipo e migrations | Não | Não | Sim |
 | Alterar Própria Senha e Avatar | Sim | Sim | Sim |
@@ -446,7 +429,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * Nenhuma movimentação financeira, conta ou categoria é apagada definitivamente do banco de dados na exclusão inicial.
 * A aplicação utiliza as colunas `deleted_at` (timestamp da exclusão) e `deleted_by` (ID do usuário autor da exclusão).
 * As consultas padrão do sistema incluem obrigatoriamente a cláusula `WHERE deleted_at IS NULL`.
-* A lixeira filtra registros pelo proprietário para usuários comuns; o `dev` possui visão global, restauração e expurgo globais.
+* A lixeira filtra registros pelo proprietário para todos os perfis, inclusive `dev`; restauração e expurgo também ficam limitados aos registros próprios.
 
 ### 9.5. Sistema de Logs e Contingência em Arquivo
 
@@ -762,11 +745,12 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `usuario_id`: usuário autenticado que enviou o item.
 * `texto`: conteúdo entre 10 e 3.000 caracteres.
 * `tela`: tela de origem validada e `tipo`: `correcao`, `melhoria` ou `duvida`.
+* `imagens`: URLs privadas do Vercel Blob em JSON/JSONB, com até 5 imagens por feedback.
 * `status`: `novo`, `em_analise`, `concluido` ou `descartado`, com timestamps de criação e atualização.
 
 #### Evolução Planejada: Tabela de Participantes de Conta
 
-Antes do compartilhamento, deverá ser criada uma tabela como `conta_participantes`, sem remover `contas.usuario_id`. Ela deverá conter `conta_id`, `usuario_id`, `pode_visualizar`, `pode_lancar`, `pode_editar_proprios`, `visualiza_historico`, `convidado_em`, `aceito_em` e `revogado_em`. Consultas e validações contra IDOR deverão aceitar proprietário ou participante ativo com a permissão adequada.
+Antes do compartilhamento, deverá ser criada uma tabela como `conta_participantes`, sem remover `contas.usuario_id`. Ela deverá vincular conta e usuário, registrar permissão de visualização, lançamento e alcance de edição, além dos timestamps de convite, aceite e revogação. A visibilidade começa no aceite; não haverá opção para liberar histórico anterior. Consultas e validações contra IDOR deverão aceitar proprietário ou participante ativo com permissão para aquela conta.
 
 ---
 
@@ -821,7 +805,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 12.3. Módulo de Transações (`/transacoes`)
 
 * **Objetivo:** Listagem geral, busca filtrada, auditoria e manutenção de receitas e despesas.
-* **Usuários:** `admin` para seus dados, `operador` legado para próprios lançamentos e `dev` operacional global.
+* **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro. O perfil `operador` é legado até existir compartilhamento por conta.
 * **Filtros e Buscas:** Período de datas (de/até), Tipo (Receita/Despesa), Categoria, Conta Financeira, Meio de Pagamento, Status (Pendente/Pago/Recebido) e Busca textual por descrição.
 * **Tabela de Dados:** Alta densidade com linhas zebradas sutis (`Surface-Container-Low`), colunas para Data, Tipo (badge semântico), Descrição (com identificação de parcela `[1/12]`), Categoria, Conta/Cartão, Valor (numerais tabulares), Status e Botões de Ação (Visualizar Detalhes, Editar, Excluir).
 * **Modais Interativos:**
@@ -840,25 +824,25 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 12.5. Módulo de Cartões de Crédito e Faturas (`/cartoes`)
 
 * **Objetivo:** Gestão de cartões, limites e fechamento/pagamento de faturas mensais.
-* **Usuários:** Administrador e Operador.
+* **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro.
 * **Informações:** Card visual do cartão com limite total, limite disponível (barra de progresso), dia de fecho e dia de vencimento. Tabela de faturas históricas com status (Aberta, Fechada, Paga) e botão de ação para "Pagar Fatura" (dispara liquidação em conta corrente).
 
 ### 12.6. Módulo de Transferências (`/transferencias`)
 
 * **Objetivo:** Registro e extrato de transferências internas entre contas.
-* **Usuários:** Administrador e Operador.
+* **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro.
 * **Informações:** Formulário simples com seleção de Conta de Origem, Conta de Destino, Valor, Data e Observação. Tabela histórica das transferências com identificação das contas envolvidas e autor da movimentação.
 
 ### 12.7. Módulo de Categorias e Meios de Pagamento (`/categorias`, `/meios-pagamento`)
 
 * **Objetivo:** Cadastro e parametrização das classificações financeiras.
-* **Usuários:** Administrador (gestão total) e Operador (somente leitura).
+* **Usuários:** `admin` e `dev` administram os próprios cadastros; `operador` é legado e não tem compartilhamento ativo.
 * **Informações:** Listagens tabulares com badges de cores, ícones associados, tipo e status (ativo/inativo).
 
 ### 12.8. Módulo de Relatórios e Exportação (`/relatorios`)
 
 * **Objetivo:** Emissão de extratos consolidados, análise de fluxo de caixa e exportação para planilhas.
-* **Usuários:** Administrador e Operador.
+* **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro.
 * **Informações:** Painel de filtros obrigatórios de período (Mês/Ano ou Intervalo Personalizado), agrupamentos opcionais por categoria, conta ou centro de custo, tabela analítica consolidada e botão destacado de "Exportar para CSV".
 
 ### 12.9. Módulo de Usuários (`/usuarios`)
@@ -870,7 +854,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 12.10. Módulo de Lixeira do Sistema (`/lixeira`)
 
 * **Objetivo:** Auditoria e recuperação de itens excluídos logicamente.
-* **Usuários:** Registros próprios para usuários comuns; visão global para `dev`.
+* **Usuários:** Registros próprios para todos os perfis, inclusive `dev`.
 * **Informações:** Abas separadas para Transações Excluídas, Categorias Excluídas e Contas Excluídas. Tabela detalhada informando data da exclusão, usuário que excluiu, dados originais e botões de ação: "Restaurar" e "Excluir Definitivamente".
 
 ### 12.11. Módulo de Auditoria (`/auditoria`)
@@ -884,6 +868,13 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Objetivo:** Ajuste de preferências do sistema e logotipo.
 * **Usuários:** Todos para preferências pessoais; `dev` para funções globais.
 * **Informações:** Formulário de configurações gerais (Nome do Sistema, Moeda, Itens por Página, Fuso Horário), área de upload de logotipo com pré-visualização instantânea e botão de verificação de migrations do banco de dados.
+
+### 12.13. Consulta de Feedbacks Recebidos (`/feedbacks`)
+
+* **Objetivo:** Permitir a triagem operacional das sugestões, dúvidas e correções enviadas pelos usuários.
+* **Usuários:** Exclusivamente o perfil `dev`, com autorização também validada no Controller.
+* **Informações:** Tabela paginada em ordem cronológica decrescente com autor, data, tela de origem, tipo, status, texto e miniaturas das imagens anexadas. O texto e as imagens podem ser ampliados para leitura.
+* **Segurança:** A leitura das imagens passa por rota autenticada exclusiva do `dev`; URLs privadas e credenciais do Vercel Blob não são expostas à interface.
 
 ---
 
@@ -945,8 +936,8 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 ### 13.4. Fluxo de Exclusão Lógica e Restauração via Lixeira
 
-1. **Perfil de Exclusão:** Usuário no próprio escopo; `operador` legado apenas em lançamentos próprios; `dev` global.
-2. **Perfil de Restauração:** Usuário para seus registros e `dev` global.
+1. **Perfil de Exclusão:** Cada usuário, inclusive `dev`, opera somente no próprio escopo.
+2. **Perfil de Restauração:** Cada usuário restaura somente seus próprios registros.
 3. **Passo a Passo:**
 * O utilizador solicita a exclusão de uma transação confirmada;
 * O sistema executa o *Soft Delete*, gravando `deleted_at = NOW()` e `deleted_by = ID_USER`;
@@ -1020,9 +1011,9 @@ O controle de acesso é aplicado de forma centralizada através de métodos auxi
 
 ### 16.2. Regra de Isolamento por Usuário e Edição de Operador
 
-* Ao tentar editar ou excluir uma transação financeira, o `TransactionController` executa a seguinte validação:
+* Ao tentar editar ou excluir uma transação financeira, o Controller e o Model restringem a ação ao proprietário autenticado. O perfil `dev` não é exceção para dados financeiros:
 ```php
-if (!$isAdmin && $transaction->usuario_id !== $userId) {
+if ($transaction->usuario_id !== $userId) {
     FlashHelper::set('error', 'Acesso negado: Você só pode alterar lançamentos criados por você.');
     LoggerHelper::security('UNAUTHORIZED_TRANSACTION_EDIT_ATTEMPT', ['trans_id' => $id]);
     $this->redirect('/transacoes');
@@ -1049,7 +1040,7 @@ Os dados anteriores e novos são serializados em JSON padrão:
 
 ### 17.3. Exibição da Trilha de Auditoria
 
-* O `dev` tem acesso à tela `/auditoria` para consultar todos os eventos com filtros por usuário, tabela e período.
+* O `dev` tem acesso à tela `/auditoria` para consultar todos os eventos com filtros por usuário, tabela e período; essa visão global de auditoria não torna globais as telas financeiras.
 * No modal de detalhes de cada transação, é exibida a aba "Histórico de Alterações" listando as modificações ocorridas naquele registro específico.
 
 ---
@@ -1068,8 +1059,8 @@ Os dados anteriores e novos são serializados em JSON padrão:
 
 ### 18.2. Regras de Restauração e Expurgo
 
-* **Restauração:** Usuários restauram itens próprios; o `dev` pode operar globalmente. A restauração de transações recalcula os saldos associados.
-* **Expurgo Definitivo (*Hard Delete*):** O escopo é aplicado por usuário comum e globalmente para `dev`; o evento `PURGE` é auditado com cópia dos dados relevantes.
+* **Restauração:** Todos os perfis restauram somente itens próprios. A restauração de transações recalcula os saldos associados.
+* **Expurgo Definitivo (*Hard Delete*):** Todos os perfis expurgam somente registros próprios; o evento `PURGE` é auditado com cópia dos dados relevantes.
 
 ---
 
@@ -1317,7 +1308,7 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 * [ ] **Padrão MVC Desacoplado:** Separação estrita entre Models (PDO), Views (HTML/CSS/JS) e Controllers, com roteamento centralizado.
 * [ ] **Design System Fiel:** A interface adere rigorosamente aos componentes, cores e tipografia do tema *Symo* definido no `docs/DESIGN.md`.
 * [ ] **Autenticação e Segurança de Senhas:** Senhas criptografadas com BCRYPT, proteção de sessão com expiração em 60 minutos, e bloqueio de tentativas de força bruta.
-* [ ] **Isolamento e RBAC:** Usuários comuns não leem ou mutam dados de terceiros; `dev` é obrigatório em usuários, auditoria e configurações globais; `operador` legado não edita lançamentos de outros autores.
+* [ ] **Isolamento e RBAC:** `admin` e `dev` não leem ou mutam dados financeiros de terceiros; `dev` é obrigatório em usuários, auditoria e configurações globais; a futura colaboração será vinculada a uma conta e suas permissões.
 * [ ] **Integridade nos Lançamentos e Parcelamentos:** Compras parceladas geram $N$ lançamentos consistentes, com centavos residuais ajustados na primeira parcela.
 * [ ] **Atomicidade nas Transferências e Pagamentos:** Transferências entre contas e liquidações de fatura executam sob transações atômicas de banco (`BEGIN ... COMMIT/ROLLBACK`).
 * [ ] **Soft Delete e Lixeira Operacional:** Exclusões lógicas alimentam a lixeira; restaurações reprocessam os saldos financeiros corretamente.
@@ -1333,31 +1324,31 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 
 1. **OAuth Google:** Implementar autorização, callback, validação de identidade, vínculo por `google_id`, login e criação de conta com dados padrão.
 2. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
-3. **Contas Compartilhadas:** Criar convite por e-mail, aceite ou recusa, revogação, permissões `visualizar`, `lancar` e `editar_proprios`, e a escolha do proprietário sobre visibilidade do histórico existente.
-4. **Regras de Colaboração:** Categorias, meios de pagamento, cartões e preferências permanecem pessoais na primeira versão. Transferências deverão validar permissão ativa nas duas contas; dashboards e relatórios devem combinar apenas escopos visíveis.
+3. **Contas Compartilhadas:** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
+4. **Regras de Colaboração:** Categorias, cartões, faturas e preferências permanecem pessoais. Meios de pagamento serão um catálogo global futuro, após migração dos IDs existentes; usuários não criarão opções e a manutenção poderá ativar/desativar. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
 5. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
 
 ### 27.1. Critérios Funcionais para Contas Compartilhadas
 
-1. **Convite:** O proprietário informa o e-mail do participante e seleciona as permissões antes de enviar. O convite não pode conceder acesso a uma conta inexistente, inativa ou excluída.
+1. **Convite:** O proprietário informa o e-mail do participante e seleciona as permissões antes de enviar. O convite não pode conceder acesso a uma conta inexistente, inativa ou excluída. O acesso será um vínculo com a conta, nunca um papel global do usuário.
 2. **Identidade do Participante:** O convite deverá vincular um usuário existente ou permanecer pendente até que a pessoa se cadastre com o mesmo e-mail. A aceitação jamais poderá criar acesso para e-mail diferente do convidado.
 3. **Aceite e Recusa:** O participante deve aceitar ou recusar explicitamente. Enquanto pendente, não pode visualizar saldo, histórico ou metadados financeiros da conta.
 4. **Leitura:** A permissão `visualizar` concede acesso ao saldo, aos lançamentos autorizados e às informações mínimas da conta. Sem ela, nenhuma rota, JSON ou agregação poderá revelar a existência da conta.
-5. **Histórico:** O proprietário define `visualiza_historico` no convite. Quando falso, o participante pode visualizar apenas lançamentos criados após sua aceitação ou aqueles de sua própria autoria, conforme a regra final definida na implementação.
-6. **Lançamento:** A permissão `lancar` permite criar movimentações na conta. O lançamento conserva o `usuario_id` de quem o criou e usa categorias e meios de pagamento do autor, salvo decisão futura documentada de criar cadastros compartilhados.
-7. **Edição Própria:** A permissão `editar_proprios` permite alterar, alternar status ou excluir somente lançamentos cujo autor seja o participante. Ela não concede alteração em lançamentos do proprietário ou de outros participantes.
-8. **Administração:** Na primeira versão, somente o proprietário convida, altera permissões, revoga acesso, reativa convite e decide a visibilidade histórica. Participantes não podem delegar acesso.
+5. **Histórico:** O participante verá somente lançamentos criados após o aceite do compartilhamento, sempre no escopo da conta compartilhada. Lançamentos anteriores não ficam visíveis.
+6. **Lançamento:** A permissão de lançamento permite criar movimentações na conta compartilhada. O registro conserva o `usuario_id` de quem o criou.
+7. **Permissões de escrita:** O proprietário poderá conceder visualização, lançamento com edição/exclusão dos registros da conta, ou lançamento com edição/exclusão somente dos registros criados pelo participante.
+8. **Administração:** Somente o proprietário convida, altera permissões e revoga acesso. Participantes não podem delegar acesso nem habilitar leitura de lançamentos anteriores ao aceite.
 9. **Revogação:** Ao revogar, o sistema deve encerrar o acesso imediatamente em consultas, dashboard, relatórios e ações mutáveis. Os lançamentos anteriores permanecem com autoria e auditoria preservadas.
 10. **Lixeira e Auditoria:** A restauração ou o expurgo de um lançamento compartilhado deve respeitar o proprietário e a autoria. A auditoria deve registrar conta, ator, ação e contexto de participação.
 
 ### 27.2. Critérios Técnicos para Contas Compartilhadas
 
-* Toda query que hoje usa apenas `usuario_id = :usuario_id` deverá ser revisada para uma política explícita: proprietário da conta ou participante ativo com permissão adequada.
+* Toda query que hoje usa `usuario_id = :usuario_id` deverá aceitar o proprietário ou participante ativo somente quando houver vínculo e permissão para a conta específica.
 * A política de autorização precisa residir no backend. Ocultar botões na View não substitui a validação em controller/model.
 * Consultas agregadas de dashboard, relatórios, faturas, pendências e lixeira devem receber o escopo de visibilidade de forma consistente, para não produzir totais que revelem dados indevidos.
 * A migração da tabela de participantes deve possuir índices por `conta_id`, `usuario_id`, estado do convite e `revogado_em`; deve impedir duas participações ativas duplicadas para o mesmo usuário e conta.
 * A implementação deve incluir testes de IDOR para leitura, criação, atualização, exclusão, transferência, exportação CSV e restauração de dados compartilhados.
-* Cartões de crédito, faturas, categorias, meios de pagamento e preferências não devem ganhar compartilhamento implícito. Qualquer expansão desse escopo exigirá decisão funcional e migration própria.
+* Cartões de crédito, faturas, categorias e preferências não ganham compartilhamento implícito. Meios de pagamento serão um catálogo global único, sem criação por usuários e com manutenção para ativar/desativar opções. Essa mudança exigirá migrar os lançamentos existentes para IDs canônicos e remover duplicidades; não pertence ao estado atual.
 
 ---
 

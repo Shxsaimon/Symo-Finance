@@ -14,6 +14,48 @@ class Transaction extends Model
     protected string $tabela = 'transacoes';
     protected string $chavePrimaria = 'id';
 
+    public function find(int $id): ?array
+    {
+        $sql = 'SELECT * FROM transacoes WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1';
+
+        $statement = $this->db->prepare($sql);
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
+        $statement->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $statement->execute();
+        $result = $statement->fetch();
+
+        return $result !== false ? $result : null;
+    }
+
+    public function softDelete(int $id, int $usuarioId): bool
+    {
+        $registroAntigo = $this->find($id);
+        if (!$registroAntigo) {
+            return false;
+        }
+
+        $sql = 'UPDATE transacoes
+                SET excluido_em = NOW(), excluido_por = :excluido_por, atualizado_em = NOW()
+            WHERE id = :id AND usuario_id = :usuario_escopo AND excluido_em IS NULL';
+
+        $statement = $this->db->prepare($sql);
+        $statement->bindValue(':excluido_por', $usuarioId, PDO::PARAM_INT);
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
+        $statement->bindValue(':usuario_escopo', $usuarioId, PDO::PARAM_INT);
+        $statement->execute();
+
+        if ($statement->rowCount() === 0) {
+            return false;
+        }
+
+        $this->logAudit('SOFT_DELETE', $id, $registroAntigo, [
+            'excluido_em' => date('Y-m-d H:i:s'),
+            'excluido_por' => $usuarioId,
+        ], $usuarioId);
+
+        return true;
+    }
+
     /**
      * Cria uma transação avulsa (receita ou despesa à vista).
      *
@@ -38,6 +80,7 @@ class Transaction extends Model
         $faturaId = null;
 
         $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, $cartaoCreditoId);
+        $contaOwnerId = $contaId !== null ? $this->accountOwnerId($contaId, $userId) : null;
 
         // INÍCIO DA TRANSAÇÃO ATÔMICA
         $this->db->beginTransaction();
@@ -93,9 +136,9 @@ class Transaction extends Model
             // Atualização de saldo em conta bancária (se afetar conta imediatamente)
             if ($contaId !== null) {
                 if ($tipo === 'receita' && $status === 'recebido') {
-                    $this->adjustAccountBalance($contaId, $valor);
+                    $this->adjustAccountBalance($contaId, $valor, (int) $contaOwnerId);
                 } elseif ($tipo === 'despesa' && $status === 'pago') {
-                    $this->adjustAccountBalance($contaId, -$valor);
+                    $this->adjustAccountBalance($contaId, -$valor, (int) $contaOwnerId);
                 }
             }
 
@@ -248,18 +291,17 @@ class Transaction extends Model
      * @param int $id
      * @param array<string, mixed> $data
      * @param int $userId
-     * @param bool $isAdmin
      * @return bool
      */
-    public function updateTransaction(int $id, array $data, int $userId, bool $isAdmin): bool
+    public function updateTransaction(int $id, array $data, int $userId): bool
     {
         $old = $this->find($id);
         if (!$old) {
             return false;
         }
 
-        // Restrição RBAC: operador só edita lançamentos criados por ele mesmo
-        if (!$isAdmin && (int) $old['usuario_id'] !== $userId) {
+        // Edição financeira é limitada ao usuário proprietário do lançamento.
+        if ((int) $old['usuario_id'] !== $userId) {
             throw new RuntimeException('Você não possui autorização para editar lançamentos de outros usuários.');
         }
 
@@ -276,6 +318,7 @@ class Transaction extends Model
         $dataPagamento = ($status === 'pago' || $status === 'recebido') ? ($data['data_pagamento'] ?? $old['data_pagamento'] ?? date('Y-m-d')) : null;
 
         $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, null);
+        $contaOwnerId = $contaId !== null ? $this->accountOwnerId($contaId, $userId) : null;
 
         $this->db->beginTransaction();
         try {
@@ -284,18 +327,18 @@ class Transaction extends Model
                 $oldContaId = (int) $old['conta_id'];
                 $oldValor = (float) $old['valor'];
                 if ($old['tipo'] === 'receita' && $old['status'] === 'recebido') {
-                    $this->adjustAccountBalance($oldContaId, -$oldValor);
+                    $this->adjustAccountBalance($oldContaId, -$oldValor, (int) $old['usuario_id']);
                 } elseif ($old['tipo'] === 'despesa' && $old['status'] === 'pago') {
-                    $this->adjustAccountBalance($oldContaId, $oldValor);
+                    $this->adjustAccountBalance($oldContaId, $oldValor, (int) $old['usuario_id']);
                 }
             }
 
             // 2. Aplica o novo saldo na conta (se estiver liquidado)
             if ($contaId !== null) {
                 if ($tipo === 'receita' && $status === 'recebido') {
-                    $this->adjustAccountBalance($contaId, $valor);
+                    $this->adjustAccountBalance($contaId, $valor, (int) $contaOwnerId);
                 } elseif ($tipo === 'despesa' && $status === 'pago') {
-                    $this->adjustAccountBalance($contaId, -$valor);
+                    $this->adjustAccountBalance($contaId, -$valor, (int) $contaOwnerId);
                 }
             }
 
@@ -306,7 +349,7 @@ class Transaction extends Model
                         data_pagamento = :data_pagamento, status = :status, conta_id = :conta_id,
                         categoria_id = :categoria_id, meio_pagamento_id = :meio_pagamento_id,
                         observacoes = :observacoes, atualizado_em = NOW()
-                    WHERE id = :id AND excluido_em IS NULL";
+                    WHERE id = :id AND usuario_id = :usuario_escopo AND excluido_em IS NULL";
 
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
@@ -321,6 +364,7 @@ class Transaction extends Model
             $stmt->bindValue(':meio_pagamento_id', $meioPagamentoId, PDO::PARAM_INT);
             $stmt->bindValue(':observacoes', $observacoes, $observacoes !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->bindValue(':usuario_escopo', $userId, PDO::PARAM_INT);
             $success = $stmt->execute();
 
             // 4. Se tiver fatura vinculada, recalcula o total
@@ -351,17 +395,16 @@ class Transaction extends Model
      *
      * @param int $id
      * @param int $userId
-     * @param bool $isAdmin
      * @return array{success: bool, message: string, novo_status?: string}
      */
-    public function toggleStatus(int $id, int $userId, bool $isAdmin): array
+    public function toggleStatus(int $id, int $userId): array
     {
         $trans = $this->find($id);
         if (!$trans) {
             return ['success' => false, 'message' => 'Lançamento não encontrado.'];
         }
 
-        if (!$isAdmin && (int) $trans['usuario_id'] !== $userId) {
+        if ((int) $trans['usuario_id'] !== $userId) {
             return ['success' => false, 'message' => 'Você não possui permissão para alterar lançamentos de terceiros.'];
         }
 
@@ -380,7 +423,7 @@ class Transaction extends Model
         $this->updateTransaction($id, [
             'status'         => $novoStatus,
             'data_pagamento' => $dataPagto,
-        ], $userId, $isAdmin);
+        ], $userId);
 
         return [
             'success'     => true,
@@ -394,17 +437,16 @@ class Transaction extends Model
      *
      * @param int $id
      * @param int $userId
-     * @param bool $isAdmin
      * @return array{success: bool, message: string}
      */
-    public function deleteTransaction(int $id, int $userId, bool $isAdmin): array
+    public function deleteTransaction(int $id, int $userId): array
     {
         $trans = $this->find($id);
         if (!$trans) {
             return ['success' => false, 'message' => 'Lançamento não encontrado.'];
         }
 
-        if (!$isAdmin && (int) $trans['usuario_id'] !== $userId) {
+        if ((int) $trans['usuario_id'] !== $userId) {
             return ['success' => false, 'message' => 'Você não possui permissão para excluir lançamentos de terceiros.'];
         }
 
@@ -415,13 +457,15 @@ class Transaction extends Model
                 $contaId = (int) $trans['conta_id'];
                 $valor = (float) $trans['valor'];
                 if ($trans['tipo'] === 'receita' && $trans['status'] === 'recebido') {
-                    $this->adjustAccountBalance($contaId, -$valor);
+                    $this->adjustAccountBalance($contaId, -$valor, (int) $trans['usuario_id']);
                 } elseif ($trans['tipo'] === 'despesa' && $trans['status'] === 'pago') {
-                    $this->adjustAccountBalance($contaId, $valor);
+                    $this->adjustAccountBalance($contaId, $valor, (int) $trans['usuario_id']);
                 }
             }
 
-            $this->softDelete($id, $userId);
+            if (!$this->softDelete($id, $userId)) {
+                throw new RuntimeException('O lançamento não pôde ser excluído porque foi alterado durante a operação.');
+            }
 
             // Recalcula total da fatura se houver
             if (!empty($trans['fatura_id'])) {
@@ -461,7 +505,7 @@ class Transaction extends Model
                 WHERE t.excluido_em IS NULL";
 
         $params = [];
-        $sql .= " AND t.usuario_id = :usuario_id";
+        $sql .= ' AND t.usuario_id = :usuario_id';
         $params[':usuario_id'] = AuthHelper::id();
 
         if (!empty($filters['mes'])) {
@@ -537,9 +581,11 @@ class Transaction extends Model
                     SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas,
                     SUM(CASE WHEN tipo = 'despesa' AND status = 'pendente' THEN valor ELSE 0 END) as despesas_pendentes
                 FROM `transacoes`
-                WHERE usuario_id = :usuario_id AND excluido_em IS NULL
+                WHERE excluido_em IS NULL
                   AND MONTH(data_vencimento) = :mes
                   AND YEAR(data_vencimento) = :ano";
+
+        $sql .= ' AND usuario_id = :usuario_id';
 
         if ($contaId !== null) {
             $sql .= " AND conta_id = :conta_id";
@@ -625,8 +671,9 @@ class Transaction extends Model
                     SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END) as total_despesas,
                     SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas
                 FROM `transacoes`
-                WHERE usuario_id = :usuario_id AND excluido_em IS NULL
-                  AND data_vencimento BETWEEN :data_inicio AND :data_fim
+                WHERE excluido_em IS NULL";
+            $sql .= ' AND usuario_id = :usuario_id';
+        $sql .= " AND data_vencimento BETWEEN :data_inicio AND :data_fim
                 GROUP BY YEAR(data_vencimento), MONTH(data_vencimento)
                 ORDER BY ano ASC, mes ASC";
 
@@ -667,8 +714,9 @@ class Transaction extends Model
                        COUNT(t.id) as total_lancamentos
                 FROM `transacoes` t
                 JOIN `categorias` c ON t.categoria_id = c.id
-                WHERE t.excluido_em IS NULL
-                                    AND t.usuario_id = :usuario_id
+                WHERE t.excluido_em IS NULL";
+            $sql .= ' AND t.usuario_id = :usuario_id';
+        $sql .= "
                   AND t.tipo = 'despesa'
                   AND MONTH(t.data_vencimento) = :mes
                   AND YEAR(t.data_vencimento) = :ano
@@ -714,8 +762,9 @@ class Transaction extends Model
                 LEFT JOIN `contas` co ON t.conta_id = co.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
-                WHERE t.excluido_em IS NULL
-                                    AND t.usuario_id = :usuario_id
+                WHERE t.excluido_em IS NULL";
+            $sql .= ' AND t.usuario_id = :usuario_id';
+        $sql .= "
                   AND t.status = 'pendente'
                   AND COALESCE(fc.data_vencimento, t.data_vencimento) <= (CURRENT_DATE + (:dias * INTERVAL '1 day'))
                 ORDER BY data_vencimento_efetiva ASC, t.id ASC
@@ -735,9 +784,10 @@ class Transaction extends Model
      *
      * @param int $contaId
      * @param float $valor (positivo para crédito, negativo para débito)
+    * @param int $contaOwnerId
      * @return void
      */
-    private function adjustAccountBalance(int $contaId, float $valor): void
+    private function adjustAccountBalance(int $contaId, float $valor, int $contaOwnerId): void
     {
         $sql = "UPDATE `contas` 
                 SET saldo_atual = saldo_atual + :valor, atualizado_em = NOW() 
@@ -745,8 +795,27 @@ class Transaction extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':valor', $valor);
         $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $contaOwnerId, PDO::PARAM_INT);
         $stmt->execute();
+        if ($stmt->rowCount() !== 1) {
+            throw new RuntimeException('Não foi possível ajustar o saldo da conta vinculada.');
+        }
+    }
+
+    private function accountOwnerId(int $contaId, int $requestUserId): int
+    {
+        $sql = 'SELECT usuario_id FROM contas WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL';
+        $statement = $this->db->prepare($sql . ' LIMIT 1');
+        $statement->bindValue(':id', $contaId, PDO::PARAM_INT);
+        $statement->bindValue(':usuario_id', $requestUserId, PDO::PARAM_INT);
+        $statement->execute();
+        $ownerId = $statement->fetchColumn();
+
+        if ($ownerId === false) {
+            throw new InvalidArgumentException('A conta selecionada não está disponível para este usuário.');
+        }
+
+        return (int) $ownerId;
     }
 
     private function validateRelatedOwnership(int $userId, int $categoriaId, int $meioPagamentoId, ?int $contaId, ?int $cartaoCreditoId): void
@@ -764,8 +833,10 @@ class Transaction extends Model
         }
 
         foreach ($checks as [$table, $id, $label]) {
-            $stmt = $this->db->prepare("SELECT 1 FROM `{$table}` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1");
-            $stmt->execute(['id' => $id, 'usuario_id' => $userId]);
+            $sql = "SELECT 1 FROM `{$table}` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
+            $params = ['id' => $id, 'usuario_id' => $userId];
+            $stmt = $this->db->prepare($sql . ' LIMIT 1');
+            $stmt->execute($params);
             if ($stmt->fetchColumn() === false) {
                 throw new InvalidArgumentException("{$label} inválido ou não pertence ao usuário autenticado.");
             }

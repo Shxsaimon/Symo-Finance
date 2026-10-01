@@ -6,8 +6,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 29/09/2026
-- **Fase Atual:** Fase 14 — Multiusuário e Login Google (Em Andamento — Etapa 4/6 concluída)
+- **Data da Última Atualização:** 30/09/2026
+- **Fase Atual:** Fase 14 — Multiusuário e Login Google (OAuth Google e testes manuais pendentes)
 - **Massa de Dados para Demonstração:** Gerados 110 lançamentos, 14 transferências e 8 faturas de cartão no período de Março/2026 a Outubro/2026 para o perfil `dev` (ID 1). A operação limpa (DELETE) os dados anteriores do dev antes de recriar a massa. As transações de cartão vinculadas a faturas pagas (Março a Agosto) são marcadas com status `pago` e `data_pagamento`. Adicionada a opção `seed_demo` no GitHub Actions (`database-migrations.yml`), no helper `GitHubActionsHelper` e na tela de Configurações da aplicação.
 
 
@@ -30,10 +30,14 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
 - **Feedback Beta:** Adicionado aviso clicável no topo, modal de envio com tela e tipo, rota protegida por CSRF e migration `016_criar_tabela_feedback.php`. A tabela também mantém status de triagem e data de atualização para acompanhamento posterior.
 - **Feedback com anexos:** O modal de feedback ganhou upload de até 5 imagens (JPEG/PNG/WebP, 2 MB cada) com pré-visualização em miniatura expansível por clique; as imagens são enviadas ao Vercel Blob privado via `UploadHelper` e suas URLs são gravadas na coluna `imagens` (JSON/JSONB) da própria tabela `feedback` (migration `017_adicionar_imagens_feedback.php`). O select de tela ganhou as opções "Sistema (geral)" e "Lixeira".
+- **Consulta de feedbacks recebidos:** Criada a tela `/feedbacks`, exclusiva do perfil `dev`, com listagem paginada e autor, origem, tipo, status, texto e miniaturas; texto e imagem podem ser ampliados. As imagens são entregues pelo proxy privado, sem expor URL de Blob na interface. Lint PHP dos arquivos alterados aprovado; validação integrada com banco e Blob pendente.
+- **Planejamento de evolução:** `AGENTS.md` agora orienta alinhar ideias de desenvolvimento e sugerir seu registro em `docs/PLANO.md`; as Fases 15 (feedbacks) e 16 (achados prioritários) foram adicionadas e atualizadas.
+- **Correções prioritárias de isolamento e integridade:** `admin` e `dev` ficam limitados aos próprios dados financeiros em transações, transferências, agregados e lixeira; o `dev` mantém apenas privilégios globais de plataforma. Sessões consultam o status atual da conta, e o débito de transferência valida o saldo no `UPDATE` atômico. Lint e diagnósticos estáticos aprovados; testes integrados de banco/concorrência ainda dependem de ambiente configurado.
+- **Regras futuras alinhadas:** Compartilhamento será permissão vinculada a cada conta, com visibilidade apenas de lançamentos posteriores ao aceite; transferências seguirão restritas a contas do mesmo proprietário. Meios de pagamento serão um catálogo global após migração dos IDs existentes. Nada disso foi implementado nesta etapa.
 - **Favicon dedicado:** Criado `public/img/favicon.svg` apenas com o ícone da marca (sem o texto "Symo"), usado nos layouts `main.php` e `auth.php`; o logo completo com texto continua sendo usado onde a marca é exibida por extenso.
 - **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
 - **Revisão Ortográfica do README:** `README.md` totalmente revisado quanto à grafia, acentuação e ortografia em português do Brasil (pt-BR), preservando o vocabulário, clareza técnica e estrutura originais.
-- **Atualização do Contexto para Agentes:** `AGENTS.md` revisado para refletir o FSD aprovado, com Vercel/Neon/Blob/GitHub Actions como stack oficial, PostgreSQL como banco principal, RBAC `admin` individual + `dev` global + `operador` legado, isolamento por `usuario_id`, segredos por variáveis de ambiente e obrigação de atualizar o próprio AGENTS quando suas regras mudarem.
+- **Atualização do Contexto para Agentes:** `AGENTS.md` revisado para refletir o FSD aprovado, com Vercel/Neon/Blob/GitHub Actions como stack oficial, PostgreSQL como banco principal, `admin` e `dev` com escopo financeiro próprio, `dev` com funções globais da plataforma, `operador` legado, isolamento por `usuario_id` e segredos por variáveis de ambiente.
 
 ---
 
@@ -54,6 +58,10 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Concluída |
 | **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload) | Concluída |
 | **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Concluída |
+| **Fase 14** | Multiusuário e Login Google | Em andamento; OAuth Google e testes manuais pendentes |
+| **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; integração com banco/Blob pendente de ambiente |
+| **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; validação integrada pendente de ambiente |
+| **Fase 17** | Compartilhamento por conta e catálogo global de meios de pagamento | Roadmap; não iniciado |
 
 ---
 
@@ -193,7 +201,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Etapa 4/6 — Segmentação de RBAC, menus e configurações (Concluída):**
   - [x] Perfil `dev` ganhou helpers explícitos (`isDev()`/`requireDev()`); `admin` continua sendo o administrador da própria conta, não administrador global.
   - [x] Gestão de Usuários e Auditoria ficaram restritas ao `dev`, inclusive por URL direta; `dev` herda as permissões operacionais de `admin` nos módulos financeiros.
-  - [x] Lixeira ficou disponível aos usuários autenticados com dados próprios; o `dev` possui visão global, restauração e expurgo globais.
+  - [x] Lixeira disponível a usuários autenticados, sempre limitada aos dados do próprio usuário, inclusive para `dev`.
   - [x] Configurações comuns usam exclusivamente `configuracoes_usuario`; identidade visual, status de migrations e GitHub Actions ficaram exclusivos do `dev`.
   - [x] Sidebar passou a exibir Gestão de Usuários/Auditoria apenas para `dev` e Configurações/Lixeira conforme o perfil.
-- **Próximas etapas planejadas:** (5) login Google via OAuth 2.0 (cURL nativo, sem Composer); (6) testes manuais completos; (7) especificar e implementar contas compartilhadas por convite, permissao e visibilidade opcional do historico.
+- **Próximas etapas planejadas:** OAuth Google e testes manuais completos. Compartilhamento por conta e catálogo global de meios de pagamento foram alinhados e registrados na Fase 17 do plano; não fazem parte da implementação atual.

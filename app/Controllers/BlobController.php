@@ -21,6 +21,14 @@ class BlobController extends Controller
         $this->serve(is_string($logo) ? $logo : null, 'logo');
     }
 
+    public function feedbackImage(int|string $id, int|string $index): void
+    {
+        AuthHelper::requireDev();
+
+        $imageUrl = (new Feedback())->getImageUrl((int) $id, (int) $index);
+        $this->serve($imageUrl, 'feedback');
+    }
+
     private function serve(?string $url, string $resource): void
     {
         if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {

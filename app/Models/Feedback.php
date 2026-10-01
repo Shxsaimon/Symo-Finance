@@ -52,6 +52,57 @@ class Feedback extends Model
         return $isPgsql ? (int) $stmt->fetchColumn() : (int) $this->db->lastInsertId();
     }
 
+    /**
+    * @return array{items: array<int, array<string, mixed>>, total: int, page: int, total_pages: int}
+     */
+    public function getPaginated(int $page, int $perPage = 25): array
+    {
+        $page = max(1, $page);
+        $perPage = max(1, $perPage);
+
+        $countStatement = $this->db->prepare('SELECT COUNT(*) FROM feedback');
+        $countStatement->execute();
+        $total = (int) $countStatement->fetchColumn();
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $totalPages);
+
+        $statement = $this->db->prepare('SELECT f.id, f.usuario_id, f.texto, f.tela, f.tipo, f.imagens,
+                    f.status, f.criado_em, u.nome AS usuario_nome, u.email AS usuario_email
+                FROM feedback f
+                LEFT JOIN usuarios u ON u.id = f.usuario_id
+                ORDER BY f.criado_em DESC, f.id DESC
+                LIMIT :limite OFFSET :deslocamento');
+        $statement->bindValue(':limite', $perPage, PDO::PARAM_INT);
+        $statement->bindValue(':deslocamento', ($page - 1) * $perPage, PDO::PARAM_INT);
+        $statement->execute();
+
+        $items = $statement->fetchAll();
+        foreach ($items as &$item) {
+            $images = json_decode((string) ($item['imagens'] ?? '[]'), true);
+            $item['imagens'] = is_array($images) ? $images : [];
+        }
+        unset($item);
+
+        return ['items' => $items, 'total' => $total, 'page' => $page, 'total_pages' => $totalPages];
+    }
+
+    public function getImageUrl(int $feedbackId, int $imageIndex): ?string
+    {
+        if ($imageIndex < 0) {
+            return null;
+        }
+
+        $feedback = $this->find($feedbackId);
+        if (!$feedback) {
+            return null;
+        }
+
+        $images = json_decode((string) ($feedback['imagens'] ?? '[]'), true);
+        $url = is_array($images) ? ($images[$imageIndex] ?? null) : null;
+
+        return is_string($url) && filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
+    }
+
     public static function telaPermitida(string $tela): bool
     {
         return in_array($tela, self::TELAS_PERMITIDAS, true);

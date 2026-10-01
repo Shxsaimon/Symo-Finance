@@ -62,7 +62,7 @@ O arquivo de referência é [config/config.example.php](config/config.example.ph
 | `DATABASE_URL` | URL PostgreSQL do Neon; ativa o driver oficial. |
 | `APP_BASE_URL` | URL pública da aplicação. |
 | `APP_ENV` e `APP_DEBUG` | Ambiente e diagnóstico. Em produção, use `production` e `false`. |
-| `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL`, `SYSTEM_DEV_PASSWORD` | Usuário técnico global criado pelo seed. |
+| `SYSTEM_DEV_NAME`, `SYSTEM_DEV_EMAIL`, `SYSTEM_DEV_PASSWORD` | Usuário técnico da plataforma criado pelo seed; seus dados financeiros permanecem no próprio escopo. |
 | `BLOB_PROXY_SECRET` | Segredo entre o PHP e a Function de Blob. |
 | `BLOB_PROXY_URL` | URL da Function `api/blob.js`. |
 | `BLOB_READ_WRITE_TOKEN` | Credencial do Vercel Blob usada pela Function Node. |

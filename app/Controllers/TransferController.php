@@ -138,9 +138,7 @@ class TransferController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        $isAdmin = AuthHelper::isAdmin();
-
-        $result = $this->transferModel->deleteTransfer($id, $userId, $isAdmin);
+        $result = $this->transferModel->deleteTransfer($id, $userId);
 
         if ($result['success']) {
             FlashHelper::set('success', $result['message']);

@@ -17,6 +17,8 @@ class AuthHelper
     private const SESSION_USER_ROLE     = 'user_role';
     private const SESSION_USER_AVATAR   = 'user_avatar';
     private const SESSION_LAST_ACTIVITY = 'last_activity';
+    private static bool $userStatusChecked = false;
+    private static bool $activeUserStatus = false;
 
     /**
      * Inicia a sessão autenticada do usuário, aplicando regeneração de ID para proteção contra fixação de sessão.
@@ -41,6 +43,8 @@ class AuthHelper
         $_SESSION[self::SESSION_USER_ROLE]     = (string) $usuario['perfil'];
         $_SESSION[self::SESSION_USER_AVATAR]   = $usuario['avatar'] ?? null;
         $_SESSION[self::SESSION_LAST_ACTIVITY] = time();
+        self::$userStatusChecked = true;
+        self::$activeUserStatus = true;
 
         LoggerHelper::security('LOGIN_SUCCESS', [
             'usuario_id' => $usuario['id'],
@@ -67,6 +71,8 @@ class AuthHelper
         }
 
         $_SESSION = [];
+        self::$userStatusChecked = false;
+        self::$activeUserStatus = false;
 
         if (session_status() === PHP_SESSION_ACTIVE) {
             if (ini_get('session.use_cookies') && !headers_sent()) {
@@ -103,6 +109,26 @@ class AuthHelper
 
         // Checa se a sessão expirou por inatividade
         if (self::isExpired()) {
+            self::logout();
+            return false;
+        }
+
+        if (!self::$userStatusChecked) {
+            try {
+                $statement = Database::getConnection()->prepare(
+                    "SELECT status FROM usuarios WHERE id = :id AND excluido_em IS NULL LIMIT 1"
+                );
+                $statement->bindValue(':id', (int) $_SESSION[self::SESSION_USER_ID], PDO::PARAM_INT);
+                $statement->execute();
+                self::$activeUserStatus = $statement->fetchColumn() === 'ativo';
+            } catch (Throwable $e) {
+                self::$activeUserStatus = false;
+                LoggerHelper::error($e, ['context' => 'AuthHelper::checkUserStatus']);
+            }
+            self::$userStatusChecked = true;
+        }
+
+        if (!self::$activeUserStatus) {
             self::logout();
             return false;
         }

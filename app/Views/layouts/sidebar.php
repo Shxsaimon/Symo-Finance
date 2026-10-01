@@ -86,6 +86,10 @@ $isActive = function (string $path) use ($currentUri): string {
                 <i class="bi bi-shield-check"></i>
                 <span>Trilha de Auditoria</span>
             </a>
+            <a href="<?= BASE_URL ?>/feedbacks" class="sidebar-nav-link <?= $isActive('/feedbacks') ?>">
+                <i class="bi bi-chat-left-text-fill"></i>
+                <span>Feedbacks Recebidos</span>
+            </a>
             <?php endif; ?>
             <a href="<?= BASE_URL ?>/configuracoes" class="sidebar-nav-link <?= $isActive('/configuracoes') ?>">
                 <i class="bi bi-gear-fill"></i>

@@ -19,6 +19,10 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 11:** Relatórios Analíticos e Exportação Estruturada em CSV
 - **Fase 12:** Módulos Administrativos (Gestão de Usuários, Auditoria, Lixeira e Configurações Globais com Upload Seguro)
 - **Fase 13:** Revisão de Segurança, Validações Integradas e Homologação Final
+- **Fase 14:** Multiusuário e Autenticação Social (etapas já concluídas e pendentes registradas abaixo)
+- **Fase 15:** Consulta administrativa de feedbacks recebidos
+- **Fase 16:** Correção dos achados prioritários de isolamento e integridade financeira
+- **Fase 17:** Compartilhamento por conta e catálogo global de meios de pagamento (roadmap)
 
 ---
 
@@ -162,7 +166,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Implementar `app/Models/Transaction.php` com suporte a cálculo de saldos, filtros complexos e soft delete.
   - [x] Implementar `app/Controllers/TransactionController.php`.
   - [x] Implementar rotina de compra parcelada com geração de $N$ lançamentos agrupados por `installment_group_id`, ajuste de dízima residual de centavos na 1ª parcela e vinculação de faturas de cartão.
-  - [x] Implementar validação RBAC: operador só edita/exclui lançamentos próprios; admin edita/exclui qualquer um.
+  - [x] Implementar validação de propriedade: alterações e exclusões ficam limitadas ao dono do lançamento, inclusive para `dev`.
   - [x] Criar views e modais em `app/Views/transactions/` com tabela zebrada de alta densidade e numerais tabulares.
 - **Critérios de Pronto:**
   - Lançamento de receita/despesa com status pago atualiza imediatamente o saldo da conta vinculada; status pendente não altera saldo.
@@ -253,4 +257,59 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - Sistema homologado e pronto para uso em produção.
 - **Arquivos/Pastas Envolvidos:** Todo o projeto.
 - **Dependências:** Fases 1 a 12 concluídas.
+
+---
+
+## Evoluções em Andamento e Próximas
+
+### Fase 14 — Multiusuário e Autenticação Social
+- **Checklist:**
+  - [x] Criar autocadastro local com perfil `admin` e dados padrão do próprio usuário.
+  - [x] Isolar contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira por proprietário.
+  - [x] Reservar gestão de usuários, auditoria e configurações globais ao perfil `dev`, sem ampliar seu escopo financeiro próprio.
+  - [x] Registrar no plano as regras futuras de compartilhamento por conta e catálogo global de meios de pagamento.
+  - [ ] Implementar login Google via OAuth 2.0.
+  - [ ] Executar testes manuais completos dos fluxos de autenticação, isolamento e RBAC.
+- **Estado:** Em andamento; OAuth Google e testes manuais permanecem pendentes.
+
+### Fase 15 — Consulta administrativa de feedbacks recebidos
+- **Checklist:**
+  - [x] Restringir a rota de consulta ao perfil `dev` também no backend.
+  - [x] Exibir feedbacks paginados com autor, tipo, tela, status, data e texto.
+  - [x] Exibir miniaturas e ampliar imagens por rota autenticada, sem tornar o Blob público.
+  - [x] Adicionar a tela à navegação administrativa desktop e mobile.
+  - [x] Validar sintaxe PHP e diagnósticos estáticos dos arquivos alterados.
+  - [ ] Validar listagem e leitura das imagens em ambiente integrado com banco e Vercel Blob.
+- **Estado:** Implementada; validação integrada depende do ambiente configurado.
+
+### Fase 16 — Correção dos achados prioritários de isolamento e integridade
+- **Checklist:**
+  - [x] Limitar transações, consultas por ID, alterações, exclusões e agregados ao proprietário, inclusive para `dev`.
+  - [x] Limitar transferências, resumos e estornos ao proprietário; impedir que `admin` ou `dev` operem transferências de terceiros.
+  - [x] Validar saldo no `UPDATE` atômico da conta de origem para impedir saldo negativo por concorrência.
+  - [x] Limitar listagem, restauração e expurgo da lixeira ao proprietário, inclusive para `dev`.
+  - [x] Revalidar o status do usuário na sessão para encerrar o acesso após inativação.
+  - [x] Atualizar FSD, AGENTS, README, PLANO e STATUS para documentar o escopo financeiro próprio de `admin` e `dev`.
+  - [x] Executar lint PHP, diagnósticos estáticos e `git diff --check`.
+  - [ ] Validar isolamento contra PostgreSQL com usuários distintos e testar transferências concorrentes.
+  - [ ] Testar em ambiente integrado a recusa de sessão de usuário inativado.
+- **Estado:** Correções implementadas; validações integradas dependem do ambiente de banco.
+
+### Fase 17 — Compartilhamento por conta e catálogo global de meios de pagamento
+- **Estado:** Roadmap; não implementar na demanda atual.
+- **Checklist de alinhamento prévio:**
+  - [ ] Detalhar o ciclo do convite: envio, aceite/recusa, revogação e identidade do participante.
+  - [ ] Confirmar qual perfil poderá ativar/desativar meios de pagamento, pois a alteração afeta o catálogo global.
+  - [ ] Definir a correspondência entre os meios de pagamento atuais e os IDs canônicos antes de migrar os vínculos existentes.
+  - [ ] Definir estratégia de implantação e reversão da migration de consolidação, preservando o histórico dos lançamentos.
+- **Checklist de implementação:**
+  - [ ] Criar vínculo de permissão por conta; não criar papel global `operador` para conceder acesso financeiro.
+  - [ ] Permitir ao proprietário conceder: somente visualização; lançamento com edição/exclusão dos registros da conta; ou lançamento com edição/exclusão apenas dos registros criados pelo participante.
+  - [ ] Restringir a visibilidade do participante aos lançamentos criados após o aceite e pertencentes à conta compartilhada; não mostrar histórico anterior.
+  - [ ] Restringir transferências a contas do mesmo proprietário e não oferecer no seletor contas de outro proprietário.
+  - [ ] Manter categorias, cartões, faturas e preferências pessoais; aplicar o escopo de contas compartilhadas somente onde autorizado em dashboard, relatórios e lixeira.
+  - [ ] Consolidar os meios de pagamento em catálogo global sem criação por usuários; oferecer somente ativação/desativação pela manutenção autorizada.
+  - [ ] Migrar transações existentes para os IDs canônicos, validar todos os vínculos e só então remover registros duplicados.
+  - [ ] Validar permissões e isolamento para leitura, lançamento, edição, exclusão, exportação, dashboard, relatórios, transferências e lixeira.
+- **Critérios de aceite:** Nenhum convite pendente concede acesso; o participante vê somente dados posteriores ao aceite e da conta autorizada; revogação encerra acesso; transferências nunca cruzam proprietários; e lançamentos existentes preservam o meio de pagamento correto após a consolidação.
 

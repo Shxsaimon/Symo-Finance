@@ -19,9 +19,9 @@ O **Symo Finance** é uma plataforma web de gestão financeira pessoal para pess
 - Cada usuário possui uma conta financeira individual e privada por padrão.
 - Contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios, preferências e lixeira são isolados por `usuario_id`.
 - O cadastro público cria um usuário `admin` da própria conta, com categorias, meios de pagamento e preferências padrão.
-- O perfil `dev` é um usuário técnico global, criado pelo seed, responsável pela operação da plataforma. Ele não representa o proprietário financeiro comum.
-- O perfil `operador` permanece no código por compatibilidade com regras legadas; não é criado pelo autocadastro atual.
-- A visão futura contempla compartilhar contas financeiras específicas por convite, com permissões de visualização, lançamento e edição dos próprios lançamentos. Esse recurso não existe no estado atual.
+- O perfil `dev` é um usuário técnico criado pelo seed, responsável pela operação global da plataforma. Como usuário financeiro, mantém escopo próprio por `usuario_id`, igual ao `admin`.
+- O perfil `operador` permanece no código por compatibilidade, não é usado no produto atual e não será um papel global no modelo futuro.
+- A visão futura contempla compartilhar contas específicas por vínculo de permissões à conta. O participante verá apenas lançamentos posteriores ao aceite; esse recurso não existe no estado atual.
 
 O sistema não é um orçamento global compartilhado por padrão, não é um banco, não é um sistema contábil formal e não possui integração bancária automática.
 
@@ -149,7 +149,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 - OAuth Google possui preparação de configuração e banco, mas não possui fluxo ativo.
 - A tela de esqueci a senha existe, mas não há recuperação por e-mail implementada.
 - Contas compartilhadas são roadmap. Não criar tabelas, rotas ou telas desse recurso sem especificação complementar e aprovação.
-- Na futura colaboração, apenas contas financeiras serão compartilháveis inicialmente. Categorias, meios de pagamento, cartões, faturas e preferências continuam pessoais.
+- Na futura colaboração, apenas contas financeiras serão compartilháveis inicialmente. Categorias, cartões, faturas e preferências continuam pessoais. Meios de pagamento deverão se tornar um catálogo global após migração dos IDs existentes; usuários não criarão opções e a manutenção permitirá ativar/desativar. Nada disso está implementado no estado atual.
 - Fora de escopo: Open Finance, OFX, importação bancária, boletos, gateways de pagamento, anexos de comprovantes, metas orçamentárias, recorrência infinita, conversão cambial em tempo real, PDF nativo e notificações de vencimento por e-mail.
 
 ---
@@ -164,9 +164,9 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 6. **Força bruta:** cinco falhas de login em 15 minutos por e-mail/IP geram bloqueio temporário e evento em `seguranca_logs`.
 7. **Isolamento:** toda leitura, alteração, exclusão e associação financeira deve validar o `usuario_id` autenticado. Não confiar somente na ocultação de menus ou botões.
 8. **RBAC:**
-   - `admin` administra somente seus próprios dados e preferências;
-   - `operador` legado não acessa funções globais e só altera lançamentos próprios;
-   - `dev` é obrigatório para gestão de usuários, auditoria global, configurações globais, migrations e GitHub Actions.
+  - `admin` e `dev` administram somente seus próprios dados financeiros e preferências;
+  - `operador` é legado, sem uso no produto atual; o compartilhamento futuro será autorizado por conta, não por papel global;
+  - `dev` é obrigatório para gestão de usuários, auditoria global, configurações globais, migrations e GitHub Actions, sem ampliar o escopo financeiro próprio.
 9. **IDOR:** validar propriedade de contas, categorias, meios, cartões, faturas e transações relacionadas antes de qualquer operação.
 10. **Arquivos privados:** Blob é privado; tokens nunca vão para o navegador; avatar e logotipo são entregues por rotas autenticadas.
 11. **Mensagens:** telas públicas não exibem stack trace, SQL, credenciais, URLs privadas ou detalhes de infraestrutura.
@@ -236,6 +236,13 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ---
 
 ## 14. Protocolo dos Arquivos Vivos
+
+### Alinhamento de ideias de desenvolvimento
+
+- Quando o usuário desenvolvedor trouxer ideias ou necessidades em uma conversa de alinhamento, primeiro esclarecer objetivo, escopo e critérios de aceite antes de iniciar a implementação.
+- Depois que a necessidade estiver alinhada, sugerir registrá-la em `docs/PLANO.md`, que continua sendo a referência para organizar as próximas evoluções mesmo após as fases iniciais.
+- Incluir a funcionalidade no plano quando o usuário confirmar ou já solicitar explicitamente seu registro/execução; preservar prioridades e dependências acordadas.
+- Ao iniciar uma demanda planejada, consultar o plano junto aos demais arquivos vivos e atualizar seu estado real ao concluir.
 
 ### Antes de qualquer trabalho
 

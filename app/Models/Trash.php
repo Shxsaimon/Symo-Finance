@@ -198,11 +198,15 @@ class Trash extends Model
 
             if ($contaId !== null && in_array($status, ['pago', 'recebido'], true)) {
                 $ajuste = ($transacao['tipo'] === 'receita') ? $valor : -$valor;
-                $sqlSaldo = "UPDATE `contas` SET saldo_atual = saldo_atual + :ajuste, atualizado_em = NOW() WHERE id = :conta_id";
+                $sqlSaldo = "UPDATE `contas` SET saldo_atual = saldo_atual + :ajuste, atualizado_em = NOW() WHERE id = :conta_id AND usuario_id = :usuario_id";
                 $stmtSaldo = $this->db->prepare($sqlSaldo);
                 $stmtSaldo->bindValue(':ajuste', $ajuste, PDO::PARAM_STR);
                 $stmtSaldo->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
+                $stmtSaldo->bindValue(':usuario_id', (int) $transacao['usuario_id'], PDO::PARAM_INT);
                 $stmtSaldo->execute();
+                if ($stmtSaldo->rowCount() !== 1) {
+                    throw new RuntimeException('A conta vinculada não pertence ao usuário da transação.');
+                }
             }
 
             // 3. Log de Auditoria
@@ -319,14 +323,12 @@ class Trash extends Model
 
     private function ownerClause(string $column): string
     {
-        return AuthHelper::isDev() ? '1=1' : "{$column} = :usuario_id";
+        return "{$column} = :usuario_id";
     }
 
     private function bindOwner(PDOStatement $stmt, string $column = 'usuario_id'): void
     {
-        if (!AuthHelper::isDev()) {
-            $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
-        }
+        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
     }
 }
 
