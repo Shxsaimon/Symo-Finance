@@ -30,6 +30,38 @@ class FeedbackController extends Controller
         ], 'layouts/main');
     }
 
+    public function updateStatus(int|string $id): void
+    {
+        AuthHelper::requireDev();
+
+        if (!CsrfHelper::validateToken($_POST['csrf_token'] ?? null)) {
+            FlashHelper::set('error', 'Token de segurança expirado.');
+            $this->redirect('/feedbacks');
+        }
+
+        $feedbackId = (int) $id;
+        $status = trim((string) ($_POST['status'] ?? ''));
+        $pagina = max(1, (int) ($_POST['pagina'] ?? 1));
+        $statusLabels = [
+            'em_analise' => 'Em análise',
+            'concluido' => 'Concluído',
+        ];
+
+        if (!isset($statusLabels[$status])) {
+            FlashHelper::set('error', 'Selecione um status válido para o feedback.');
+            $this->redirect('/feedbacks?pagina=' . $pagina);
+        }
+
+        $updated = $this->feedbackModel->atualizarStatus($feedbackId, $status, (int) AuthHelper::id());
+        if ($updated) {
+            FlashHelper::set('success', 'Status atualizado para ' . $statusLabels[$status] . '.');
+        } else {
+            FlashHelper::set('error', 'Não foi possível atualizar o status deste feedback.');
+        }
+
+        $this->redirect('/feedbacks?pagina=' . $pagina);
+    }
+
     public function store(): void
     {
         AuthHelper::requireLogin();

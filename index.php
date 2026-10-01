@@ -262,6 +262,7 @@ Router::get('/configuracoes/github-actions/logs/{id}', [SettingsController::clas
 Router::get('/perfil', [ProfileController::class, 'index']);
 Router::post('/perfil/salvar', [ProfileController::class, 'update']);
 Router::get('/feedbacks', [FeedbackController::class, 'index']);
+Router::post('/feedbacks/status/{id}', [FeedbackController::class, 'updateStatus']);
 
 // Rota de Teste de Permissão RBAC (Exclusiva para Administradores)
 Router::get('/admin/teste-rbac', function (): void {

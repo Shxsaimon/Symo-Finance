@@ -277,9 +277,11 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Restringir a rota de consulta ao perfil `dev` também no backend.
   - [x] Exibir feedbacks paginados com autor, tipo, tela, status, data e texto.
   - [x] Exibir miniaturas e ampliar imagens por rota autenticada, sem tornar o Blob público.
+  - [x] Manter `novo` como status inicial e permitir ao `dev` alterar para `em_analise` ou `concluido` (exibido como Concluído), com CSRF e auditoria.
+  - [x] Ordenar colunas como mensagem, imagens, status e ações; aplicar o botão de leitura do tema Symo.
   - [x] Adicionar a tela à navegação administrativa desktop e mobile.
   - [x] Validar sintaxe PHP e diagnósticos estáticos dos arquivos alterados.
-  - [ ] Validar listagem e leitura das imagens em ambiente integrado com banco e Vercel Blob.
+  - [x] Validar listagem e leitura das imagens em ambiente integrado com banco e Vercel Blob.
 - **Estado:** Implementada; validação integrada depende do ambiente configurado.
 
 ### Fase 16 — Correção dos achados prioritários de isolamento e integridade

@@ -103,6 +103,39 @@ class Feedback extends Model
         return is_string($url) && filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
     }
 
+    public function atualizarStatus(int $feedbackId, string $status, int $usuarioId): bool
+    {
+        if (!in_array($status, ['em_analise', 'concluido'], true)) {
+            return false;
+        }
+
+        $statement = $this->db->prepare('SELECT status FROM feedback WHERE id = :id LIMIT 1');
+        $statement->bindValue(':id', $feedbackId, PDO::PARAM_INT);
+        $statement->execute();
+        $statusAnterior = $statement->fetchColumn();
+
+        if ($statusAnterior === false) {
+            return false;
+        }
+        if ($statusAnterior === $status) {
+            return true;
+        }
+
+        $statement = $this->db->prepare(
+            'UPDATE feedback SET status = :status, atualizado_em = CURRENT_TIMESTAMP WHERE id = :id'
+        );
+        $statement->bindValue(':status', $status, PDO::PARAM_STR);
+        $statement->bindValue(':id', $feedbackId, PDO::PARAM_INT);
+        $statement->execute();
+
+        if ($statement->rowCount() !== 1) {
+            return false;
+        }
+
+        $this->logAudit('UPDATE', $feedbackId, ['status' => $statusAnterior], ['status' => $status], $usuarioId);
+        return true;
+    }
+
     public static function telaPermitida(string $tela): bool
     {
         return in_array($tela, self::TELAS_PERMITIDAS, true);

@@ -55,15 +55,16 @@ $statusClasses = [
                     <th style="min-width: 190px;">Usuário</th>
                     <th style="min-width: 150px;">Origem</th>
                     <th style="min-width: 115px;">Tipo</th>
-                    <th style="min-width: 100px;">Status</th>
+                    <th style="min-width: 130px;">Mensagem</th>
                     <th style="min-width: 180px;">Imagens</th>
-                    <th class="text-end" style="min-width: 130px;">Mensagem</th>
+                    <th style="min-width: 110px;">Status</th>
+                    <th class="text-end" style="min-width: 240px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($feedbacks)): ?>
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="8" class="text-center py-5 text-muted">
                             <i class="bi bi-chat-square-text fs-1 d-block mb-2"></i>
                             Ainda não há feedbacks recebidos.
                         </td>
@@ -81,10 +82,10 @@ $statusClasses = [
                             <td><?= htmlspecialchars($telaLabels[$feedback['tela']] ?? $feedback['tela'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars($tipoLabels[$feedback['tipo']] ?? $feedback['tipo'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
-                                <?php $status = (string) ($feedback['status'] ?? 'novo'); ?>
-                                <span class="badge rounded-pill <?= $statusClasses[$status] ?? 'bg-secondary-subtle text-secondary' ?>">
-                                    <?= htmlspecialchars($statusLabels[$status] ?? $status, ENT_QUOTES, 'UTF-8') ?>
-                                </span>
+                                <button type="button" class="btn-symo-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTextoFeedback"
+                                        data-feedback-text="<?= htmlspecialchars($feedback['texto'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <i class="bi bi-eye"></i><span>Ler mensagem</span>
+                                </button>
                             </td>
                             <td>
                                 <?php $imageCount = 0; ?>
@@ -103,11 +104,26 @@ $statusClasses = [
                                 </div>
                                 <?php if ($imageCount === 0): ?><span class="text-muted small">Sem anexos</span><?php endif; ?>
                             </td>
+                            <td>
+                                <?php $status = (string) ($feedback['status'] ?? 'novo'); ?>
+                                <span class="badge rounded-pill <?= $statusClasses[$status] ?? 'bg-secondary-subtle text-secondary' ?>">
+                                    <?= htmlspecialchars($statusLabels[$status] ?? $status, ENT_QUOTES, 'UTF-8') ?>
+                                </span>
+                            </td>
                             <td class="text-end">
-                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTextoFeedback"
-                                        data-feedback-text="<?= htmlspecialchars($feedback['texto'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <i class="bi bi-eye me-1"></i>Ler
-                                </button>
+                                <form method="POST" action="<?= BASE_URL ?>/feedbacks/status/<?= (int) $feedback['id'] ?>" class="d-inline-flex align-items-center justify-content-end gap-2">
+                                    <?= CsrfHelper::inputField() ?>
+                                    <input type="hidden" name="pagina" value="<?= (int) $paginaAtual ?>">
+                                    <label class="visually-hidden" for="feedback-status-<?= (int) $feedback['id'] ?>">Novo status</label>
+                                    <select class="form-select form-select-sm" id="feedback-status-<?= (int) $feedback['id'] ?>" name="status" required style="min-width: 130px;">
+                                        <option value="" selected disabled>Alterar status</option>
+                                        <option value="em_analise">Em análise</option>
+                                        <option value="concluido">Concluído</option>
+                                    </select>
+                                    <button type="submit" class="btn-symo-primary btn-sm" title="Salvar status" aria-label="Salvar status">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
