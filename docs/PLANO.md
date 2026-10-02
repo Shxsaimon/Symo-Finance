@@ -1,4 +1,3 @@
-  - A migration foi aplicada pelo workflow oficial; alterações subsequentes do catálogo exigem validação integrada antes da publicação.
 # Plano de Construção Incremental — Symo
 
 Este documento detalha o planejamento de implementação fase a fase do sistema **Symo (Gestão Financeira Pessoal e Compartilhada)**, com base estrita no `docs/FSD.md` e `docs/DESIGN.md`.
@@ -23,7 +22,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 14:** Multiusuário e Autenticação Social (etapas já concluídas e pendentes registradas abaixo)
 - **Fase 15:** Consulta administrativa de feedbacks recebidos
 - **Fase 16:** Correção dos achados prioritários de isolamento e integridade financeira
-- **Fase 17:** Catálogo global de meios de pagamento (prioridade atual)
+- **Fase 17:** Catálogo global de meios de pagamento
 - **Fase 18:** Compartilhamento por conta (roadmap)
 
 ---
@@ -334,8 +333,8 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Preservar auditoria histórica e validar CSRF, autorização e isolamento no backend.
   - [x] Executar a migration no banco alvo pelo workflow oficial e confirmar a conclusão sem divergências.
   - [x] Executar a migration do catálogo pelo workflow oficial.
-  - [ ] Publicar o ajuste de inativação/reativação global e validar o fluxo pela tela.
-- **Estado:** Migration aplicada; correção de reativação preparada, publicação e validação integrada pendentes.
+  - [x] Publicar o ajuste de inativação/reativação global e validar o fluxo pela tela.
+- **Estado:** Migration aplicada; correção de reativação preparada, publicação e validação integrada validados.
 - **Critérios de aceite:** A inativação individual não altera as opções dos demais; inativar globalmente impede novos usos para todos e reativar restaura a disponibilidade sem mudar preferências pessoais; nenhum vínculo histórico é perdido; somente o `dev` altera o status global.
 
 ### Fase 18 — Compartilhamento por conta

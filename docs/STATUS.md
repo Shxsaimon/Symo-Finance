@@ -7,7 +7,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 01/10/2026
-- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (migration aplicada; ajuste de reativação em publicação/validação)
+- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (concluída)
 
 
 
@@ -239,8 +239,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Validar sintaxe dos arquivos PHP alterados e diagnósticos do editor.
 - [x] Registrar a migration aplicada pelo workflow oficial; nenhuma escrita adicional foi feita nesta correção.
 - [x] Implementar reativação global pelo status sem exclusão lógica e preservar a preferência pessoal.
-- [ ] Publicar a correção e validar o fluxo integrado de inativação/reativação pela tela.
-- **Estado:** Migration aplicada; ajuste de reativação preparado, publicação e validação integrada pendentes.
+- [x] Publicar a correção e validar o fluxo integrado de inativação/reativação pela tela.
+- **Estado:** Migration aplicada; ajuste de reativação preparado, publicação e validação integrada validados.
 
 ### Fase 18 — Compartilhamento por conta
 - [x] Alinhar que permissões serão vínculos por conta, não papel global de usuário.
