@@ -890,16 +890,16 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 2. **Pré-condições:** Estar autenticado; existirem categorias de despesa e contas/cartões cadastrados e ativos.
 3. **Passo a Passo:**
 * O utilizador clica em "+ Nova Despesa" no Dashboard ou na tela de Transações;
-* Seleciona a opção "Compra Parcelada" e informa o número total de parcelas (ex: 10x);
-* Preenche a Descrição (ex: "Notebook Dell"), Valor Total (ex: `R$ 3.500,00`), Categoria ("Equipamentos"), Meio de Pagamento ("Cartão de Crédito"), Cartão vinculado e Data da 1ª Parcela;
-* O sistema calcula o valor base da parcela (`3500.00 / 10 = 350.00`). Caso haja dízima residual, a diferença de centavos é alocada na 1ª parcela;
+* Seleciona a opção "Compra Parcelada" e informa a quantidade desejada de parcelas;
+* Preenche descrição, valor total, categoria, meio de pagamento, cartão vinculado e data da primeira parcela;
+* O sistema calcula o valor base de cada parcela. Eventual diferença de centavos é ajustada na primeira parcela;
+* O backend valida o CSRF e os campos, gera um identificador único de grupo e cria atomicamente os lançamentos correspondentes às parcelas, calculando as datas de vencimento subsequentes;
 * O usuário submete o formulário;
-* O backend valida o CSRF e os campos, gera um identificador único de grupo (`installment_group_id = UUID/Hash`) e insere em transação atômica 10 registros na tabela `transactions` com sufixos `[1/10]`, `[2/10]`, ..., calculando as datas de vencimento mensais subsequentes;
 * Se a transação for em Cartão de Crédito, cada parcela é vinculada à sua respetiva fatura mensal (`credit_card_invoices`).
 
 
-4. **Resultado:** As 10 parcelas são criadas e visíveis no extrato futuro e nas faturas correspondentes.
-5. **Auditoria:** Gravação de registro de auditoria tipo `INSERT` contendo a lista de IDs criados.
+4. **Resultado:** As parcelas são criadas e visíveis no extrato futuro e nas faturas correspondentes.
+5. **Auditoria:** A operação gera o registro de auditoria correspondente.
 
 ### 13.2. Fluxo de Transferência entre Contas
 
@@ -907,13 +907,12 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 2. **Pré-condições:** Haver pelo menos duas contas bancárias ativas cadastradas.
 3. **Passo a Passo:**
 * O utilizador acessa o modal de "+ Transferência";
-* Seleciona a Conta de Origem (ex: "Conta Corrente Itaú") e a Conta de Destino (ex: "Reserva Nubank");
-* Informa o Valor (ex: `R$ 1.000,00`), a Data e uma Observação opcional;
+* Seleciona as contas de origem e destino;
+* Informa o valor, a data e uma observação opcional;
 * O sistema valida contas distintas, valor positivo, propriedade das duas contas e saldo suficiente na origem;
 * O backend inicia uma transação PDO (`beginTransaction`);
 * Cria o registro mestre na tabela `transfers`;
-* Atualiza o saldo da Conta de Origem deduzindo o valor (`current_balance = current_balance - 1000.00`);
-* Atualiza o saldo da Conta de Destino somando o valor (`current_balance = current_balance + 1000.00`);
+* Debita a conta de origem e credita a conta de destino pelo mesmo valor, sob a mesma transação atômica;
 * Executa o `commit` da transação no banco de dados.
 
 
@@ -1039,8 +1038,7 @@ A auditoria abrange entidades financeiras, cadastros, usuários e configuraçõe
 
 Os dados anteriores e novos são serializados em JSON padrão:
 
-* `old_values`: `{"amount": 150.00, "status": "pendente", "category_id": 3}`
-* `new_values`: `{"amount": 180.00, "status": "pago", "category_id": 3}`
+* Os snapshots preservam os valores anteriores e posteriores à operação, sem alterar os dados históricos.
 
 ### 17.3. Exibição da Trilha de Auditoria
 
@@ -1364,12 +1362,14 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 5. Lançamentos existentes continuam exibindo o meio associado após arquivamento ou inativação. Ao editar um lançamento antigo, o vínculo existente deve ser preservado mesmo que a opção não esteja disponível para novos lançamentos.
 6. Usuários comuns não podem criar opções, alterar atributos globais nem arquivar opções.
 7. Não há meios personalizados cadastrados atualmente. A consolidação deve verificar os dados existentes e preservar os vínculos de todas as transações, sem exclusão física de opções referenciadas.
+7. A consolidação deve verificar as opções existentes, preservar todos os vínculos de transações e impedir a exclusão física de qualquer opção referenciada.
 
 ### 27.4. Critérios Técnicos para o Catálogo Global de Meios de Pagamento
 
 * O estado global de arquivamento e a preferência individual de ativação devem ser armazenados separadamente.
 * A autorização para criar e arquivar é exclusiva do `dev` e validada no backend; a preferência individual deve ser sempre limitada ao usuário autenticado.
-* A migration deve preservar `transacoes.meio_pagamento_id`, consolidar os registros padrão em IDs canônicos e ser implementada primeiro para PostgreSQL/Neon, considerando também o MySQL legado enquanto suportado.
+* A migration deve remapear todos os valores de `transacoes.meio_pagamento_id` para IDs canônicos equivalentes antes de remover duplicatas; deve validar contagens, chaves estrangeiras e equivalência de nome/tipo, incluindo transações logicamente excluídas, e abortar integralmente diante de divergências. Implementar primeiro para PostgreSQL/Neon, considerando também o MySQL legado enquanto suportado.
+* Logs existentes de `auditoria_logs` são históricos e não devem ser reescritos nem apagados durante a consolidação; snapshots e IDs auditados permanecem como registrados.
 * Os dados padrão para novos usuários não devem mais clonar linhas de meios de pagamento por usuário.
 * Testes devem cobrir isolamento das preferências entre usuários, autorização do `dev`, seleção para novos lançamentos e exibição/edição de lançamentos históricos.
 

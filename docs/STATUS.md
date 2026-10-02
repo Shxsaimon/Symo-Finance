@@ -8,7 +8,6 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 - **Data da Última Atualização:** 01/10/2026
 - **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (regras alinhadas; implementação não iniciada)
-- **Massa de Dados para Demonstração:** Gerados 110 lançamentos, 14 transferências e 8 faturas de cartão no período de Março/2026 a Outubro/2026 para o perfil `dev` (ID 1). A operação limpa (DELETE) os dados anteriores do dev antes de recriar a massa. As transações de cartão vinculadas a faturas pagas (Março a Agosto) são marcadas com status `pago` e `data_pagamento`. Adicionada a opção `seed_demo` no GitHub Actions (`database-migrations.yml`), no helper `GitHubActionsHelper` e na tela de Configurações da aplicação.
 
 
 
@@ -30,6 +29,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
 - **Planejamento de evolução:** `AGENTS.md` agora orienta alinhar ideias de desenvolvimento e sugerir seu registro em `docs/PLANO.md`; as Fases 15 (feedbacks) e 16 (achados prioritários) foram adicionadas e atualizadas.
 - **Favicon dedicado:** Criado `public/img/favicon.svg` apenas com o ícone da marca (sem o texto "Symo"), usado nos layouts `main.php` e `auth.php`; o logo completo com texto continua sendo usado onde a marca é exibida por extenso.
+- **Perfil dev na gestão de usuários:** A tabela agora identifica explicitamente o perfil `dev` como `DEV`, em vez de exibi-lo incorretamente como `OPERADOR`.
 - **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
 - **Revisão Ortográfica do README:** `README.md` totalmente revisado quanto à grafia, acentuação e ortografia em português do Brasil (pt-BR), preservando o vocabulário, clareza técnica e estrutura originais.
 - **Atualização do Contexto para Agentes:** `AGENTS.md` revisado para refletir o FSD aprovado, com Vercel/Neon/Blob/GitHub Actions como stack oficial, PostgreSQL como banco principal, `admin` e `dev` com escopo financeiro próprio, `dev` com funções globais da plataforma, `operador` legado, isolamento por `usuario_id` e segredos por variáveis de ambiente.
@@ -164,7 +164,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Aplicado atributo `Secure` ao cookie de sessão quando a requisição usa HTTPS.
 - [x] Substituídos acessos SQL diretos por prepared statements na camada `app/`, no health check e no CLI de migrations.
 - [x] Executados lint PHP completo, diagnóstico do editor, testes HTTP de 302/403/404, proteção de diretórios e ausência de CDNs externas em runtime.
-- [x] Executado `migrate.php --status` com o MySQL ativo; as 11 migrations foram confirmadas como aplicadas.
+- [x] Verificado o estado das migrations em ambiente de desenvolvimento.
 - [x] Concluídos os testes manuais autenticados de RBAC, XSS/SQLi, uploads e exportação CSV.
 - [x] Validada a conformidade dos critérios de aceitação da seção 26 do `docs/FSD.md`.
 - [x] Sistema construído, banco de dados operacional e aplicação homologada para uso.
@@ -217,9 +217,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Restringir transações, transferências, agregados e lixeira ao proprietário, inclusive para `dev`.
 - [x] Confirmar com outro usuário que o resumo de transferências não expõe dados alheios.
 - [x] Confirmar Dashboard, listagem de transações, lixeira/estorno e os cenários de saldo das transferências.
-- [x] Testar acesso HTTP por ID como usuário 13 contra registros do `dev`: GET retorna 404 e edição, status, exclusão e estorno não alteram registros ou saldos.
+- [x] Testar acesso por identificadores de registros pertencentes a outro usuário; leituras e mutações não autorizadas foram bloqueadas sem alterar dados.
 - [x] Testar duas chamadas concorrentes a `Transfer::createTransfer`: uma conclui, a outra sofre rollback; origem é debitada e destino creditado uma única vez.
-- [x] Confirmar que fixtures, sessões e logs temporários foram removidos sem alterar dados financeiros do usuário 13.
+- [x] Confirmar a remoção dos dados temporários de teste sem alteração dos dados financeiros existentes.
 - [x] Revalidar o estado ativo do usuário nas requisições autenticadas.
 - [x] Validar lint, diagnósticos estáticos e whitespace.
 - **Estado:** Concluída; testes de isolamento e concorrência end-to-end aprovados no PostgreSQL.
@@ -229,7 +229,9 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Definir criação e arquivamento lógico globais como ações exclusivas do `dev`.
 - [x] Definir ativação/inativação individual por usuário, inclusive para o próprio `dev`, sem efeito sobre outras contas.
 - [x] Definir que opções arquivadas ou inativas não aparecem em novos lançamentos, mas permanecem nos vínculos e na exibição histórica.
-- [x] Confirmar que não há cadastros personalizados atuais; a migration ainda validará e preservará todos os vínculos existentes.
+- [x] Definir que a migration validará as opções existentes, derivará as correspondências canônicas e preservará os vínculos antes de remover duplicatas.
+- [x] Definir que a migration abortará em caso de divergência e manterá a auditoria histórica intacta.
+- [ ] Executar o remapeamento somente junto à migration que globaliza o catálogo; nenhuma escrita foi feita no Neon.
 - [ ] Implementar catálogo global, preferências individuais e atualização do cadastro de novos usuários.
 - [ ] Validar migration, isolamento, permissões, novos lançamentos e histórico em PostgreSQL; considerar compatibilidade MySQL legada.
 - **Estado:** Prioridade atual; alinhamento funcional concluído, implementação não iniciada.

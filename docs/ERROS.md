@@ -51,7 +51,7 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## 2026-09-16 - Upload Blob usando endpoint fabricado
 
-- **Sintoma:** O upload recebia `BLOB_READ_WRITE_TOKEN`, mas falhava ao validar a resposta porque o código enviava o arquivo para `https://blob.vercel-storage.com/...`, uma URL montada manualmente.
+- **Sintoma:** O upload falhava ao validar a resposta porque o fluxo usava um endpoint de armazenamento montado manualmente.
 - **Causa:** O fluxo não utilizava o SDK oficial, não suportava corretamente Blob privado e não possuía rota server-side para leitura autenticada.
 - **Solução aplicada:** Criada a Function `api/blob.js` com `@vercel/blob` para `put`, `get` e `del`; o PHP passou a chamá-la com segredo interno, guardar a URL retornada e servir imagens por rotas autenticadas. Adicionados suporte a SVG sanitizado e migration 012 para campos `TEXT`.
 - **Como evitar no futuro:** Não fabricar URLs do Blob nem expor tokens no navegador; testar upload, leitura e exclusão com o mesmo ambiente Vercel configurado.
@@ -86,8 +86,8 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## 2026-09-14 - Validação local do Neon bloqueada por extensões e banco local
 
-- **Sintoma:** `migrate.php --status` local falhou porque o MySQL em `localhost:3306` recusou conexão; o PHP do XAMPP também não possui `pdo_pgsql`.
-- **Causa:** O ambiente local ainda está configurado para MySQL e não tem o driver PDO PostgreSQL necessário para testar `DATABASE_URL` do Neon.
+- **Sintoma:** A verificação de migrations local falhou porque a conexão ao banco foi recusada e o PHP disponível não possuía o driver PostgreSQL necessário.
+- **Causa:** O ambiente local não estava preparado para conectar ao banco PostgreSQL de desenvolvimento.
 - **Solução aplicada:** O código foi preparado para PostgreSQL, mas a execução contra o Neon deve ser feita em um PHP com `pdo_pgsql` habilitado ou por uma ferramenta PostgreSQL compatível.
 - **Como evitar no futuro:** Validar `php -m` antes de executar migrations remotas e nunca usar `--fresh` contra o banco de produção.
 
@@ -123,22 +123,20 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## 2026-09-03 - Ausência de validação de saldo suficiente na conta de origem em transferências
 
-- **Sintoma:** Ao realizar uma transferência de valor superior ao saldo disponível na conta de origem (ex: transferir R$ 3.500,00 de uma conta com R$ 100,00), o sistema debitava a conta deixando-a com saldo negativo de R$ -3.400,00 e creditava integralmente o destino.
+- **Sintoma:** Uma transferência acima do saldo disponível podia debitar a conta de origem além do valor disponível e creditar integralmente o destino.
 - **Causa:** O método `Transfer::createTransfer()` validava apenas se o valor era positivo (`$valor > 0`) e se as contas eram diferentes (`origem != destino`), sem checar se o saldo atual da conta de origem cobria o montante solicitado.
 - **Solução aplicada:**
-  1. No Model [`Transfer.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Models/Transfer.php), adicionada checagem antes de abrir a transação PDO: `if ($saldoOrigem < $valor) throw new InvalidArgumentException(...)`, informando o saldo disponível e o valor solicitado.
-  2. Na View [`transfers/index.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Views/transfers/index.php), adicionado atributo `data-saldo` nas opções do seletor e validação preventiva em JavaScript para impedir o envio do formulário e alertar o usuário visualmente.
+  1. A operação passou a validar o saldo disponível no servidor e a atualizar os saldos de forma transacional.
+  2. A interface recebeu uma validação preventiva complementar; a validação do servidor permanece autoritativa.
 - **Como evitar no futuro:** Sempre incluir validação de disponibilidade de fundos tanto no backend quanto no frontend em qualquer operação mutatória de débito/transferência.
 
 ## 2026-09-03 - Data de vencimento de compras no cartão de crédito exibida como vencida no Dashboard
 
 - **Sintoma:** Compras efetuadas no cartão de crédito apareciam no widget de "Compromissos Pendentes" do Dashboard como vencidas (ex: "Venceu há 1d"), utilizando a data da compra (`data_transacao`) como se fosse o vencimento financeiro da despesa.
-- **Causa:** Na gravação da transação e na query de compromissos pendentes do Dashboard (`getUpcomingPending`), o sistema utilizava `t.data_vencimento` preenchido com a data da compra em vez de herdar a data de vencimento estipulada na fatura do cartão (`fc.data_vencimento`).
+- **Causa:** O vencimento da compra era calculado a partir da data da transação, sem considerar corretamente o ciclo da fatura associada.
 - **Solução aplicada:**
-  1. Nos métodos `createSingleTransaction` e `createInstallmentTransactions` em [`Transaction.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Models/Transaction.php), a `data_vencimento` da transação passa a herdar a `data_vencimento` da fatura mensal do cartão vinculada.
-  2. No método `getUpcomingPending()` em [`Transaction.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Models/Transaction.php), adicionado `LEFT JOIN faturas_cartao fc ON t.fatura_id = fc.id` utilizando `COALESCE(fc.data_vencimento, t.data_vencimento)` como data efetiva de cálculo.
-  3. Na view [`dashboard/index.php`](file:///c:/xampp/htdocs/Symo_Finance/app/Views/dashboard/index.php), a ação para compras de cartão direciona diretamente para o detalhe da fatura do cartão em vez do botão de pagamento individual avulso.
-  4. Executada sincronização das transações já gravadas no banco de dados.
+  1. O cálculo de vencimento passou a considerar a fatura associada à compra.
+  2. O Dashboard e as ações correspondentes passaram a usar o vencimento da fatura.
 - **Como evitar no futuro:** Em modelos financeiros com cartões de crédito, sempre desacoplar a data de competência/compra da data de vencimento da obrigação financeira (fatura).
 
 
@@ -152,9 +150,9 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 ## 2026-09-09 - PHP fora do PATH durante a validação
 
 - **Sintoma:** O comando `php -l` não foi reconhecido no PowerShell.
-- **Causa:** O executável do PHP do XAMPP não está disponível no `PATH` da sessão.
-- **Solução aplicada:** As validações foram executadas com `C:\xampp\php\php.exe`.
-- **Como evitar no futuro:** Configurar o PHP do XAMPP no `PATH` ou usar explicitamente o executável local nos scripts de validação.
+- **Causa:** O executável do PHP não estava disponível no `PATH` da sessão.
+- **Solução aplicada:** As validações foram executadas com o interpretador PHP configurado no ambiente local.
+- **Como evitar no futuro:** Configurar o PHP no `PATH` ou usar o executável local configurado para as validações.
 
 ---
 

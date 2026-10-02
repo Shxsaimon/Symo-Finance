@@ -252,7 +252,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Testar contingência de logs simulando falha no banco de dados.
   - [x] Verificar ausência de dependências de CDNs externas em tempo de execução.
   - [x] Validar integralmente a conformidade de todos os itens da seção 26 do `docs/FSD.md`.
-- **Validações executadas:** Lint PHP dos 76 arquivos, `migrate.php --status` com as 11 migrations aplicadas, testes HTTP de redirecionamento/403/404, proteção de diretórios internos e análise estática de SQL/CDNs.
+- **Validações executadas:** Lint PHP, verificação do estado das migrations, testes HTTP de autenticação/autorização, proteção de arquivos internos e análise estática.
 - **Critérios de Pronto:**
   - 100% dos critérios de aceitação do FSD atendidos.
   - Sistema homologado e pronto para uso em produção.
@@ -301,7 +301,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Atualizar FSD, AGENTS, README, PLANO e STATUS para documentar o escopo financeiro próprio de `admin` e `dev`.
   - [x] Executar lint PHP, diagnósticos estáticos e `git diff --check`.
   - [x] Testar acesso direto por ID com outro usuário: GET de transação alheia retorna 404; edição, mudança de status, exclusão e estorno não alteram registros nem saldos do proprietário.
-  - [x] Testar concorrência do débito condicional no PostgreSQL com duas conexões: ambas leem saldo de R$ 0,01; uma atualização afeta 1 linha, a outra 0, e o saldo final não fica negativo.
+  - [x] Testar concorrência do débito condicional no PostgreSQL: uma operação concorrente é aceita, a outra é recusada e o saldo não fica negativo.
   - [x] Testar concorrência end-to-end por `Transfer::createTransfer`: uma transferência foi criada, a concorrente recusada/rollback, origem debitada uma vez e destino creditado uma vez.
   - [x] Inativar um usuário com sessão ativa e confirmar que a próxima requisição bloqueia o acesso.
 - **Estado:** Concluída; testes de isolamento e transferência concorrente end-to-end aprovados no PostgreSQL.
@@ -314,10 +314,19 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - O arquivamento é lógico: a opção deixa de estar disponível para novos lançamentos, mas permanece vinculada e visível no histórico, inclusive ao consultar ou editar lançamentos antigos.
   - Cada usuário, inclusive `dev`, poderá ativar/inativar opções apenas para si. A preferência individual altera as opções oferecidas em novos lançamentos e não afeta outros usuários.
   - Usuários comuns não poderão criar, editar os dados globais ou arquivar opções.
-  - Não há meios personalizados cadastrados atualmente; a migração ainda deverá verificar os registros e preservar todos os vínculos de transações.
+  - **Reconciliação:** a migration deverá derivar internamente a correspondência entre opções existentes e canônicas por atributos aprovados. Não registrar em documentação valores, IDs, volumes nem resultados do ambiente.
+  - **Sequência obrigatória da reconciliação, dentro da implantação da Fase 17:**
+    1. Validar que cada opção existente possui correspondência canônica única; interromper a migration e solicitar análise se houver ausência ou ambiguidade.
+    2. Registrar, somente no contexto operacional protegido da migration, as contagens de vínculos anteriores para conferência.
+    3. Remapear todos os lançamentos para as opções canônicas, incluindo registros logicamente excluídos.
+    4. Confirmar que nenhum vínculo foi perdido e que não restam referências às opções duplicadas.
+    5. Remover duplicatas somente após as verificações. A migration deve ser atômica e abortar integralmente diante de qualquer divergência.
+    6. Preservar registros de auditoria e seus snapshots históricos, sem reescrita ou exclusão.
+  - A reconciliação deve ocorrer somente como parte da migration que transforma o modelo em catálogo global.
+-  - [ ] Implementar a sequência de reconciliação acima, validando equivalências e integridade referencial sem registrar dados do ambiente na documentação.
 - **Checklist de implementação:**
   - [ ] Criar migration compatível primeiro com PostgreSQL e, se mantida, com MySQL legado, separando catálogo global, arquivamento global e preferência individual.
-  - [ ] Consolidar os registros padrão existentes para IDs canônicos e preservar as referências de `transacoes.meio_pagamento_id`; não remover opção referenciada fisicamente.
+  - [ ] Implementar a sequência de reconciliação acima, validando IDs, equivalências, contagens de transações, chaves estrangeiras e auditoria antes de concluir.
   - [ ] Atualizar cadastro de novos usuários para usar o catálogo global, sem clonar meios de pagamento por usuário.
   - [ ] Atualizar model, controller, rotas e interface: manutenção global de criação/arquivamento exclusiva do `dev`; ativação/inativação individual para qualquer usuário autenticado.
   - [ ] Garantir que formulários de novos lançamentos ofereçam apenas opções não arquivadas e não inativadas pelo usuário atual.

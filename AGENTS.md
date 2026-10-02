@@ -149,7 +149,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 - OAuth Google possui preparação de configuração e banco, mas não possui fluxo ativo.
 - A tela de esqueci a senha existe, mas não há recuperação por e-mail implementada.
 - Contas compartilhadas são roadmap. Não criar tabelas, rotas ou telas desse recurso sem especificação complementar e aprovação.
-- A Fase 17 prioriza o catálogo global de meios de pagamento: somente `dev` cria e arquiva opções globalmente; qualquer usuário autenticado, inclusive `dev`, pode ativar/inativar opções apenas para si. Arquivamento é lógico, não remove vínculos históricos e impede novos usos. A migration deve preservar os IDs referenciados por transações. A Fase 18 trata do compartilhamento por conta; categorias, cartões, faturas e preferências continuam pessoais. Nenhuma dessas evoluções está implementada no estado atual.
+- A Fase 17 prioriza o catálogo global de meios de pagamento: somente `dev` cria e arquiva opções globalmente; qualquer usuário autenticado, inclusive `dev`, pode ativar/inativar opções apenas para si. Arquivamento é lógico, não remove vínculos históricos e impede novos usos. Na consolidação, a migration deve remapear as transações aos IDs canônicos, validar todos os vínculos e só então remover duplicatas; auditoria histórica não deve ser reescrita. A Fase 18 trata do compartilhamento por conta; categorias, cartões, faturas e preferências continuam pessoais. Nenhuma dessas evoluções está implementada no estado atual.
 - Fora de escopo: Open Finance, OFX, importação bancária, boletos, gateways de pagamento, anexos de comprovantes, metas orçamentárias, recorrência infinita, conversão cambial em tempo real, PDF nativo e notificações de vencimento por e-mail.
 
 ---
@@ -170,6 +170,15 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 9. **IDOR:** validar propriedade de contas, categorias, meios, cartões, faturas e transações relacionadas antes de qualquer operação.
 10. **Arquivos privados:** Blob é privado; tokens nunca vão para o navegador; avatar e logotipo são entregues por rotas autenticadas.
 11. **Mensagens:** telas públicas não exibem stack trace, SQL, credenciais, URLs privadas ou detalhes de infraestrutura.
+
+### Política para Documentos Vivos
+
+Trate `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md` e `docs/ERROS.md` como documentos públicos, mesmo enquanto o repositório for privado.
+
+- Nunca registrar dados reais ou derivados do banco ou de usuários, ainda que pareçam indiretos: identificadores, nomes ou e-mails de pessoas/registros; volumes, contagens, distribuições, mapeamentos, vínculos, estados ou datas de registros; exemplos, resultados de consultas, screenshots ou dados de testes baseados no ambiente. Nomes fixos de funcionalidades e opções padronizadas do produto podem ser documentados como regras, sem associação a registros reais.
+- Nunca registrar segredos, valores de configuração, endereços de serviços privados, detalhes operacionais destrutivos, vulnerabilidades exploráveis ou outros detalhes técnicos que possam facilitar acesso, enumeração, alteração ou indisponibilidade do sistema.
+- Documentar somente regras funcionais e critérios técnicos abstratos necessários ao produto. Para descrever migrações, usar invariantes genéricas (por exemplo, preservar vínculos, validar integridade e abortar em caso de divergência), sem IDs, volumes, amostras ou resultados de ambiente.
+- Antes de concluir qualquer alteração documental, revisar os quatro arquivos por exposição direta e indireta; generalizar ou remover o conteúdo sensível. Não copiar saídas de terminal, consultas, logs ou dados de usuários para eles.
 
 ---
 
