@@ -17,8 +17,8 @@ Este arquivo define o contexto técnico, as regras de segurança, os limites de 
 O **Symo Finance** é uma plataforma web de gestão financeira pessoal para pessoas, casais, famílias, freelancers e MEIs.
 
 - Cada usuário possui uma conta financeira individual e privada por padrão.
-- No estado atual, contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios, preferências e lixeira são isolados por `usuario_id`.
-- O cadastro público cria um usuário `admin` da própria conta, com categorias, meios de pagamento e preferências padrão; a Fase 17 removerá a clonagem de meios de pagamento por usuário.
+- Contas, categorias, cartões, transações, transferências, relatórios, preferências e lixeira permanecem isolados por usuário. Meios de pagamento estão em transição do cadastro por usuário para catálogo global; a aplicação da migration 018 deve preceder a ativação da nova versão em produção.
+- O cadastro público cria um usuário `admin` da própria conta, com categorias e preferências padrão; meios de pagamento vêm do catálogo global e a disponibilidade inicial é ativa.
 - O perfil `dev` é um usuário técnico criado pelo seed, responsável pela operação global da plataforma. Como usuário financeiro, mantém escopo próprio por `usuario_id`, igual ao `admin`.
 - O perfil `operador` permanece no código por compatibilidade, não é usado no produto atual e não será um papel global no modelo futuro.
 - A visão futura contempla compartilhar contas específicas por vínculo de permissões à conta. O participante verá apenas lançamentos posteriores ao aceite; esse recurso não existe no estado atual.
@@ -149,7 +149,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 - OAuth Google possui preparação de configuração e banco, mas não possui fluxo ativo.
 - A tela de esqueci a senha existe, mas não há recuperação por e-mail implementada.
 - Contas compartilhadas são roadmap. Não criar tabelas, rotas ou telas desse recurso sem especificação complementar e aprovação.
-- A Fase 17 prioriza o catálogo global de meios de pagamento: somente `dev` cria e arquiva opções globalmente; qualquer usuário autenticado, inclusive `dev`, pode ativar/inativar opções apenas para si. Arquivamento é lógico, não remove vínculos históricos e impede novos usos. Na consolidação, a migration deve remapear as transações aos IDs canônicos, validar todos os vínculos e só então remover duplicatas; auditoria histórica não deve ser reescrita. A Fase 18 trata do compartilhamento por conta; categorias, cartões, faturas e preferências continuam pessoais. Nenhuma dessas evoluções está implementada no estado atual.
+- A Fase 17 implementa o catálogo global de meios de pagamento: somente `dev` cria, edita e arquiva opções globalmente; qualquer usuário autenticado, inclusive `dev`, ativa/inativa opções apenas para si. Arquivamento é lógico, não remove vínculos históricos e impede novos usos. A migration remapeia as transações antes de remover duplicatas, valida a integridade e preserva a auditoria. Executar o workflow oficial da migration antes de ativar o código em produção. A Fase 18, compartilhamento por conta, continua no roadmap; categorias, cartões, faturas e preferências continuam pessoais.
 - Fora de escopo: Open Finance, OFX, importação bancária, boletos, gateways de pagamento, anexos de comprovantes, metas orçamentárias, recorrência infinita, conversão cambial em tempo real, PDF nativo e notificações de vencimento por e-mail.
 
 ---
@@ -213,7 +213,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ## 11. Banco de Dados e Migrations
 
 - Tabelas atuais: `usuarios`, `contas`, `categorias`, `meios_pagamento`, `transacoes`, `transferencias`, `cartoes_credito`, `faturas_cartao`, `auditoria_logs`, `seguranca_logs`, `erros_logs`, `configuracoes`, `migracoes`, `sessoes`, `configuracoes_usuario` e `feedback`.
-- Migrations 013 a 016 introduzem `dev`, `google_id`, senha anulável para OAuth futuro, `usuario_id` nas entidades financeiras, preferências por usuário e feedback.
+- Migrations 013 a 016 introduzem `dev`, `google_id`, senha anulável para OAuth futuro, `usuario_id` nas entidades financeiras, preferências por usuário e feedback. A migration 018 globaliza o catálogo de meios de pagamento e cria disponibilidade individual.
 - PostgreSQL é o banco oficial. Ao escrever SQL compatível, verificar diferenças de `NOW()`, `CURRENT_DATE`, `EXTRACT`, tipos identity, `RETURNING`, `INTERVAL`, `ENUM/CHECK`, quoting e `lastInsertId()`.
 - A classe `SymoPostgresConnection` normaliza somente compatibilidades conhecidas; não usar essa normalização como justificativa para escrever SQL ambíguo.
 - Migrations destrutivas ou que assumam tabelas vazias devem documentar essa condição e exigir fluxo `fresh` autorizado.

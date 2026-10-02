@@ -2,13 +2,13 @@
 
 ---
 
-> **Versão 2.1 — 01/10/2026.** Este documento preserva a estrutura integral de 28 seções do FSD original, mas descreve o estado real do Symo Finance: dados isolados por usuário, operação serverless com Vercel, PostgreSQL no Neon e arquivos privados no Vercel Blob. Recursos em planejamento são identificados explicitamente e não devem ser tratados como entregues.
+> **Versão 2.3 — 01/10/2026.** Este documento preserva a estrutura integral de 28 seções do FSD original e distingue o estado implantado das evoluções em rollout. Os dados financeiros permanecem isolados por usuário; a Fase 17 migra os meios de pagamento para catálogo global com ativação individual.
 
 ## 1. Visão Geral
 
 * **Nome do Sistema:** Symo Finance — Gestão Financeira Pessoal e Compartilhada.
 * **Objetivo Principal:** Fornecer uma plataforma web intuitiva para pessoas, casais, famílias, freelancers e MEIs registrarem receitas, despesas, transferências e faturas, com clareza entre saldos realizados e compromissos futuros.
-* **Resumo do Funcionamento Atual:** Cada pessoa cria sua própria conta Symo. Contas financeiras, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira são isolados pelo identificador do usuário autenticado. O sistema oferece lançamentos à vista ou parcelados, acompanhamento de faturas, dashboard, auditoria, exclusão lógica e exportação CSV.
+* **Resumo do Funcionamento Atual:** Cada pessoa cria sua própria conta Symo. Contas financeiras, categorias, cartões, transações, transferências, relatórios e lixeira são isolados pelo usuário autenticado. A Fase 17 migra os meios de pagamento para catálogo global, mantendo a ativação/inativação como preferência individual. O sistema oferece lançamentos à vista ou parcelados, acompanhamento de faturas, dashboard, auditoria, exclusão lógica e exportação CSV.
 * **Visão de Colaboração:** A evolução planejada permitirá compartilhar seletivamente uma conta financeira por convite e permissões vinculadas à conta, nunca por papel global. Após o aceite, o participante verá somente lançamentos posteriores e do escopo compartilhado; não receberá acesso ao perfil financeiro inteiro.
 * **Público Usuário:**
 * Pessoas físicas que buscam organizar o orçamento pessoal e planeamento financeiro;
@@ -299,10 +299,11 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.6. Módulo de Cadastros Básicos (Contas, Categorias e Meios de Pagamento)
 
 * **Objetivo:** Estruturar a base cadastral de suporte aos lançamentos financeiros.
-* **Usuários Envolvidos:** Contas, categorias, meios de pagamento e cartões pertencem ao usuário autenticado no estado atual; `admin` e `dev` administram os próprios itens.
+* **Usuários Envolvidos:** Contas, categorias e cartões pertencem ao usuário autenticado; `admin` e `dev` administram os próprios itens. Meios de pagamento seguem o catálogo global da Fase 17, com disponibilidade individual.
 
 
 * **Ações Permitidas:** Criação, edição, inativação e reativação de itens cadastrais.
+* **Ações Permitidas:** O `dev` cria, edita e arquiva opções globais. Cada usuário autenticado ativa/inativa opções para si. Contas, categorias e cartões continuam sob administração do próprio usuário.
 * **Resultado Esperado:** Padronização dos lançamentos financeiros sem risco de redundância ou criação desordenada de dados por operadores.
 
 ### 6.7. Módulo de Relatórios e Exportação CSV
@@ -366,7 +367,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * **Descrição:** Proprietário da própria conta financeira individual.
 * **Permissões:** Acesso integral apenas aos seus dados financeiros e preferências pessoais. Não é administrador global da plataforma.
 * **Ações Exclusivas:**
-* Gestão de contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira próprios;
+* Gestão de contas, categorias, cartões, transações, transferências, relatórios e lixeira próprios; ativação/inativação individual de meios de pagamento;
 * Atualização do próprio perfil, senha e avatar;
 * Alteração de preferências individuais de moeda, separadores e paginação;
 * Futuramente, gestão de convites e permissões das contas financeiras de sua propriedade.
@@ -392,6 +393,9 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 | Editar / Excluir Transações Próprias | Sim | Legado; sem compartilhamento ativo | Sim |
 | Editar / Excluir Transações de Outros Usuários | Não | Não | Não |
 | Cadastrar / Editar Contas, Categorias e Meios | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Cadastrar / Editar Contas e Categorias | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Ativar / Inativar Meios de Pagamento | Individual | Legado; sem compartilhamento ativo | Individual |
+| Criar / Editar / Arquivar Catálogo de Meios | Não | Não | Sim |
 | Gerenciar Cartões e Faturas | Próprios | Legado; sem compartilhamento ativo | Próprios |
 | Emitir Relatórios e Exportar CSV | Próprios | Legado; sem compartilhamento ativo | Próprios |
 | Lixeira | Própria | Legado; sem compartilhamento ativo | Própria |
@@ -480,7 +484,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 * **Finalidade:** Modalidade utilizada para liquidar as transações (ex: Dinheiro, Pix, Débito, Crédito, Boleto, Transferência).
 * **Informações:** Nome, tipo de liquidação (imediata ou a prazo/fatura), status (`ativo` ou `inativo`), timestamps e soft delete.
-* **Regras:** Gerenciado exclusivamente pelo Administrador.
+* **Regras:** Catálogo global; o perfil `dev` cria, edita e arquiva opções. Cada usuário autenticado ativa/inativa opções somente para si. O arquivamento é lógico e preserva lançamentos históricos.
 
 ### 10.5. Cartão de Crédito (`CreditCard`)
 
@@ -590,7 +594,16 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `deleted_by`: INT UNSIGNED NULL
 * *Índices:* `idx_payment_methods_status (status)`, `idx_payment_methods_deleted_at (deleted_at)`
 
-**Evolução planejada na Fase 17:** a tabela deixa de ser vinculada a `usuario_id` e passa a representar o catálogo global. O arquivamento global será lógico e controlado pelo `dev`; uma preferência vinculada a usuário e meio de pagamento controlará a ativação individual. O desenho físico da migration deverá preservar as referências existentes em transações e impedir exclusão física de opções referenciadas.
+**Transição da Fase 17:** a migration remove `usuario_id` da tabela de catálogo. O arquivamento usa exclusão lógica, exclusiva do `dev`, e preserva os vínculos das transações.
+
+#### Tabela `meios_pagamento_usuario`
+
+* `usuario_id`: INTEGER NOT NULL, FK para `usuarios`.
+* `meio_pagamento_id`: INTEGER NOT NULL, FK para `meios_pagamento`.
+* `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'; preferência individual de disponibilidade.
+* *Chave primária:* (`usuario_id`, `meio_pagamento_id`).
+
+Sem preferência registrada, a opção é considerada ativa. A migration consolida referências antes de remover duplicatas e preserva transações e auditoria histórica.
 
 #### Tabela `cartoes_credito`
 
@@ -1327,7 +1340,7 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 1. **OAuth Google:** Implementar autorização, callback, validação de identidade, vínculo por `google_id`, login e criação de conta com dados padrão.
 2. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
 3. **Contas Compartilhadas:** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
-4. **Catálogo Global de Meios de Pagamento (Fase 17):** Um catálogo único substituirá os cadastros por usuário. O `dev` poderá criar opções e arquivá-las logicamente; usuários autenticados poderão ativar/inativar cada opção apenas para si. Opções arquivadas globalmente ou inativas para o usuário não estarão disponíveis em novos lançamentos, mas as referências e a exibição histórica serão preservadas. O catálogo inicial terá Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária. Não há registros personalizados atualmente; a migration deverá validar os dados existentes e consolidar os IDs sem perder vínculos.
+4. **Catálogo Global de Meios de Pagamento (Fase 17):** Um catálogo único substituirá os cadastros por usuário. O `dev` poderá criar opções e arquivá-las logicamente; usuários autenticados poderão ativar/inativar cada opção apenas para si. Opções arquivadas globalmente ou inativas para o usuário não estarão disponíveis em novos lançamentos, mas as referências e a exibição histórica serão preservadas. O catálogo inicial terá Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária. A migration deverá validar equivalências e preservar todos os vínculos.
 5. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
 6. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
 
@@ -1361,14 +1374,13 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 4. Opções arquivadas globalmente ou inativadas pelo usuário não são oferecidas em novos lançamentos daquele escopo.
 5. Lançamentos existentes continuam exibindo o meio associado após arquivamento ou inativação. Ao editar um lançamento antigo, o vínculo existente deve ser preservado mesmo que a opção não esteja disponível para novos lançamentos.
 6. Usuários comuns não podem criar opções, alterar atributos globais nem arquivar opções.
-7. Não há meios personalizados cadastrados atualmente. A consolidação deve verificar os dados existentes e preservar os vínculos de todas as transações, sem exclusão física de opções referenciadas.
 7. A consolidação deve verificar as opções existentes, preservar todos os vínculos de transações e impedir a exclusão física de qualquer opção referenciada.
 
 ### 27.4. Critérios Técnicos para o Catálogo Global de Meios de Pagamento
 
 * O estado global de arquivamento e a preferência individual de ativação devem ser armazenados separadamente.
 * A autorização para criar e arquivar é exclusiva do `dev` e validada no backend; a preferência individual deve ser sempre limitada ao usuário autenticado.
-* A migration deve remapear todos os valores de `transacoes.meio_pagamento_id` para IDs canônicos equivalentes antes de remover duplicatas; deve validar contagens, chaves estrangeiras e equivalência de nome/tipo, incluindo transações logicamente excluídas, e abortar integralmente diante de divergências. Implementar primeiro para PostgreSQL/Neon, considerando também o MySQL legado enquanto suportado.
+* A migration deve remapear todas as referências de `transacoes.meio_pagamento_id` para opções canônicas equivalentes antes de remover duplicatas; deve validar a integridade referencial e a equivalência de nome/tipo, incluindo transações logicamente excluídas, e abortar integralmente diante de divergências. Implementar primeiro para PostgreSQL/Neon, considerando também o MySQL legado enquanto suportado.
 * Logs existentes de `auditoria_logs` são históricos e não devem ser reescritos nem apagados durante a consolidação; snapshots e IDs auditados permanecem como registrados.
 * Os dados padrão para novos usuários não devem mais clonar linhas de meios de pagamento por usuário.
 * Testes devem cobrir isolamento das preferências entre usuários, autorização do `dev`, seleção para novos lançamentos e exibição/edição de lançamentos históricos.

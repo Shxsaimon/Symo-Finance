@@ -19,7 +19,6 @@ abstract class Model
     private const TABELAS_COM_PROPRIETARIO = [
         'contas',
         'categorias',
-        'meios_pagamento',
         'cartoes_credito',
     ];
 

@@ -6,186 +6,239 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Model de Meios de Pagamento (PaymentMethod)
  *
- * Gerencia as formas de liquidação (Pix, Dinheiro, Cartão de Débito, Boleto, etc.),
- * checagem de transações associadas e auditoria.
+ * Mantém o catálogo global e as preferências individuais de disponibilidade.
  */
 class PaymentMethod extends Model
 {
     protected string $tabela = 'meios_pagamento';
     protected string $chavePrimaria = 'id';
 
-    /**
-     * Retorna todos os meios de pagamento ativos e não excluídos.
-     *
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     public function getActive(): array
     {
-        $sql = "SELECT * FROM `meios_pagamento` 
-            WHERE usuario_id = :usuario_id AND status = 'ativo' AND excluido_em IS NULL
-                ORDER BY nome ASC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll();
+        return $this->getActiveForUser((int) AuthHelper::id());
     }
 
-    /**
-     * Alias semântico para getActive().
-     *
-     * @return array<int, array<string, mixed>>
-     */
+    /** @return array<int, array<string, mixed>> */
     public function getActivePaymentMethods(): array
     {
         return $this->getActive();
     }
 
-    /**
-     * Cadastra um novo meio de pagamento.
-     *
-     * @param array<string, mixed> $data
-     * @param int $userId
-     * @return int ID do novo meio de pagamento
-     */
+    /** @return array<int, array<string, mixed>> */
+    public function getActiveForUser(int $userId): array
+    {
+        $this->assertCurrentUser($userId);
+        $sql = "SELECT mp.id, mp.nome, mp.eh_credito, mp.status AS status_global,
+                       COALESCE(mpu.status, 'ativo') AS status
+                FROM meios_pagamento mp
+                LEFT JOIN meios_pagamento_usuario mpu
+                    ON mpu.meio_pagamento_id = mp.id AND mpu.usuario_id = :usuario_id
+                WHERE mp.excluido_em IS NULL AND mp.status = 'ativo'
+                  AND COALESCE(mpu.status, 'ativo') = 'ativo'
+                ORDER BY mp.nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getForUser(int $userId): array
+    {
+        $this->assertCurrentUser($userId);
+        $sql = "SELECT mp.id, mp.nome, mp.eh_credito, mp.status AS status_global,
+                       COALESCE(mpu.status, 'ativo') AS status,
+                       CASE WHEN mp.excluido_em IS NULL THEN 0 ELSE 1 END AS arquivado
+                FROM meios_pagamento mp
+                LEFT JOIN meios_pagamento_usuario mpu
+                    ON mpu.meio_pagamento_id = mp.id AND mpu.usuario_id = :usuario_id
+                ORDER BY mp.nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getForHistoricalTransaction(int $id): ?array
+    {
+        $stmt = $this->db->prepare('SELECT id, nome, eh_credito, excluido_em FROM meios_pagamento WHERE id = :id LIMIT 1');
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        $method = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $method === false ? null : $method;
+    }
+
+    public function isAvailableForUser(int $id, int $userId): bool
+    {
+        $this->assertCurrentUser($userId);
+        $sql = "SELECT 1 FROM meios_pagamento mp
+                LEFT JOIN meios_pagamento_usuario mpu
+                    ON mpu.meio_pagamento_id = mp.id AND mpu.usuario_id = :usuario_id
+                WHERE mp.id = :id AND mp.excluido_em IS NULL AND mp.status = 'ativo'
+                  AND COALESCE(mpu.status, 'ativo') = 'ativo'
+                LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchColumn() !== false;
+    }
+
     public function createPaymentMethod(array $data, int $userId): int
     {
+        $this->requireDev($userId);
+        $nome = trim((string) ($data['nome'] ?? ''));
+        if ($nome === '' || mb_strlen($nome) > 80) {
+            throw new InvalidArgumentException('Informe um nome válido para o meio de pagamento.');
+        }
+
         $ehCredito = !empty($data['eh_credito']) ? 1 : 0;
+        if ($this->nameExists($nome, $ehCredito)) {
+            throw new InvalidArgumentException('Já existe uma opção global com esse nome e modalidade.');
+        }
 
-        $sql = "INSERT INTO `meios_pagamento` (usuario_id, nome, eh_credito, status, criado_em, atualizado_em)
-            VALUES (:usuario_id, :nome, :eh_credito, :status, NOW(), NOW())";
-
+        $sql = "INSERT INTO meios_pagamento (nome, eh_credito, status, criado_em, atualizado_em)
+                VALUES (:nome, :eh_credito, 'ativo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+            $sql .= ' RETURNING id';
+        }
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
-        $stmt->bindValue(':eh_credito', $ehCredito, PDO::PARAM_INT);
-        $stmt->bindValue(':status', $data['status'] ?? 'ativo', PDO::PARAM_STR);
-        $stmt->execute();
+        $stmt->execute(['nome' => $nome, 'eh_credito' => $ehCredito]);
+        $newId = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql'
+            ? (int) $stmt->fetchColumn()
+            : (int) $this->db->lastInsertId();
 
-        $novoId = (int) $this->db->lastInsertId();
-
-        $this->logAudit('INSERT', $novoId, null, [
-            'nome'       => $data['nome'],
+        $this->logAudit('INSERT', $newId, null, [
+            'nome' => $nome,
             'eh_credito' => $ehCredito,
-            'status'     => $data['status'] ?? 'ativo'
         ], $userId);
 
-        return $novoId;
+        return $newId;
     }
 
-    /**
-     * Atualiza um meio de pagamento existente.
-     *
-     * @param int $id
-     * @param array<string, mixed> $data
-     * @param int $userId
-     * @return bool
-     */
     public function updatePaymentMethod(int $id, array $data, int $userId): bool
     {
-        $antigo = $this->find($id);
-        if (!$antigo) {
+        $this->requireDev($userId);
+        $old = $this->find($id);
+        if (!$old) {
             return false;
         }
 
-        $ehCredito = isset($data['eh_credito']) ? (!empty($data['eh_credito']) ? 1 : 0) : (int) $antigo['eh_credito'];
-
-        $sql = "UPDATE `meios_pagamento` 
-                SET nome = :nome, 
-                    eh_credito = :eh_credito, 
-                    status = :status, 
-                    atualizado_em = NOW() 
-                WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':nome', trim((string) $data['nome']), PDO::PARAM_STR);
-        $stmt->bindValue(':eh_credito', $ehCredito, PDO::PARAM_INT);
-        $stmt->bindValue(':status', $data['status'] ?? $antigo['status'], PDO::PARAM_STR);
-        $success = $stmt->execute();
-
-        if ($success) {
-            $novo = $this->find($id);
-            $this->logAudit('UPDATE', $id, $antigo, $novo, $userId);
+        $nome = trim((string) ($data['nome'] ?? ''));
+        if ($nome === '' || mb_strlen($nome) > 80) {
+            throw new InvalidArgumentException('Informe um nome válido para o meio de pagamento.');
         }
 
-        return $success;
+        $ehCredito = !empty($data['eh_credito']) ? 1 : 0;
+        if ($this->nameExists($nome, $ehCredito, $id)) {
+            throw new InvalidArgumentException('Já existe outra opção global com esse nome e modalidade.');
+        }
+
+        $stmt = $this->db->prepare("UPDATE meios_pagamento
+            SET nome = :nome, eh_credito = :eh_credito, atualizado_em = CURRENT_TIMESTAMP
+            WHERE id = :id AND excluido_em IS NULL");
+        $stmt->execute(['nome' => $nome, 'eh_credito' => $ehCredito, 'id' => $id]);
+        $new = $this->find($id);
+        if ($new === null) {
+            return false;
+        }
+
+        $this->logAudit('UPDATE', $id, $old, $new, $userId);
+        return true;
     }
 
-    /**
-     * Alterna o status entre 'ativo' e 'inativo'.
-     *
-     * @param int $id
-     * @param int $userId
-     * @return bool
-     */
     public function toggleStatus(int $id, int $userId): bool
     {
-        $item = $this->find($id);
-        if (!$item) {
+        $this->assertCurrentUser($userId);
+        if ($this->getForHistoricalTransaction($id) === null || !$this->isGloballyAvailable($id)) {
             return false;
         }
 
-        $novoStatus = ($item['status'] === 'ativo') ? 'inativo' : 'ativo';
-
-        $sql = "UPDATE `meios_pagamento` SET status = :status, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':status', $novoStatus, PDO::PARAM_STR);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
-        $success = $stmt->execute();
-
-        if ($success) {
-            $this->logAudit('UPDATE_STATUS', $id, ['status' => $item['status']], ['status' => $novoStatus], $userId);
+        $oldStatus = $this->getPersonalStatus($id, $userId);
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+            $sql = "INSERT INTO meios_pagamento_usuario (usuario_id, meio_pagamento_id, status)
+                    VALUES (:usuario_id, :meio_id, 'inativo')
+                    ON CONFLICT (usuario_id, meio_pagamento_id) DO UPDATE
+                    SET status = CASE WHEN meios_pagamento_usuario.status = 'ativo' THEN 'inativo' ELSE 'ativo' END,
+                        atualizado_em = CURRENT_TIMESTAMP";
+        } else {
+            $sql = "INSERT INTO meios_pagamento_usuario (usuario_id, meio_pagamento_id, status)
+                    VALUES (:usuario_id, :meio_id, 'inativo')
+                    ON DUPLICATE KEY UPDATE
+                    status = IF(status = 'ativo', 'inativo', 'ativo'), atualizado_em = CURRENT_TIMESTAMP";
         }
-
-        return $success;
-    }
-
-    /**
-     * Verifica se o meio de pagamento está associado a lançamentos.
-     *
-     * @param int $id
-     * @return bool
-     */
-    public function hasTransactions(int $id): bool
-    {
-        $sql = "SELECT COUNT(*) as total FROM `transacoes` WHERE meio_pagamento_id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
-        $stmt->execute();
-        $res = $stmt->fetch();
-        return ((int) ($res['total'] ?? 0)) > 0;
+        $stmt->execute(['usuario_id' => $userId, 'meio_id' => $id]);
+
+        $newStatus = $this->getPersonalStatus($id, $userId);
+        $this->logAudit('UPDATE', $id, ['status_pessoal' => $oldStatus], ['status_pessoal' => $newStatus], $userId);
+        return true;
     }
 
-    /**
-     * Realiza a exclusão lógica segura se não estiver vinculado a movimentações.
-     *
-     * @param int $id
-     * @param int $userId
-     * @return array{success: bool, message: string}
-     */
+    /** @return array{success: bool, message: string} */
     public function deletePaymentMethod(int $id, int $userId): array
     {
-        $item = $this->find($id);
-        if (!$item) {
+        $this->requireDev($userId);
+        $old = $this->find($id);
+        if (!$old) {
             return ['success' => false, 'message' => 'Meio de pagamento não encontrado.'];
         }
 
-        if ($this->hasTransactions($id)) {
-            return [
-                'success' => false,
-                'message' => 'Este meio de pagamento está associado a transações e não pode ser excluído. Sugerimos inativá-lo.'
-            ];
+        $stmt = $this->db->prepare('UPDATE meios_pagamento SET excluido_em = CURRENT_TIMESTAMP, excluido_por = :usuario_id, atualizado_em = CURRENT_TIMESTAMP WHERE id = :id AND excluido_em IS NULL');
+        $stmt->execute(['usuario_id' => $userId, 'id' => $id]);
+        if ($stmt->rowCount() === 0) {
+            return ['success' => false, 'message' => 'Meio de pagamento não encontrado.'];
         }
 
-        $deleted = $this->softDelete($id, $userId);
-        if ($deleted) {
-            $this->logAudit('SOFT_DELETE', $id, $item, ['excluido_em' => date('Y-m-d H:i:s'), 'excluido_por' => $userId], $userId);
-            return ['success' => true, 'message' => 'Meio de pagamento excluído com sucesso.'];
-        }
+        $this->logAudit('SOFT_DELETE', $id, $old, ['arquivado' => true], $userId);
+        return ['success' => true, 'message' => 'Meio de pagamento arquivado para novos lançamentos.'];
+    }
 
-        return ['success' => false, 'message' => 'Não foi possível excluir o meio de pagamento.'];
+    private function assertCurrentUser(int $userId): void
+    {
+        if (AuthHelper::id() !== $userId) {
+            throw new RuntimeException('Não é permitido acessar preferências de outro usuário.');
+        }
+    }
+
+    private function nameExists(string $nome, int $ehCredito, ?int $exceptId = null): bool
+    {
+        $sql = 'SELECT 1 FROM meios_pagamento WHERE nome = :nome AND eh_credito = :eh_credito';
+            $sql = 'SELECT 1 FROM meios_pagamento WHERE LOWER(nome) = LOWER(:nome) AND eh_credito = :eh_credito';
+        if ($exceptId !== null) {
+            $sql .= ' AND id <> :id';
+        }
+        $stmt = $this->db->prepare($sql . ' LIMIT 1');
+        $params = ['nome' => $nome, 'eh_credito' => $ehCredito];
+        if ($exceptId !== null) {
+            $params['id'] = $exceptId;
+        }
+        $stmt->execute($params);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function isGloballyAvailable(int $id): bool
+    {
+        $stmt = $this->db->prepare("SELECT 1 FROM meios_pagamento WHERE id = :id AND status = 'ativo' AND excluido_em IS NULL LIMIT 1");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function getPersonalStatus(int $id, int $userId): string
+    {
+        $stmt = $this->db->prepare("SELECT COALESCE(status, 'ativo') FROM meios_pagamento_usuario
+            WHERE usuario_id = :usuario_id AND meio_pagamento_id = :meio_id");
+        $stmt->execute(['usuario_id' => $userId, 'meio_id' => $id]);
+        $status = $stmt->fetchColumn();
+        return $status === false ? 'ativo' : (string) $status;
+    }
+
+    private function requireDev(int $userId): void
+    {
+        if (!AuthHelper::isDev() || (int) AuthHelper::id() !== $userId) {
+            throw new RuntimeException('A manutenção do catálogo é exclusiva do perfil dev.');
+        }
     }
 }

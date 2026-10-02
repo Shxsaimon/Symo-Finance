@@ -71,7 +71,7 @@ class Transaction extends Model
         $dataTransacao = !empty($data['data_transacao']) ? $data['data_transacao'] : date('Y-m-d');
         $dataVencimento = !empty($data['data_vencimento']) ? $data['data_vencimento'] : $dataTransacao;
         $categoriaId = (int) ($data['categoria_id'] ?? 1);
-        $meioPagamentoId = (int) ($data['meio_pagamento_id'] ?? 1);
+        $meioPagamentoId = (int) ($data['meio_pagamento_id'] ?? 0);
         $contaId = !empty($data['conta_id']) ? (int) $data['conta_id'] : null;
         $cartaoCreditoId = !empty($data['cartao_credito_id']) ? (int) $data['cartao_credito_id'] : null;
         $status = $data['status'] ?? ($tipo === 'receita' ? 'recebido' : 'pago');
@@ -182,7 +182,7 @@ class Transaction extends Model
         $totalParcelas = max(2, (int) ($data['total_parcelas'] ?? 2));
         $dataPrimeiraParcela = !empty($data['data_transacao']) ? $data['data_transacao'] : date('Y-m-d');
         $categoriaId = (int) ($data['categoria_id'] ?? 1);
-        $meioPagamentoId = (int) ($data['meio_pagamento_id'] ?? 1);
+        $meioPagamentoId = (int) ($data['meio_pagamento_id'] ?? 0);
         $contaId = !empty($data['conta_id']) ? (int) $data['conta_id'] : null;
         $cartaoCreditoId = !empty($data['cartao_credito_id']) ? (int) $data['cartao_credito_id'] : null;
         $observacoes = !empty($data['observacoes']) ? trim((string) $data['observacoes']) : null;
@@ -317,7 +317,10 @@ class Transaction extends Model
         $observacoes = isset($data['observacoes']) ? trim((string) $data['observacoes']) : $old['observacoes'];
         $dataPagamento = ($status === 'pago' || $status === 'recebido') ? ($data['data_pagamento'] ?? $old['data_pagamento'] ?? date('Y-m-d')) : null;
 
-        $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, null);
+        $historicalPaymentMethodId = $meioPagamentoId === (int) $old['meio_pagamento_id']
+            ? $meioPagamentoId
+            : null;
+        $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, null, $historicalPaymentMethodId);
         $contaOwnerId = $contaId !== null ? $this->accountOwnerId($contaId, $userId) : null;
 
         $this->db->beginTransaction();
@@ -818,11 +821,17 @@ class Transaction extends Model
         return (int) $ownerId;
     }
 
-    private function validateRelatedOwnership(int $userId, int $categoriaId, int $meioPagamentoId, ?int $contaId, ?int $cartaoCreditoId): void
+    private function validateRelatedOwnership(
+        int $userId,
+        int $categoriaId,
+        int $meioPagamentoId,
+        ?int $contaId,
+        ?int $cartaoCreditoId,
+        ?int $historicalPaymentMethodId = null
+    ): void
     {
         $checks = [
             ['categorias', $categoriaId, 'Categoria'],
-            ['meios_pagamento', $meioPagamentoId, 'Meio de pagamento'],
         ];
 
         if ($contaId !== null) {
@@ -840,6 +849,18 @@ class Transaction extends Model
             if ($stmt->fetchColumn() === false) {
                 throw new InvalidArgumentException("{$label} inválido ou não pertence ao usuário autenticado.");
             }
+        }
+
+        $paymentMethod = new PaymentMethod();
+        if ($historicalPaymentMethodId === $meioPagamentoId) {
+            if ($paymentMethod->getForHistoricalTransaction($meioPagamentoId) === null) {
+                throw new InvalidArgumentException('O meio de pagamento histórico não está disponível.');
+            }
+            return;
+        }
+
+        if (!$paymentMethod->isAvailableForUser($meioPagamentoId, $userId)) {
+            throw new InvalidArgumentException('O meio de pagamento selecionado não está disponível para novos lançamentos.');
         }
     }
 }

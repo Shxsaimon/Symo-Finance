@@ -656,7 +656,16 @@ $anoAtual = (int) date('Y');
                     document.getElementById('edit_valor').value = data.valor;
                     document.getElementById('edit_data_vencimento').value = data.data_vencimento;
                     document.getElementById('edit_categoria_id').value = data.categoria_id;
-                    document.getElementById('edit_meio_pagamento_id').value = data.meio_pagamento_id;
+                    const selectMeioPagamento = document.getElementById('edit_meio_pagamento_id');
+                    selectMeioPagamento.querySelectorAll('option[data-historico="true"]').forEach(option => option.remove());
+                    const meioAtualDisponivel = Array.from(selectMeioPagamento.options)
+                        .some(option => option.value === String(data.meio_pagamento_id));
+                    if (!meioAtualDisponivel) {
+                        const optionHistorica = new Option(`${data.meio_pagamento_nome} (Histórico)`, data.meio_pagamento_id, true, true);
+                        optionHistorica.dataset.historico = 'true';
+                        selectMeioPagamento.add(optionHistorica);
+                    }
+                    selectMeioPagamento.value = data.meio_pagamento_id;
                     document.getElementById('edit_conta_id').value = data.conta_id || '';
                     document.getElementById('edit_status').value = data.status;
                     document.getElementById('edit_observacoes').value = data.observacoes || '';

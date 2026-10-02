@@ -6,7 +6,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Helper de Dados Padrão para Novas Contas de Usuário
  *
- * Centraliza o template de categorias, meios de pagamento e preferências
+ * Centraliza o template de categorias e preferências
  * pessoais clonado para cada novo usuário no momento do cadastro (local
  * ou via Google), garantindo que a conta nasça pronta para uso.
  */
@@ -41,23 +41,6 @@ class DefaultDataHelper
     }
 
     /**
-     * Retorna o template padrão de meios de pagamento.
-     *
-     * @return array<int, array{nome: string, eh_credito: int}>
-     */
-    public static function meiosPagamentoPadrao(): array
-    {
-        return [
-            ['nome' => 'Dinheiro', 'eh_credito' => 0],
-            ['nome' => 'Pix', 'eh_credito' => 0],
-            ['nome' => 'Cartão de Débito', 'eh_credito' => 0],
-            ['nome' => 'Cartão de Crédito', 'eh_credito' => 1],
-            ['nome' => 'Boleto Bancário', 'eh_credito' => 0],
-            ['nome' => 'Transferência Bancária', 'eh_credito' => 0],
-        ];
-    }
-
-    /**
      * Retorna as preferências pessoais padrão gravadas em `configuracoes_usuario`.
      *
      * @return array<int, array{chave: string, valor: string, tipo: string}>
@@ -73,8 +56,7 @@ class DefaultDataHelper
     }
 
     /**
-     * Clona o conjunto completo de dados padrão (categorias, meios de pagamento
-     * e preferências pessoais) para um usuário recém-cadastrado.
+        * Clona categorias e preferências pessoais para um usuário recém-cadastrado.
      *
      * @param PDO $pdo
      * @param int $usuarioId
@@ -90,15 +72,6 @@ class DefaultDataHelper
                 'tipo'       => $categoria['tipo'],
                 'icone'      => $categoria['icone'],
                 'cor'        => $categoria['cor'],
-            ]);
-        }
-
-        $insPm = $pdo->prepare("INSERT INTO `meios_pagamento` (usuario_id, nome, eh_credito, status) VALUES (:usuario_id, :nome, :eh_credito, 'ativo')");
-        foreach (self::meiosPagamentoPadrao() as $meio) {
-            $insPm->execute([
-                'usuario_id'  => $usuarioId,
-                'nome'        => $meio['nome'],
-                'eh_credito'  => $meio['eh_credito'],
             ]);
         }
 

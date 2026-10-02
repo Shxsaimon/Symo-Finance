@@ -36,11 +36,10 @@ return new class {
         $pdo->exec("DELETE FROM cartoes_credito WHERE usuario_id = {$usuarioId}");
         $pdo->exec("DELETE FROM contas WHERE usuario_id = {$usuarioId}");
         $pdo->exec("DELETE FROM categorias WHERE usuario_id = {$usuarioId}");
-        $pdo->exec("DELETE FROM meios_pagamento WHERE usuario_id = {$usuarioId}");
         $pdo->exec("DELETE FROM configuracoes_usuario WHERE usuario_id = {$usuarioId}");
 
-        // 2. Popular Categorias, Meios de Pagamento e Preferências Padrão
-        echo "  [+] Populando categorias, meios de pagamento e preferências padrão para usuário ID 1...\n";
+        // 2. Popular Categorias e Preferências Padrão
+        echo "  [+] Populando categorias e preferências padrão para o perfil dev...\n";
         require_once dirname(__DIR__, 2) . '/app/Helpers/DefaultDataHelper.php';
         DefaultDataHelper::popularDadosPadrao($pdo, $usuarioId);
 
@@ -49,10 +48,21 @@ return new class {
         $stmtCat->execute(['uid' => $usuarioId]);
         $catMap = $stmtCat->fetchAll(PDO::FETCH_KEY_PAIR);
 
-        // Mapear Meios de Pagamento (Nome => ID)
-        $stmtPm = $pdo->prepare("SELECT nome, id FROM meios_pagamento WHERE usuario_id = :uid");
+        // Mapear opções globais disponíveis para o perfil dev
+        $stmtPm = $pdo->prepare("SELECT mp.nome, mp.id
+            FROM meios_pagamento mp
+            LEFT JOIN meios_pagamento_usuario mpu
+                ON mpu.meio_pagamento_id = mp.id AND mpu.usuario_id = :uid
+            WHERE mp.status = 'ativo' AND mp.excluido_em IS NULL
+              AND COALESCE(mpu.status, 'ativo') = 'ativo'");
         $stmtPm->execute(['uid' => $usuarioId]);
         $pmMap = $stmtPm->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        foreach (['Pix', 'Transferência Bancária', 'Boleto Bancário', 'Cartão de Crédito', 'Cartão de Débito'] as $metodoNecessario) {
+            if (!isset($pmMap[$metodoNecessario])) {
+                throw new RuntimeException('Ative as opções necessárias para executar a demonstração.');
+            }
+        }
 
 
         // 3. Criar Contas Bancárias

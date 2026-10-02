@@ -6,9 +6,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Controlador de Meios de Pagamento (PaymentMethodController)
  *
- * Gerencia as formas de liquidação financeiras com isolamento RBAC:
- * - Operador: consulta de meios de pagamento disponíveis.
- * - Administrador: cadastro, alteração, inativação e exclusão lógica.
+ * Apresenta a disponibilidade pessoal e restringe a manutenção global ao dev.
  */
 class PaymentMethodController extends Controller
 {
@@ -28,23 +26,23 @@ class PaymentMethodController extends Controller
     {
         AuthHelper::requireLogin();
 
-        $meios = $this->paymentMethodModel->all('nome ASC');
+        $meios = $this->paymentMethodModel->getForUser((int) AuthHelper::id());
 
         $this->render('payment-methods/index', [
             'title'   => 'Meios de Pagamento — Symo',
             'meios'   => $meios,
-            'isAdmin' => AuthHelper::isAdmin(),
+            'isDev'   => AuthHelper::isDev(),
         ], 'layouts/main');
     }
 
     /**
-     * Processa a inclusão de um novo meio de pagamento (Apenas Administrador).
+    * Processa a inclusão de uma opção global (Apenas dev).
      *
      * @return void
      */
     public function store(): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
 
         $token = $_POST['csrf_token'] ?? null;
         if (!CsrfHelper::validateToken($token)) {
@@ -55,20 +53,24 @@ class PaymentMethodController extends Controller
 
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $ehCredito = !empty($_POST['eh_credito']) ? 1 : 0;
-        $status = trim((string) ($_POST['status'] ?? 'ativo'));
 
-        if (empty($nome)) {
-            FlashHelper::set('error', 'O nome do meio de pagamento é obrigatório.');
+        if ($nome === '' || mb_strlen($nome) > 80) {
+            FlashHelper::set('error', 'Informe um nome de até 80 caracteres.');
             header('Location: ' . BASE_URL . '/meios-pagamento');
             exit;
         }
 
         $userId = (int) AuthHelper::id();
-        $this->paymentMethodModel->createPaymentMethod([
-            'nome'       => $nome,
-            'eh_credito' => $ehCredito,
-            'status'     => $status,
-        ], $userId);
+        try {
+            $this->paymentMethodModel->createPaymentMethod([
+                'nome'       => $nome,
+                'eh_credito' => $ehCredito,
+            ], $userId);
+        } catch (InvalidArgumentException $exception) {
+            FlashHelper::set('warning', $exception->getMessage());
+            header('Location: ' . BASE_URL . '/meios-pagamento');
+            exit;
+        }
 
         FlashHelper::set('success', "Meio de pagamento '{$nome}' cadastrado com sucesso!");
         header('Location: ' . BASE_URL . '/meios-pagamento');
@@ -76,14 +78,14 @@ class PaymentMethodController extends Controller
     }
 
     /**
-     * Processa a atualização de um meio de pagamento (Apenas Administrador).
+    * Processa a atualização de uma opção global (Apenas dev).
      *
      * @param int $id
      * @return void
      */
     public function update(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $id = (int) $id;
 
         $token = $_POST['csrf_token'] ?? null;
@@ -95,20 +97,24 @@ class PaymentMethodController extends Controller
 
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $ehCredito = !empty($_POST['eh_credito']) ? 1 : 0;
-        $status = trim((string) ($_POST['status'] ?? 'ativo'));
 
-        if (empty($nome)) {
-            FlashHelper::set('error', 'O nome não pode ser vazio.');
+        if ($nome === '' || mb_strlen($nome) > 80) {
+            FlashHelper::set('error', 'Informe um nome de até 80 caracteres.');
             header('Location: ' . BASE_URL . '/meios-pagamento');
             exit;
         }
 
         $userId = (int) AuthHelper::id();
-        $updated = $this->paymentMethodModel->updatePaymentMethod($id, [
-            'nome'       => $nome,
-            'eh_credito' => $ehCredito,
-            'status'     => $status,
-        ], $userId);
+        try {
+            $updated = $this->paymentMethodModel->updatePaymentMethod($id, [
+                'nome'       => $nome,
+                'eh_credito' => $ehCredito,
+            ], $userId);
+        } catch (InvalidArgumentException $exception) {
+            FlashHelper::set('warning', $exception->getMessage());
+            header('Location: ' . BASE_URL . '/meios-pagamento');
+            exit;
+        }
 
         if ($updated) {
             FlashHelper::set('success', "Meio de pagamento '{$nome}' atualizado com sucesso!");
@@ -121,14 +127,14 @@ class PaymentMethodController extends Controller
     }
 
     /**
-     * Alterna o status entre ativo/inativo (Apenas Administrador).
+    * Alterna a disponibilidade individual do usuário autenticado.
      *
      * @param int|string $id
      * @return void
      */
     public function toggle(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireLogin();
         $id = (int) $id;
 
         $token = $_POST['csrf_token'] ?? null;
@@ -139,22 +145,24 @@ class PaymentMethodController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        $this->paymentMethodModel->toggleStatus($id, $userId);
-
-        FlashHelper::set('info', 'Status do meio de pagamento alterado com sucesso.');
+        if ($this->paymentMethodModel->toggleStatus($id, $userId)) {
+            FlashHelper::set('info', 'Disponibilidade alterada apenas para sua conta.');
+        } else {
+            FlashHelper::set('warning', 'Esta opção foi arquivada globalmente e não pode ser ativada.');
+        }
         header('Location: ' . BASE_URL . '/meios-pagamento');
         exit;
     }
 
     /**
-     * Executa a exclusão lógica se não houver lançamentos associados (Apenas Administrador).
+    * Arquiva globalmente uma opção sem remover vínculos históricos (Apenas dev).
      *
      * @param int|string $id
      * @return void
      */
     public function delete(int|string $id): void
     {
-        AuthHelper::requireRole('admin');
+        AuthHelper::requireDev();
         $id = (int) $id;
 
         $token = $_POST['csrf_token'] ?? null;

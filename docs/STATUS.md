@@ -7,11 +7,11 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 01/10/2026
-- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (regras alinhadas; implementação não iniciada)
+- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (código preparado; migration e validação integrada pendentes)
 
 
 
-- **Próximo Passo Recomendado:** Implementar a Fase 17. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta foi separado para a Fase 18.
+- **Próximo Passo Recomendado:** Executar a migration da Fase 17 pelo workflow oficial e validar os fluxos integrados. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta permanece na Fase 18.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
@@ -56,7 +56,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 14** | Multiusuário e Login Google | Em andamento; OAuth Google e testes manuais pendentes |
 | **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; upload e visualização de imagens validados manualmente |
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
-| **Fase 17** | Catálogo global de meios de pagamento | Prioridade atual; regras alinhadas, implementação não iniciada |
+| **Fase 17** | Catálogo global de meios de pagamento | Código preparado; migration remota e validação integrada pendentes |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 
 ---
@@ -231,10 +231,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Definir que opções arquivadas ou inativas não aparecem em novos lançamentos, mas permanecem nos vínculos e na exibição histórica.
 - [x] Definir que a migration validará as opções existentes, derivará as correspondências canônicas e preservará os vínculos antes de remover duplicatas.
 - [x] Definir que a migration abortará em caso de divergência e manterá a auditoria histórica intacta.
-- [ ] Executar o remapeamento somente junto à migration que globaliza o catálogo; nenhuma escrita foi feita no Neon.
-- [ ] Implementar catálogo global, preferências individuais e atualização do cadastro de novos usuários.
-- [ ] Validar migration, isolamento, permissões, novos lançamentos e histórico em PostgreSQL; considerar compatibilidade MySQL legada.
-- **Estado:** Prioridade atual; alinhamento funcional concluído, implementação não iniciada.
+- [x] Implementar migration, catálogo global, preferências individuais e atualização do cadastro e do seed demo.
+- [x] Adaptar autorização, listagem, seleção de opções e preservação do meio em lançamentos históricos.
+- [x] Validar sintaxe dos arquivos PHP alterados e diagnósticos do editor.
+- [ ] Validar o isolamento das preferências pessoais em teste autenticado após a migration integrada.
+- [ ] Executar a migration no banco alvo pelo workflow oficial.
+- [ ] Validar os fluxos integrados após a migration.
+- **Estado:** Código preparado; migration remota e validação integrada pendentes.
 
 ### Fase 18 — Compartilhamento por conta
 - [x] Alinhar que permissões serão vínculos por conta, não papel global de usuário.

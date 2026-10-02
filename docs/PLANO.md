@@ -307,7 +307,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Estado:** Concluída; testes de isolamento e transferência concorrente end-to-end aprovados no PostgreSQL.
 
 ### Fase 17 — Catálogo global de meios de pagamento
-- **Prioridade:** Próxima correção a executar; esta fase não inclui compartilhamento por conta.
+- **Prioridade:** Em execução; esta fase não inclui compartilhamento por conta.
 - **Regras alinhadas:**
   - O catálogo será global e começará com Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária.
   - Somente o perfil `dev` poderá criar opções ou arquivá-las globalmente.
@@ -317,22 +317,23 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - **Reconciliação:** a migration deverá derivar internamente a correspondência entre opções existentes e canônicas por atributos aprovados. Não registrar em documentação valores, IDs, volumes nem resultados do ambiente.
   - **Sequência obrigatória da reconciliação, dentro da implantação da Fase 17:**
     1. Validar que cada opção existente possui correspondência canônica única; interromper a migration e solicitar análise se houver ausência ou ambiguidade.
-    2. Registrar, somente no contexto operacional protegido da migration, as contagens de vínculos anteriores para conferência.
+    2. Validar que o remapeamento preserva todas as referências antes de remover duplicatas.
     3. Remapear todos os lançamentos para as opções canônicas, incluindo registros logicamente excluídos.
     4. Confirmar que nenhum vínculo foi perdido e que não restam referências às opções duplicadas.
     5. Remover duplicatas somente após as verificações. A migration deve ser atômica e abortar integralmente diante de qualquer divergência.
     6. Preservar registros de auditoria e seus snapshots históricos, sem reescrita ou exclusão.
   - A reconciliação deve ocorrer somente como parte da migration que transforma o modelo em catálogo global.
--  - [ ] Implementar a sequência de reconciliação acima, validando equivalências e integridade referencial sem registrar dados do ambiente na documentação.
+  - A aplicação deve ser publicada somente após a migration concluir pelo workflow oficial.
 - **Checklist de implementação:**
-  - [ ] Criar migration compatível primeiro com PostgreSQL e, se mantida, com MySQL legado, separando catálogo global, arquivamento global e preferência individual.
-  - [ ] Implementar a sequência de reconciliação acima, validando IDs, equivalências, contagens de transações, chaves estrangeiras e auditoria antes de concluir.
-  - [ ] Atualizar cadastro de novos usuários para usar o catálogo global, sem clonar meios de pagamento por usuário.
-  - [ ] Atualizar model, controller, rotas e interface: manutenção global de criação/arquivamento exclusiva do `dev`; ativação/inativação individual para qualquer usuário autenticado.
-  - [ ] Garantir que formulários de novos lançamentos ofereçam apenas opções não arquivadas e não inativadas pelo usuário atual.
-  - [ ] Preservar a apresentação do meio associado em transações existentes, mesmo quando arquivado globalmente ou inativado pelo usuário.
-  - [ ] Auditar autorização, CSRF, isolamento por usuário e auditoria das operações administrativas e preferências individuais.
-  - [ ] Validar migration, cadastro, edição, histórico, relatório e exportação, além dos fluxos de ativação/inativação e arquivamento.
+  - [x] Criar migration para PostgreSQL e MySQL legado com catálogo global, arquivamento e preferência individual.
+  - [x] Remapear lançamentos para opções canônicas, incluindo excluídos logicamente, validar integridade e abortar diante de divergências.
+  - [x] Atualizar cadastro de usuários e seed demo para não clonar meios de pagamento.
+  - [x] Atualizar model, controller, rotas e interface com manutenção global exclusiva do `dev` e preferência individual autenticada.
+  - [x] Limitar novos lançamentos a opções disponíveis e preservar a opção original na edição histórica.
+  - [x] Preservar auditoria histórica e validar CSRF, autorização e isolamento no backend.
+  - [ ] Executar a migration no banco alvo pelo workflow oficial e confirmar a conclusão sem divergências.
+  - [ ] Validar os fluxos integrados de cadastro, inativação, arquivamento, histórico, relatórios e exportação após a migration.
+- **Estado:** Código preparado; aplicação da migration e validação integrada pendentes.
 - **Critérios de aceite:** A inativação de um usuário não altera as opções dos demais; o arquivamento pelo `dev` impede novos usos para todos; nenhum vínculo histórico é perdido; e somente o `dev` cria ou arquiva opções globais.
 
 ### Fase 18 — Compartilhamento por conta

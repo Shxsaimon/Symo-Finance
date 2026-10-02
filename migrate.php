@@ -185,7 +185,11 @@ foreach ($files as $file) {
     
     $migration = require $file;
     if (is_object($migration) && method_exists($migration, 'up')) {
+        $ownsTransaction = $migrationDriver === 'pgsql' && !$pdo->inTransaction();
         try {
+            if ($ownsTransaction) {
+                $pdo->beginTransaction();
+            }
             $migration->up($pdo);
 
             $stmt = $pdo->prepare("INSERT INTO `migracoes` (`migracao`, `lote`) VALUES (:migracao, :lote)");
@@ -194,9 +198,16 @@ foreach ($files as $file) {
                 'lote'     => $nextBatch
             ]);
 
+            if ($ownsTransaction) {
+                $pdo->commit();
+            }
+
             echo "[OK]\n";
             $appliedCount++;
         } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             echo "[FALHA]\n";
             echo "\n[ERRO CRÍTICO] Falha ao executar migração '{$name}': " . $e->getMessage() . "\n";
             exit(1);

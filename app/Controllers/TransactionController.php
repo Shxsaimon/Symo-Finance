@@ -95,7 +95,7 @@ class TransactionController extends Controller
         $dataTransacao = !empty($_POST['data_transacao']) ? trim((string) $_POST['data_transacao']) : date('Y-m-d');
         $dataVencimento = !empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : $dataTransacao;
         $categoriaId = (int) ($_POST['categoria_id'] ?? 1);
-        $meioPagamentoId = (int) ($_POST['meio_pagamento_id'] ?? 1);
+        $meioPagamentoId = (int) ($_POST['meio_pagamento_id'] ?? 0);
         $destinoTipo = trim((string) ($_POST['destino_tipo'] ?? 'conta')); // 'conta' ou 'cartao'
         $contaId = ($destinoTipo === 'conta' && !empty($_POST['conta_id'])) ? (int) $_POST['conta_id'] : null;
         $cartaoCreditoId = ($destinoTipo === 'cartao' && !empty($_POST['cartao_credito_id'])) ? (int) $_POST['cartao_credito_id'] : null;
@@ -192,6 +192,13 @@ class TransactionController extends Controller
             exit;
         }
 
+        $meioPagamento = $this->paymentMethodModel->getForHistoricalTransaction((int) $transacao['meio_pagamento_id']);
+        if ($meioPagamento === null) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Lançamento não encontrado.']);
+            exit;
+        }
+
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
             'id'                => $transacao['id'],
@@ -204,6 +211,7 @@ class TransactionController extends Controller
             'conta_id'          => $transacao['conta_id'],
             'categoria_id'      => $transacao['categoria_id'],
             'meio_pagamento_id' => $transacao['meio_pagamento_id'],
+                        'meio_pagamento_nome' => $meioPagamento['nome'],
             'cartao_credito_id' => $transacao['cartao_credito_id'],
             'fatura_id'         => $transacao['fatura_id'],
             'observacoes'       => $transacao['observacoes'] ?? '',
@@ -234,7 +242,7 @@ class TransactionController extends Controller
         $dataTransacao = !empty($_POST['data_transacao']) ? trim((string) $_POST['data_transacao']) : date('Y-m-d');
         $dataVencimento = !empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : $dataTransacao;
         $categoriaId = (int) ($_POST['categoria_id'] ?? 1);
-        $meioPagamentoId = (int) ($_POST['meio_pagamento_id'] ?? 1);
+        $meioPagamentoId = isset($_POST['meio_pagamento_id']) ? (int) $_POST['meio_pagamento_id'] : null;
         $contaId = !empty($_POST['conta_id']) ? (int) $_POST['conta_id'] : null;
         $status = trim((string) ($_POST['status'] ?? 'pendente'));
         $observacoes = !empty($_POST['observacoes']) ? trim((string) $_POST['observacoes']) : null;
