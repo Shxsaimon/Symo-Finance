@@ -1,3 +1,4 @@
+  - A migration foi aplicada pelo workflow oficial; alterações subsequentes do catálogo exigem validação integrada antes da publicação.
 # Plano de Construção Incremental — Symo
 
 Este documento detalha o planejamento de implementação fase a fase do sistema **Symo (Gestão Financeira Pessoal e Compartilhada)**, com base estrita no `docs/FSD.md` e `docs/DESIGN.md`.
@@ -310,10 +311,10 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Prioridade:** Em execução; esta fase não inclui compartilhamento por conta.
 - **Regras alinhadas:**
   - O catálogo será global e começará com Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária.
-  - Somente o perfil `dev` poderá criar opções ou arquivá-las globalmente.
-  - O arquivamento é lógico: a opção deixa de estar disponível para novos lançamentos, mas permanece vinculada e visível no histórico, inclusive ao consultar ou editar lançamentos antigos.
+  - Somente o perfil `dev` poderá criar opções, editá-las e alterar sua disponibilidade global entre ativa e inativa.
+  - O `dev` inativa/reativa globalmente pelo campo de status. Inativar remove a opção dos novos lançamentos para todos; reativar pela mesma tela restaura a disponibilidade global, sem alterar preferências pessoais nem vínculos históricos.
   - Cada usuário, inclusive `dev`, poderá ativar/inativar opções apenas para si. A preferência individual altera as opções oferecidas em novos lançamentos e não afeta outros usuários.
-  - Usuários comuns não poderão criar, editar os dados globais ou arquivar opções.
+  - Usuários comuns não poderão criar, editar dados globais nem alterar o status global das opções.
   - **Reconciliação:** a migration deverá derivar internamente a correspondência entre opções existentes e canônicas por atributos aprovados. Não registrar em documentação valores, IDs, volumes nem resultados do ambiente.
   - **Sequência obrigatória da reconciliação, dentro da implantação da Fase 17:**
     1. Validar que cada opção existente possui correspondência canônica única; interromper a migration e solicitar análise se houver ausência ou ambiguidade.
@@ -325,16 +326,17 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - A reconciliação deve ocorrer somente como parte da migration que transforma o modelo em catálogo global.
   - A aplicação deve ser publicada somente após a migration concluir pelo workflow oficial.
 - **Checklist de implementação:**
-  - [x] Criar migration para PostgreSQL e MySQL legado com catálogo global, arquivamento e preferência individual.
+  - [x] Criar migration para PostgreSQL e MySQL legado com catálogo global, status global reversível e preferência individual.
   - [x] Remapear lançamentos para opções canônicas, incluindo excluídos logicamente, validar integridade e abortar diante de divergências.
   - [x] Atualizar cadastro de usuários e seed demo para não clonar meios de pagamento.
-  - [x] Atualizar model, controller, rotas e interface com manutenção global exclusiva do `dev` e preferência individual autenticada.
+  - [x] Atualizar model, controller, rotas e interface com inativação/reativação global exclusiva do `dev` e preferência individual autenticada.
   - [x] Limitar novos lançamentos a opções disponíveis e preservar a opção original na edição histórica.
   - [x] Preservar auditoria histórica e validar CSRF, autorização e isolamento no backend.
-  - [ ] Executar a migration no banco alvo pelo workflow oficial e confirmar a conclusão sem divergências.
-  - [ ] Validar os fluxos integrados de cadastro, inativação, arquivamento, histórico, relatórios e exportação após a migration.
-- **Estado:** Código preparado; aplicação da migration e validação integrada pendentes.
-- **Critérios de aceite:** A inativação de um usuário não altera as opções dos demais; o arquivamento pelo `dev` impede novos usos para todos; nenhum vínculo histórico é perdido; e somente o `dev` cria ou arquiva opções globais.
+  - [x] Executar a migration no banco alvo pelo workflow oficial e confirmar a conclusão sem divergências.
+  - [x] Executar a migration do catálogo pelo workflow oficial.
+  - [ ] Publicar o ajuste de inativação/reativação global e validar o fluxo pela tela.
+- **Estado:** Migration aplicada; correção de reativação preparada, publicação e validação integrada pendentes.
+- **Critérios de aceite:** A inativação individual não altera as opções dos demais; inativar globalmente impede novos usos para todos e reativar restaura a disponibilidade sem mudar preferências pessoais; nenhum vínculo histórico é perdido; somente o `dev` altera o status global.
 
 ### Fase 18 — Compartilhamento por conta
 - **Estado:** Roadmap; implementação posterior à Fase 17 e sujeita à especificação técnica detalhada.

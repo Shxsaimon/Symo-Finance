@@ -7,11 +7,12 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 01/10/2026
-- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (código preparado; migration e validação integrada pendentes)
+- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (migration aplicada; ajuste de reativação em publicação/validação)
 
 
 
 - **Próximo Passo Recomendado:** Executar a migration da Fase 17 pelo workflow oficial e validar os fluxos integrados. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta permanece na Fase 18.
+- **Próximo Passo Recomendado:** Publicar o ajuste de reativação e validar o fluxo integrado. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta permanece na Fase 18.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
 - **Configuração Vercel:** `config/config.php` aceita as variáveis `APP_*` do deploy e credenciais `DB_*`; o driver atual continua sendo MySQL via PDO.
@@ -57,6 +58,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; upload e visualização de imagens validados manualmente |
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
 | **Fase 17** | Catálogo global de meios de pagamento | Código preparado; migration remota e validação integrada pendentes |
+| **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 
 ---
@@ -226,18 +228,19 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ### Fase 17 — Catálogo global de meios de pagamento
 - [x] Definir o catálogo inicial: Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária.
-- [x] Definir criação e arquivamento lógico globais como ações exclusivas do `dev`.
+- [x] Definir criação e alteração do status global como ações exclusivas do `dev`.
+- [x] Permitir ao `dev` inativar e reativar globalmente pela listagem, atualizando o status sem marcar exclusão lógica.
 - [x] Definir ativação/inativação individual por usuário, inclusive para o próprio `dev`, sem efeito sobre outras contas.
-- [x] Definir que opções arquivadas ou inativas não aparecem em novos lançamentos, mas permanecem nos vínculos e na exibição histórica.
+- [x] Definir que opções globalmente ou individualmente inativas não aparecem em novos lançamentos, mas permanecem nos vínculos e na exibição histórica.
 - [x] Definir que a migration validará as opções existentes, derivará as correspondências canônicas e preservará os vínculos antes de remover duplicatas.
 - [x] Definir que a migration abortará em caso de divergência e manterá a auditoria histórica intacta.
 - [x] Implementar migration, catálogo global, preferências individuais e atualização do cadastro e do seed demo.
 - [x] Adaptar autorização, listagem, seleção de opções e preservação do meio em lançamentos históricos.
 - [x] Validar sintaxe dos arquivos PHP alterados e diagnósticos do editor.
-- [ ] Validar o isolamento das preferências pessoais em teste autenticado após a migration integrada.
-- [ ] Executar a migration no banco alvo pelo workflow oficial.
-- [ ] Validar os fluxos integrados após a migration.
-- **Estado:** Código preparado; migration remota e validação integrada pendentes.
+- [x] Registrar a migration aplicada pelo workflow oficial; nenhuma escrita adicional foi feita nesta correção.
+- [x] Implementar reativação global pelo status sem exclusão lógica e preservar a preferência pessoal.
+- [ ] Publicar a correção e validar o fluxo integrado de inativação/reativação pela tela.
+- **Estado:** Migration aplicada; ajuste de reativação preparado, publicação e validação integrada pendentes.
 
 ### Fase 18 — Compartilhamento por conta
 - [x] Alinhar que permissões serão vínculos por conta, não papel global de usuário.

@@ -257,7 +257,7 @@ abstract class Model
     protected function temSoftDelete(): bool
     {
         $tabelasComSoftDelete = [
-            'usuarios', 'contas', 'categorias', 'meios_pagamento', 
+            'usuarios', 'contas', 'categorias',
             'cartoes_credito', 'transacoes', 'transferencias'
         ];
         return in_array($this->tabela, $tabelasComSoftDelete, true);

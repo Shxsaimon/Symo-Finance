@@ -160,7 +160,7 @@ class PaymentMethodController extends Controller
      * @param int|string $id
      * @return void
      */
-    public function delete(int|string $id): void
+    public function deactivateGlobally(int|string $id): void
     {
         AuthHelper::requireDev();
         $id = (int) $id;
@@ -173,7 +173,7 @@ class PaymentMethodController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        $result = $this->paymentMethodModel->deletePaymentMethod($id, $userId);
+        $result = $this->paymentMethodModel->deactivateGlobally($id, $userId);
 
         if ($result['success']) {
             FlashHelper::set('success', $result['message']);
@@ -181,6 +181,24 @@ class PaymentMethodController extends Controller
             FlashHelper::set('warning', $result['message']);
         }
 
+        header('Location: ' . BASE_URL . '/meios-pagamento');
+        exit;
+    }
+
+    public function activateGlobally(int|string $id): void
+    {
+        AuthHelper::requireDev();
+        $id = (int) $id;
+
+        $token = $_POST['csrf_token'] ?? null;
+        if (!CsrfHelper::validateToken($token)) {
+            FlashHelper::set('error', 'Token de validação CSRF inválido.');
+            header('Location: ' . BASE_URL . '/meios-pagamento');
+            exit;
+        }
+
+        $result = $this->paymentMethodModel->activateGlobally($id, (int) AuthHelper::id());
+        FlashHelper::set($result['success'] ? 'success' : 'warning', $result['message']);
         header('Location: ' . BASE_URL . '/meios-pagamento');
         exit;
     }

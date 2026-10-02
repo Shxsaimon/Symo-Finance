@@ -191,7 +191,8 @@ Router::get('/meios-pagamento', [PaymentMethodController::class, 'index']);
 Router::post('/meios-pagamento/salvar', [PaymentMethodController::class, 'store']);
 Router::post('/meios-pagamento/atualizar/{id}', [PaymentMethodController::class, 'update']);
 Router::post('/meios-pagamento/status/{id}', [PaymentMethodController::class, 'toggle']);
-Router::post('/meios-pagamento/excluir/{id}', [PaymentMethodController::class, 'delete']);
+Router::post('/meios-pagamento/inativar-global/{id}', [PaymentMethodController::class, 'deactivateGlobally']);
+Router::post('/meios-pagamento/reativar/{id}', [PaymentMethodController::class, 'activateGlobally']);
 
 // -------------------------------------------------------------
 // FASE 7: CARTÕES DE CRÉDITO E FATURAS

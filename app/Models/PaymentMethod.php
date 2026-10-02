@@ -178,7 +178,7 @@ class PaymentMethod extends Model
     }
 
     /** @return array{success: bool, message: string} */
-    public function deletePaymentMethod(int $id, int $userId): array
+    public function deactivateGlobally(int $id, int $userId): array
     {
         $this->requireDev($userId);
         $old = $this->find($id);
@@ -186,14 +186,33 @@ class PaymentMethod extends Model
             return ['success' => false, 'message' => 'Meio de pagamento não encontrado.'];
         }
 
-        $stmt = $this->db->prepare('UPDATE meios_pagamento SET excluido_em = CURRENT_TIMESTAMP, excluido_por = :usuario_id, atualizado_em = CURRENT_TIMESTAMP WHERE id = :id AND excluido_em IS NULL');
-        $stmt->execute(['usuario_id' => $userId, 'id' => $id]);
+        $stmt = $this->db->prepare("UPDATE meios_pagamento SET status = 'inativo', atualizado_em = CURRENT_TIMESTAMP WHERE id = :id AND status = 'ativo' AND excluido_em IS NULL");
+        $stmt->execute(['id' => $id]);
         if ($stmt->rowCount() === 0) {
+            return ['success' => false, 'message' => 'A opção já está inativa ou não existe.'];
+        }
+
+        $this->logAudit('UPDATE', $id, $old, ['status' => 'inativo'], $userId);
+        return ['success' => true, 'message' => 'Meio de pagamento inativado globalmente.'];
+    }
+
+    /** @return array{success: bool, message: string} */
+    public function activateGlobally(int $id, int $userId): array
+    {
+        $this->requireDev($userId);
+        $old = $this->find($id);
+        if (!$old) {
             return ['success' => false, 'message' => 'Meio de pagamento não encontrado.'];
         }
 
-        $this->logAudit('SOFT_DELETE', $id, $old, ['arquivado' => true], $userId);
-        return ['success' => true, 'message' => 'Meio de pagamento arquivado para novos lançamentos.'];
+        $stmt = $this->db->prepare("UPDATE meios_pagamento SET status = 'ativo', atualizado_em = CURRENT_TIMESTAMP WHERE id = :id AND excluido_em IS NULL AND status = 'inativo'");
+        $stmt->execute(['id' => $id]);
+        if ($stmt->rowCount() === 0) {
+            return ['success' => false, 'message' => 'O meio de pagamento não está disponível para reativação.'];
+        }
+
+        $this->logAudit('UPDATE', $id, $old, ['status' => 'ativo'], $userId);
+        return ['success' => true, 'message' => 'Meio de pagamento reativado globalmente.'];
     }
 
     private function assertCurrentUser(int $userId): void
@@ -205,8 +224,7 @@ class PaymentMethod extends Model
 
     private function nameExists(string $nome, int $ehCredito, ?int $exceptId = null): bool
     {
-        $sql = 'SELECT 1 FROM meios_pagamento WHERE nome = :nome AND eh_credito = :eh_credito';
-            $sql = 'SELECT 1 FROM meios_pagamento WHERE LOWER(nome) = LOWER(:nome) AND eh_credito = :eh_credito';
+        $sql = 'SELECT 1 FROM meios_pagamento WHERE LOWER(nome) = LOWER(:nome) AND eh_credito = :eh_credito';
         if ($exceptId !== null) {
             $sql .= ' AND id <> :id';
         }

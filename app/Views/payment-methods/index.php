@@ -39,10 +39,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                 <tr class="label-caps">
                     <th scope="col" style="padding-left: 1.5rem;">Nome</th>
                     <th scope="col">Modalidade</th>
-                    <th scope="col" class="text-center">Status</th>
                     <th scope="col" class="text-center">Disponibilidade</th>
                     <th scope="col" class="text-end" style="padding-right: 1.5rem;">Ações</th>
-                                        <td colspan="4" class="text-center py-5 text-muted">
                 </tr>
             </thead>
             <tbody>
@@ -73,9 +71,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <?php endif; ?>
                             </td>
                             <td class="text-center">
-                            <td class="text-center">
-                                <?php if ((int) $m['arquivado'] === 1): ?>
-                                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">Arquivado</span>
+                                <?php if ($m['status_global'] === 'inativo' || (int) $m['arquivado'] === 1): ?>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Inativo globalmente</span>
                                 <?php elseif ($m['status'] === 'ativo'): ?>
                                     <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Ativo para você</span>
                                 <?php else: ?>
@@ -84,7 +81,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                             </td>
                             <td class="text-end" style="padding-right: 1.5rem;">
                                 <div class="btn-group btn-group-sm">
-                                    <?php if ((int) $m['arquivado'] !== 1): ?>
+                                    <?php if ($m['status_global'] === 'ativo' && (int) $m['arquivado'] !== 1): ?>
                                         <form action="<?= BASE_URL ?>/meios-pagamento/status/<?= $m['id'] ?>" method="POST" class="d-inline">
                                             <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
                                             <button type="submit" class="btn btn-outline-secondary" title="<?= $m['status'] === 'ativo' ? 'Inativar para mim' : 'Ativar para mim' ?>" aria-label="<?= $m['status'] === 'ativo' ? 'Inativar para mim' : 'Ativar para mim' ?>">
@@ -100,12 +97,21 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                                 title="Editar opção global" aria-label="Editar opção global">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <form action="<?= BASE_URL ?>/meios-pagamento/excluir/<?= $m['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Arquivar globalmente? A opção deixará de aparecer em novos lançamentos, mas continuará no histórico.');">
-                                            <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
-                                            <button type="submit" class="btn btn-outline-danger" title="Arquivar globalmente" aria-label="Arquivar globalmente">
-                                                <i class="bi bi-archive"></i>
-                                            </button>
-                                        </form>
+                                        <?php if ($m['status_global'] === 'ativo'): ?>
+                                            <form action="<?= BASE_URL ?>/meios-pagamento/inativar-global/<?= $m['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Inativar globalmente? A opção deixará de aparecer em novos lançamentos, mas continuará no histórico.');">
+                                                <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
+                                                <button type="submit" class="btn btn-outline-danger" title="Inativar globalmente" aria-label="Inativar globalmente">
+                                                    <i class="bi bi-toggle-off"></i>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <form action="<?= BASE_URL ?>/meios-pagamento/reativar/<?= $m['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Reativar globalmente para os usuários? Preferências pessoais inativas continuarão inativas.');">
+                                                <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
+                                                <button type="submit" class="btn btn-outline-success" title="Reativar globalmente" aria-label="Reativar globalmente">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -140,7 +146,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <option value="1">Cartão de Crédito (Gera fatura)</option>
                             </select>
                         </div>
-                        <div class="mb-3">
                     </div>
                     <div class="modal-footer border-top bg-light">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -173,7 +178,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <option value="1">Cartão de Crédito (Gera fatura)</option>
                             </select>
                         </div>
-                        <div class="mb-3">
                     </div>
                     <div class="modal-footer border-top bg-light">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
