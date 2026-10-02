@@ -78,6 +78,10 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                                     <span class="badge-role-admin">
                                         <i class="bi bi-shield-lock-fill me-1"></i>ADMIN
                                     </span>
+                                <?php elseif ($u['perfil'] === 'dev'): ?>
+                                    <span class="badge-role-admin">
+                                        <i class="bi bi-code-slash me-1"></i>DEV
+                                    </span>
                                 <?php else: ?>
                                     <span class="badge-role-operador">
                                         <i class="bi bi-person-fill me-1"></i>OPERADOR
