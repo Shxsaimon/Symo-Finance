@@ -44,6 +44,7 @@ $appName = 'Symo';
                 // Reutilizamos a sidebar mantendo a consistência dos links
                 $currentUser = AuthHelper::user();
                 $isAdmin     = AuthHelper::isAdmin();
+                $isDev       = AuthHelper::isDev();
                 $currentUri  = Router::getCurrentUri();
                 ?>
                 <nav class="sidebar-menu">
@@ -89,18 +90,22 @@ $appName = 'Symo';
 
                     <?php if ($isAdmin): ?>
                         <div class="sidebar-section-title">Administração</div>
+                        <?php if ($isDev): ?>
                         <a href="<?= BASE_URL ?>/usuarios" class="sidebar-nav-link <?= str_starts_with($currentUri, '/usuarios') ? 'active' : '' ?>">
                             <i class="bi bi-people-fill"></i>
                             <span>Gestão de Usuários</span>
                         </a>
+                        <?php endif; ?>
                         <a href="<?= BASE_URL ?>/lixeira" class="sidebar-nav-link <?= str_starts_with($currentUri, '/lixeira') ? 'active' : '' ?>">
                             <i class="bi bi-trash3-fill"></i>
                             <span>Lixeira do Sistema</span>
                         </a>
+                        <?php if ($isDev): ?>
                         <a href="<?= BASE_URL ?>/auditoria" class="sidebar-nav-link <?= str_starts_with($currentUri, '/auditoria') ? 'active' : '' ?>">
                             <i class="bi bi-shield-check"></i>
                             <span>Trilha de Auditoria</span>
                         </a>
+                        <?php endif; ?>
                         <?php if (AuthHelper::isDev()): ?>
                             <a href="<?= BASE_URL ?>/feedbacks" class="sidebar-nav-link <?= str_starts_with($currentUri, '/feedbacks') ? 'active' : '' ?>">
                                 <i class="bi bi-chat-left-text-fill"></i>
