@@ -107,7 +107,7 @@ class AuthController extends Controller
         AuthHelper::login($user);
         $this->userModel->touch((int) $user['id']);
 
-        FlashHelper::set('success', 'Bem-vindo(a) ao Symo, ' . htmlspecialchars($user['nome'], ENT_QUOTES, 'UTF-8') . '!');
+        //FlashHelper::set('success', 'Bem-vindo(a) ao Symo, ' . htmlspecialchars($user['nome'], ENT_QUOTES, 'UTF-8') . '!');
         $this->redirect('/dashboard');
     }
 
