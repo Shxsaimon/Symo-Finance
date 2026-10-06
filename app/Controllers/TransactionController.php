@@ -239,8 +239,7 @@ class TransactionController extends Controller
 
         $descricao = trim((string) ($_POST['descricao'] ?? ''));
         $valorRaw = trim((string) ($_POST['valor'] ?? '0,00'));
-        $dataTransacao = !empty($_POST['data_transacao']) ? trim((string) $_POST['data_transacao']) : date('Y-m-d');
-        $dataVencimento = !empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : $dataTransacao;
+        $dataVencimento = !empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : null;
         $categoriaId = (int) ($_POST['categoria_id'] ?? 1);
         $meioPagamentoId = isset($_POST['meio_pagamento_id']) ? (int) $_POST['meio_pagamento_id'] : null;
         $contaId = !empty($_POST['conta_id']) ? (int) $_POST['conta_id'] : null;
@@ -256,17 +255,20 @@ class TransactionController extends Controller
         $valor = FormatHelper::parseCurrency($valorRaw);
         $userId = (int) AuthHelper::id();
         try {
-            $updated = $this->transactionModel->updateTransaction($id, [
+            $dataAtualizacao = [
                 'descricao'         => $descricao,
                 'valor'             => $valor,
-                'data_transacao'    => $dataTransacao,
-                'data_vencimento'   => $dataVencimento,
                 'categoria_id'      => $categoriaId,
                 'meio_pagamento_id' => $meioPagamentoId,
                 'conta_id'          => $contaId,
                 'status'            => $status,
                 'observacoes'       => $observacoes,
-            ], $userId);
+            ];
+            if ($dataVencimento !== null) {
+                $dataAtualizacao['data_vencimento'] = $dataVencimento;
+            }
+
+            $updated = $this->transactionModel->updateTransaction($id, $dataAtualizacao, $userId);
 
             if ($updated) {
                 FlashHelper::set('success', "Lançamento '{$descricao}' atualizado com sucesso!");
@@ -277,11 +279,14 @@ class TransactionController extends Controller
             FlashHelper::set('error', $e->getMessage());
         }
 
-        $dt = new DateTimeImmutable($dataVencimento);
-        $mes = $dt->format('n');
-        $ano = $dt->format('Y');
-
-        header('Location: ' . BASE_URL . "/transacoes?mes={$mes}&ano={$ano}");
+        if ($dataVencimento !== null) {
+            $dt = new DateTimeImmutable($dataVencimento);
+            $mes = $dt->format('n');
+            $ano = $dt->format('Y');
+            header('Location: ' . BASE_URL . "/transacoes?mes={$mes}&ano={$ano}");
+        } else {
+            header('Location: ' . BASE_URL . '/transacoes');
+        }
         exit;
     }
 

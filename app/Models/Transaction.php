@@ -308,7 +308,6 @@ class Transaction extends Model
         $tipo = $data['tipo'] ?? $old['tipo'];
         $descricao = isset($data['descricao']) ? trim((string) $data['descricao']) : $old['descricao'];
         $valor = isset($data['valor']) ? (float) $data['valor'] : (float) $old['valor'];
-        $dataTransacao = $data['data_transacao'] ?? $old['data_transacao'];
         $dataVencimento = $data['data_vencimento'] ?? $old['data_vencimento'];
         $status = $data['status'] ?? $old['status'];
         $categoriaId = isset($data['categoria_id']) ? (int) $data['categoria_id'] : (int) $old['categoria_id'];
@@ -348,7 +347,7 @@ class Transaction extends Model
             // 3. Executa a atualização
             $sql = "UPDATE `transacoes` SET
                         tipo = :tipo, descricao = :descricao, valor = :valor,
-                        data_transacao = :data_transacao, data_vencimento = :data_vencimento,
+                        data_vencimento = :data_vencimento,
                         data_pagamento = :data_pagamento, status = :status, conta_id = :conta_id,
                         categoria_id = :categoria_id, meio_pagamento_id = :meio_pagamento_id,
                         observacoes = :observacoes, atualizado_em = NOW()
@@ -358,7 +357,6 @@ class Transaction extends Model
             $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
             $stmt->bindValue(':descricao', $descricao, PDO::PARAM_STR);
             $stmt->bindValue(':valor', $valor);
-            $stmt->bindValue(':data_transacao', $dataTransacao, PDO::PARAM_STR);
             $stmt->bindValue(':data_vencimento', $dataVencimento, PDO::PARAM_STR);
             $stmt->bindValue(':data_pagamento', $dataPagamento, $dataPagamento !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $stmt->bindValue(':status', $status, PDO::PARAM_STR);
@@ -864,4 +862,3 @@ class Transaction extends Model
         }
     }
 }
-

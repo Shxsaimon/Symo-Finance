@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-10-05 - Edição de lançamento alterava a data de lançamento
+
+- **Sintoma:** Ao editar um lançamento, a data de lançamento podia ser substituída pela data atual.
+- **Causa:** O controlador usava a data atual como fallback quando o formulário de edição não enviava `data_transacao`.
+- **Solução aplicada:** A atualização passou a preservar `data_transacao` no model e a tratar `data_vencimento` separadamente, alterando-o somente quando enviado.
+- **Como evitar no futuro:** Manter datas de competência/lançamento fora das atualizações de campos que não as editam e testar separadamente a edição do vencimento.
+
 ## 2026-09-21 - Validação da migration de feedback bloqueada por MySQL indisponível
 
 - **Sintoma:** O comando `php migrate.php --status` não conseguiu verificar a migration `016_criar_tabela_feedback.php` porque a conexão local foi recusada.

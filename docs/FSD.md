@@ -278,6 +278,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 * Registo de Compras Parceladas (geração automática de $N$ lançamentos vinculados com sufixo numérico `[1/N]`, calculando datas de vencimento mensais e valores com tratamento de dízima residual na primeira parcela);
 * Filtros por período, tipo, conta, categoria, meio de pagamento, cartão, status, texto e autor quando permitido;
 * Alteração e exclusão lógica de transações.
+* A edição preserva a data de lançamento (`data_transacao`); somente a data de vencimento pode ser alterada pelo campo correspondente.
 
 
 * **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa individual, preservando a autoria necessária à futura colaboração por conta.
@@ -500,7 +501,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 * **Finalidade:** Registos de movimentações financeiras de receitas e despesas.
 * **Informações:** Tipo (`receita` ou `despesa`), descrição, valor monetário, data de competência/lançamento, data de vencimento, data de liquidação/pagamento, status (`pendente` ou `pago/recebido`), conta bancária vinculada, cartão de crédito vinculado (opcional), fatura vinculada (opcional), categoria, meio de pagamento, ID da compra parcelada agrupada (`installment_group_id`), número da parcela (`installment_number`), total de parcelas (`installment_total`), usuário autor do lançamento, observações, timestamps e soft delete.
-* **Regras:** Transações pendentes não afetam o saldo real da conta; transações efetivadas debitam/creditam o saldo da conta imediatamente; compras parceladas geram registros individuais linkados por grupo.
+* **Regras:** Transações pendentes não afetam o saldo real da conta; transações efetivadas debitam/creditam o saldo da conta imediatamente; compras parceladas geram registros individuais linkados por grupo. A edição mantém a data de lançamento original e altera o vencimento somente quando informado.
 
 ### 10.8. Transferência (`Transfer`)
 
