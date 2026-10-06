@@ -115,6 +115,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ### Fase 6 — Cadastros Básicos (Contas Bancárias, Categorias e Meios de Pagamento)
 - [x] Implementação de `app/Models/Account.php` com gestão de saldos, integridade contra exclusão de conta vinculada e auditoria.
+- [x] Adicionar preferência por conta para inclusão no Saldo Atual e excluir automaticamente contas do tipo `investimento`; migration 019 aplicada no ambiente de testes e validação transacional do model aprovada.
+- [x] Exibir os cards de Saldo Atual e Investimentos na tela de contas, com textos explicativos sobre os valores.
 - [x] Implementação de `app/Models/Category.php` com gestão de receitas e despesas, ícones visuais e auditoria.
 - [x] Implementação de `app/Models/PaymentMethod.php` com controle de modalidade de crédito e auditoria.
 - [x] Implementação de `AccountController.php`, `CategoryController.php` e `PaymentMethodController.php` com controle estrito de RBAC e validação anti-CSRF.
@@ -142,6 +144,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Bateria de 30 testes automatizados executada e 100% aprovada.
 
 ### Fase 10 — Dashboard Financeiro e Indicadores Gráficos (Chart.js)
+- [x] Exibir abaixo do Saldo Atual somente a quantidade de contas ativas incluídas nesse saldo.
 - [x] Implementação de `DashboardController.php` com agregação de KPIs em tempo real, evolução financeira e categorias.
 - [x] Integração de gráficos interativos com Chart.js local (Evolução Mensal e Rosca de Despesas por Categoria).
 - [x] Criação de widgets de compromissos pendentes nos próximos 7 dias e resumo visual de cartões/limites.

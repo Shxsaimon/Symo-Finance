@@ -265,7 +265,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 * **Objetivo:** Apresentar a saúde financeira do escopo permitido ao usuário autenticado, sem expor dados de terceiros.
 * **Usuários Envolvidos:** Todos os usuários autenticados.
-* **Ações Permitidas:** Filtragem por mês/ano corrente e seleção de contas financeiras; visualização rápida de cards de indicadores (Saldo Atual Consolidado, Total de Receitas do Mês, Total de Despesas do Mês, Balanço Mensal Líquido); gráficos interativos de evolução mensal e distribuição de gastos por categoria; widgets de contas pendentes e faturas de cartão próximas do vencimento.
+* **Ações Permitidas:** Filtragem por mês/ano corrente e seleção de contas financeiras; visualização rápida de cards de indicadores (Saldo Atual, Total de Receitas do Mês, Total de Despesas do Mês, Balanço Mensal Líquido); gráficos interativos de evolução mensal e distribuição de gastos por categoria; widgets de contas pendentes e faturas de cartão próximas do vencimento.
+* **Saldo Atual:** Soma os saldos das contas ativas marcadas pelo usuário para inclusão; contas do tipo `investimento` são sempre excluídas, mesmo que vinculadas a uma instituição bancária comum. A quantidade exibida junto ao saldo conta somente essas contas elegíveis. A preferência não altera o saldo individual nem o uso da conta em lançamentos e transferências.
 * **Resultado Esperado:** Resposta instantânea sobre saldos realizados e compromissos futuros com atualização em tempo real.
 
 ### 6.3. Módulo de Transações Financeiras (Receitas e Despesas)
@@ -303,7 +304,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 * **Usuários Envolvidos:** Contas, categorias e cartões pertencem ao usuário autenticado; `admin` e `dev` administram os próprios itens. Meios de pagamento seguem o catálogo global da Fase 17, com disponibilidade individual.
 
 
-* **Ações Permitidas:** O `dev` cria, edita e altera o status global das opções. Cada usuário autenticado ativa/inativa opções para si. Contas, categorias e cartões continuam sob administração do próprio usuário.
+* **Ações Permitidas:** O `dev` cria, edita e altera o status global das opções. Cada usuário autenticado ativa/inativa opções para si. Contas, categorias e cartões continuam sob administração do próprio usuário; em cada conta, o usuário pode escolher se o saldo entra no Saldo Atual. Contas do tipo `investimento` ficam sempre fora desse valor.
 * **Resultado Esperado:** Padronização dos lançamentos financeiros sem risco de redundância ou criação desordenada de dados por operadores.
 
 ### 6.7. Módulo de Relatórios e Exportação CSV
@@ -470,8 +471,8 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 10.2. Conta Financeira (`Account`)
 
 * **Finalidade:** Representa contas correntes, poupanças, contas de investimento ou carteiras de dinheiro físico.
-* **Informações:** `usuario_id` proprietário, nome, instituição, tipo, saldos, cor, status, timestamps e soft delete.
-* **Regras:** Saldo atual é atualizado por transação confirmada; no roadmap a conta poderá ter participantes e permissões sem alterar o proprietário.
+* **Informações:** `usuario_id` proprietário, nome, instituição, tipo, saldos, preferência `incluir_saldo_atual`, cor, status, timestamps e soft delete.
+* **Regras:** Saldo individual é atualizado por transação confirmada. A preferência `incluir_saldo_atual` controla somente a inclusão no Saldo Atual; contas do tipo `investimento` são sempre excluídas desse valor, sem perder saldo próprio nem poder ser usadas em lançamentos e transferências. No roadmap a conta poderá ter participantes e permissões sem alterar o proprietário.
 
 ### 10.3. Categoria (`Category`)
 
@@ -557,6 +558,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `type`: ENUM('corrente', 'poupanca', 'investimento', 'dinheiro', 'outros') NOT NULL DEFAULT 'corrente'
 * `initial_balance`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
 * `current_balance`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
+* `incluir_saldo_atual`: BOOLEAN NOT NULL DEFAULT TRUE; preferência para incluir a conta no Saldo Atual, ignorada para contas do tipo `investimento`
 * `color`: VARCHAR(7) NOT NULL DEFAULT '#6F02FF'
 * `status`: ENUM('ativa', 'inativa') NOT NULL DEFAULT 'ativa'
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -797,12 +799,12 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 ### 12.2. Dashboard Principal (`/dashboard`)
 
-* **Objetivo:** Central de comando com métricas em tempo real, saldo consolidado e previsibilidade financeira.
+* **Objetivo:** Central de comando com métricas em tempo real, Saldo Atual e previsibilidade financeira.
 * **Usuários:** Usuários autenticados, com dados filtrados por `usuario_id`.
 * **Informações e Componentes:**
 * Seletor de Período (Mês e Ano corrente) e filtro rápido de conta;
 * 4 Cards de Indicadores Principais (KPIs com numerais tabulares):
-1. Saldo Real Consolidado (somatório das contas ativas);
+1. Saldo Atual (somatório das contas ativas incluídas pelo usuário, exceto as do tipo `investimento`);
 2. Total de Receitas Realizadas no Mês;
 3. Total de Despesas Pagas no Mês;
 4. Balanço Líquido Mensal (com badge semântico verde para positivo ou vermelho para negativo).
@@ -833,7 +835,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Gestão de instituições financeiras, caixas e saldos.
 * **Usuários:** Proprietário da conta; compartilhamento de conta ainda não está implementado.
-* **Informações:** Grid de Cards de Contas com logotipo/ícone do banco, tipo, saldo atual e badge de status. Modal de criação e edição com seletor de cor personalizada.
+* **Informações:** Cards de Saldo Atual e de Investimentos com textos explicativos sobre o valor exibido, seguidos da relação de contas com tipo, saldo individual e badge de status. O Saldo Atual exclui contas de investimento e contas desmarcadas; o card de Investimentos soma os saldos das contas ativas desse tipo. Modal de criação e edição com seletor de cor personalizada.
 
 ### 12.5. Módulo de Cartões de Crédito e Faturas (`/cartoes`)
 

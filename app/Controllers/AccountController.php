@@ -28,14 +28,16 @@ class AccountController extends Controller
     {
         AuthHelper::requireLogin();
 
-        $contas = $this->accountModel->all('nome ASC');
-        $saldoConsolidado = $this->accountModel->getConsolidatedBalance();
+        $contas = $this->accountModel->getAllAccounts();
+        $saldoAtual = $this->accountModel->getCurrentBalance();
+        $saldoInvestimentos = $this->accountModel->getInvestmentBalance();
 
         $this->render('accounts/index', [
-            'title'            => 'Contas Bancárias e Carteiras — Symo',
-            'contas'           => $contas,
-            'saldoConsolidado' => $saldoConsolidado,
-            'isAdmin'          => AuthHelper::isAdmin(),
+            'title'              => 'Contas Bancárias e Carteiras — Symo',
+            'contas'             => $contas,
+            'saldoAtual'         => $saldoAtual,
+            'saldoInvestimentos' => $saldoInvestimentos,
+            'isAdmin'            => AuthHelper::isAdmin(),
         ], 'layouts/main');
     }
 
@@ -59,6 +61,7 @@ class AccountController extends Controller
         $instituicao = trim((string) ($_POST['instituicao'] ?? ''));
         $tipo = trim((string) ($_POST['tipo'] ?? 'corrente'));
         $saldoInicialRaw = trim((string) ($_POST['saldo_inicial'] ?? '0,00'));
+        $incluirSaldoAtual = isset($_POST['incluir_saldo_atual']) && $_POST['incluir_saldo_atual'] === '1';
         $cor = trim((string) ($_POST['cor'] ?? '#6F02FF'));
         $status = trim((string) ($_POST['status'] ?? 'ativa'));
 
@@ -77,6 +80,7 @@ class AccountController extends Controller
             'instituicao'   => $instituicao,
             'tipo'          => $tipo,
             'saldo_inicial' => $saldoInicial,
+            'incluir_saldo_atual' => $incluirSaldoAtual,
             'cor'           => $cor,
             'status'        => $status,
         ], $userId);
@@ -107,6 +111,7 @@ class AccountController extends Controller
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $instituicao = trim((string) ($_POST['instituicao'] ?? ''));
         $tipo = trim((string) ($_POST['tipo'] ?? 'corrente'));
+        $incluirSaldoAtual = isset($_POST['incluir_saldo_atual']) && $_POST['incluir_saldo_atual'] === '1';
         $cor = trim((string) ($_POST['cor'] ?? '#6F02FF'));
         $status = trim((string) ($_POST['status'] ?? 'ativa'));
 
@@ -121,6 +126,7 @@ class AccountController extends Controller
             'nome'        => $nome,
             'instituicao' => $instituicao,
             'tipo'        => $tipo,
+            'incluir_saldo_atual' => $incluirSaldoAtual,
             'cor'         => $cor,
             'status'      => $status,
         ], $userId);

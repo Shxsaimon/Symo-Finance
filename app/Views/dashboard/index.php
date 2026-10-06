@@ -63,11 +63,11 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
                 </div>
             </div>
             <div class="kpi-value fs-3 fw-bold mb-1 tabular-nums" style="color: var(--symo-primary-brand);">
-                <?= FormatHelper::currency((float) $saldoConsolidado) ?>
+                <?= FormatHelper::currency((float) $saldoAtual) ?>
             </div>
             <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.8rem;">
                 <i class="bi bi-bank"></i>
-                <span><?= count($contas) ?> conta(s) bancária(s) ativas</span>
+                <span><?= $contasNoSaldoAtual ?> conta(s) ativa(s) incluída(s)</span>
             </div>
         </div>
     </div>

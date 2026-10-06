@@ -8,7 +8,7 @@ O projeto usa PHP nativo com MVC, PostgreSQL no Neon, Vercel para execução ser
 
 - Autocadastro, login por e-mail e senha, sessões persistidas no banco e proteção contra tentativas repetidas de login.
 - Isolamento dos dados financeiros por usuário: contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira.
-- Dashboard mensal com saldo consolidado, receitas, despesas, evolução e despesas por categoria.
+- Dashboard mensal com Saldo Atual, receitas, despesas, evolução e despesas por categoria.
 - Contas financeiras, categorias, meios de pagamento, receitas, despesas, parcelamentos, transferências e cartões de crédito com faturas.
 - Relatórios filtráveis e exportação CSV compatível com planilhas.
 - Lixeira, auditoria, logs de segurança e feedback beta.

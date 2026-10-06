@@ -28,18 +28,30 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
     </div>
 </div>
 
-<!-- Resumo Rápido de Saldo Consolidado -->
+<!-- Resumo Rápido de Saldos -->
 <div class="row g-3 mb-4">
     <div class="col-12 col-md-6 col-lg-4">
         <div class="symo-card">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="label-caps">Saldo Consolidado das Contas Ativas</span>
+                <span class="label-caps">Saldo Atual</span>
                 <i class="bi bi-wallet2 text-primary fs-4" style="color: var(--symo-primary-brand) !important;"></i>
             </div>
-            <div class="kpi-value fs-2 fw-bold <?= $saldoConsolidado >= 0 ? 'text-success' : 'text-danger' ?>">
-                <?= FormatHelper::currency($saldoConsolidado) ?>
+            <div class="kpi-value fs-2 fw-bold <?= $saldoAtual >= 0 ? 'text-success' : 'text-danger' ?>">
+                <?= FormatHelper::currency($saldoAtual) ?>
             </div>
-            <div class="text-muted small">Disponível em contas ativas no sistema</div>
+            <div class="text-muted small">Valor total das contas ativas consideradas no Saldo Atual.</div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="symo-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="label-caps">Investimentos</span>
+                <i class="bi bi-graph-up-arrow fs-4" style="color: var(--symo-primary-brand);"></i>
+            </div>
+            <div class="kpi-value fs-2 fw-bold <?= $saldoInvestimentos >= 0 ? 'text-success' : 'text-danger' ?>">
+                <?= FormatHelper::currency($saldoInvestimentos) ?>
+            </div>
+            <div class="text-muted small">Valor investido nas contas ativas de investimento.</div>
         </div>
     </div>
 </div>
@@ -118,6 +130,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                                 data-nome="<?= htmlspecialchars($c['nome'], ENT_QUOTES, 'UTF-8') ?>"
                                                 data-instituicao="<?= htmlspecialchars($c['instituicao'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                                                 data-tipo="<?= htmlspecialchars($c['tipo'], ENT_QUOTES, 'UTF-8') ?>"
+                                                data-incluir-saldo-atual="<?= (int) $c['considerar_no_saldo_atual'] ?>"
                                                 data-cor="<?= htmlspecialchars($c['cor'], ENT_QUOTES, 'UTF-8') ?>"
                                                 data-status="<?= htmlspecialchars($c['status'], ENT_QUOTES, 'UTF-8') ?>"
                                                 title="Editar Conta">
@@ -186,6 +199,11 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <input type="text" class="form-control money-mask tabular-nums text-end" id="saldo_inicial" name="saldo_inicial" placeholder="R$ 0,00" value="R$ 0,00">
                             </div>
                         </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="incluir_saldo_atual" name="incluir_saldo_atual" value="1" checked>
+                            <label class="form-check-label fw-semibold" for="incluir_saldo_atual">Incluir no saldo atual</label>
+                            <div class="form-text">Contas do tipo Investimentos ficam sempre fora do total atual.</div>
+                        </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <label for="cor" class="form-label fw-semibold">Cor de Identificação</label>
@@ -244,6 +262,11 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <input type="color" class="form-control form-control-color w-100" id="edit_cor" name="cor">
                             </div>
                         </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="edit_incluir_saldo_atual" name="incluir_saldo_atual" value="1">
+                            <label class="form-check-label fw-semibold" for="edit_incluir_saldo_atual">Incluir no saldo atual</label>
+                            <div class="form-text">Contas do tipo Investimentos ficam sempre fora do total atual.</div>
+                        </div>
                         <div class="mb-3">
                             <label for="edit_status" class="form-label fw-semibold">Status</label>
                             <select class="form-select" id="edit_status" name="status">
@@ -267,6 +290,26 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
             const formEditar = document.getElementById('formEditarConta');
             const modalEditarEl = document.getElementById('modalEditarConta');
             const modalEditar = new bootstrap.Modal(modalEditarEl);
+            const tipoNovaConta = document.getElementById('tipo');
+            const incluirSaldoNovaConta = document.getElementById('incluir_saldo_atual');
+            const tipoEditarConta = document.getElementById('edit_tipo');
+            const incluirSaldoEditarConta = document.getElementById('edit_incluir_saldo_atual');
+
+            const atualizarDisponibilidadeSaldo = (tipoSelect, incluirSaldo) => {
+                const investimento = tipoSelect.value === 'investimento';
+                incluirSaldo.disabled = investimento;
+                if (investimento) {
+                    incluirSaldo.checked = false;
+                }
+            };
+
+            tipoNovaConta.addEventListener('change', () => {
+                atualizarDisponibilidadeSaldo(tipoNovaConta, incluirSaldoNovaConta);
+            });
+            tipoEditarConta.addEventListener('change', () => {
+                atualizarDisponibilidadeSaldo(tipoEditarConta, incluirSaldoEditarConta);
+            });
+            atualizarDisponibilidadeSaldo(tipoNovaConta, incluirSaldoNovaConta);
 
             editButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -274,6 +317,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                     const nome = btn.getAttribute('data-nome');
                     const instituicao = btn.getAttribute('data-instituicao');
                     const tipo = btn.getAttribute('data-tipo');
+                    const incluirSaldoAtual = btn.getAttribute('data-incluir-saldo-atual') === '1';
                     const cor = btn.getAttribute('data-cor');
                     const status = btn.getAttribute('data-status');
 
@@ -281,6 +325,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                     document.getElementById('edit_nome').value = nome;
                     document.getElementById('edit_instituicao').value = instituicao;
                     document.getElementById('edit_tipo').value = tipo;
+                    incluirSaldoEditarConta.checked = incluirSaldoAtual;
+                    atualizarDisponibilidadeSaldo(tipoEditarConta, incluirSaldoEditarConta);
                     document.getElementById('edit_cor').value = cor;
                     document.getElementById('edit_status').value = status;
 

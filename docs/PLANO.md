@@ -197,7 +197,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Objetivo:** Apresentar painel panorâmico com KPIs em tempo real, gráficos de evolução e distribuição de gastos com Chart.js local e widgets de contas a vencer.
 - **Checklist de Tarefas:**
   - [x] Implementar `app/Controllers/DashboardController.php` com agregação de métricas do mês selecionado.
-  - [x] Implementar cálculo de Saldo Real Consolidado, Receitas do Mês, Despesas do Mês e Balanço Líquido.
+  - [x] Implementar cálculo de Saldo Atual, Receitas do Mês, Despesas do Mês e Balanço Líquido.
   - [x] Integrar Chart.js local com gráficos:
     - Evolução Financeira Mensal (barras/linhas em Electric Violet e Deep Lavender).
     - Despesas por Categoria (gráfico de rosca/donut com paleta do tema Symo).
@@ -351,4 +351,3 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [ ] Aplicar o escopo autorizado a consultas, saldos, dashboard, relatórios, exportação, lixeira e auditoria.
   - [ ] Testar IDOR, revogação imediata, autoria, permissões e isolamento em todos os fluxos afetados.
 - **Critérios de aceite:** Convites pendentes não concedem acesso; o participante vê apenas lançamentos posteriores ao aceite e da conta autorizada; revogação encerra o acesso; e transferências nunca cruzam proprietários.
-

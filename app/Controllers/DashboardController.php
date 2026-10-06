@@ -37,8 +37,8 @@ class DashboardController extends Controller
         $mes = !empty($_GET['mes']) ? max(1, min(12, (int) $_GET['mes'])) : $mesAtual;
         $ano = !empty($_GET['ano']) ? (int) $_GET['ano'] : $anoAtual;
 
-        // 1. Saldo consolidado das contas ativas
-        $saldoConsolidado = $this->accountModel->getConsolidatedBalance();
+        // 1. Saldo Atual das contas ativas marcadas para inclusão
+        $saldoAtual = $this->accountModel->getCurrentBalance();
 
         // 2. Resumo financeiro do mês (receitas, despesas, balanço líquido)
         $resumoMes = $this->transactionModel->getMonthlySummary($mes, $ano);
@@ -57,19 +57,21 @@ class DashboardController extends Controller
 
         // 7. Lista de contas bancárias ativas
         $contas = $this->accountModel->getActiveAccounts();
+        $contasNoSaldoAtual = $this->accountModel->getCurrentBalanceAccountsCount();
 
         $this->render('dashboard/index', [
             'title'               => 'Dashboard Financeiro — Symo',
             'user'                => AuthHelper::user(),
             'mes'                 => $mes,
             'ano'                 => $ano,
-            'saldoConsolidado'    => $saldoConsolidado,
+            'saldoAtual'          => $saldoAtual,
             'resumoMes'           => $resumoMes,
             'evolucaoMensal'      => $evolucaoMensal,
             'despesasCategoria'   => $despesasCategoria,
             'proximosVencimentos' => $proximosVencimentos,
             'cartoes'             => $cartoes,
             'contas'              => $contas,
+            'contasNoSaldoAtual'  => $contasNoSaldoAtual,
         ], 'layouts/main');
     }
 }
