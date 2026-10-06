@@ -21,6 +21,13 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-10-05 - Página local sem CSS/JS no servidor embutido do PHP
+
+- **Sintoma:** Em `php -S localhost:8000 index.php`, a tela abria sem estilos e com modais visíveis, impedindo a navegação.
+- **Causa:** Com um roteador (`index.php`), o servidor embutido envia também as requisições de `/public/*` ao Front Controller, que não as tratava como arquivos estáticos.
+- **Solução aplicada:** O `index.php` passou a devolver arquivos de `public/` (exceto `.php`, com validação de `realpath`) apenas quando `PHP_SAPI` é `cli-server`; a Vercel não é afetada.
+- **Como evitar no futuro:** Validar assets (status 200 e MIME) ao testar localmente com o servidor embutido.
+
 ## 2026-10-05 - Edição de lançamento alterava a data de lançamento
 
 - **Sintoma:** Ao editar um lançamento, a data de lançamento podia ser substituída pela data atual.

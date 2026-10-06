@@ -6,6 +6,19 @@ declare(strict_types=1);
  * Ponto de Entrada Único (Front Controller)
  */
 
+// Servidor embutido do PHP (desenvolvimento local): entrega assets estáticos de public/.
+if (PHP_SAPI === 'cli-server') {
+    $caminhoRequisicao = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
+    if (str_starts_with($caminhoRequisicao, '/public/') && strtolower(pathinfo($caminhoRequisicao, PATHINFO_EXTENSION)) !== 'php') {
+        $arquivoEstatico = realpath(__DIR__ . $caminhoRequisicao);
+        $raizPublica = realpath(__DIR__ . '/public');
+        if ($arquivoEstatico !== false && $raizPublica !== false && is_file($arquivoEstatico)
+            && str_starts_with($arquivoEstatico, $raizPublica . DIRECTORY_SEPARATOR)) {
+            return false;
+        }
+    }
+}
+
 define('APP_RUNNING', true);
 define('APP_ROOT', __DIR__);
 

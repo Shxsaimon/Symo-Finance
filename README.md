@@ -86,6 +86,15 @@ Em produção, execute essas operações pelo workflow manual **Symo Database Mi
 
 ## Desenvolvimento local
 
+Fluxo recomendado, sem XAMPP e com banco isolado da produção:
+
+1. Crie uma branch do Neon (*Branches → Create branch*) e use a connection string dela, nunca a de produção.
+2. Copie `load-env.example.ps1` para `load-env.ps1` (ignorado pelo Git) e preencha `DATABASE_URL`.
+3. Preencha também `BLOB_PROXY_URL` (URL do proxy `api/blob` já implantado na Vercel) e `BLOB_PROXY_SECRET`; uploads locais gravam no Blob oficial.
+4. Execute `.\load-env.ps1 -Run -Migrate` (use `-Seed` na primeira vez, com `SYSTEM_DEV_*` definidos) para aplicar as migrations e subir o servidor em `http://localhost:8000`. `.\load-env.ps1 -Status` só consulta as migrations.
+
+Passos manuais equivalentes:
+
 1. Configure um PostgreSQL acessível e exporte `DATABASE_URL`.
 2. Garanta que o PHP tenha `pdo_pgsql`, `pdo`, `mbstring`, `fileinfo`, `json`, `session` e `curl` habilitados.
 3. Execute as migrations.
