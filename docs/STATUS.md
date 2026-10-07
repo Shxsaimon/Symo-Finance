@@ -59,7 +59,6 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 14** | Multiusuário e Login Google | Em andamento; OAuth Google e testes manuais pendentes |
 | **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; upload e visualização de imagens validados manualmente |
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
-| **Fase 17** | Catálogo global de meios de pagamento | Código preparado; migration remota e validação integrada pendentes |
 | **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 
