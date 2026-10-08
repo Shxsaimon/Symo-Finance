@@ -107,6 +107,7 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                             <option value="meios_pagamento">Meios de pagamento</option>
                             <option value="cartoes">Cartões de crédito</option>
                             <option value="transferencias">Transferências</option>
+                            <option value="investimentos">Investimentos</option>
                             <option value="relatorios">Relatórios</option>
                             <option value="lixeira">Lixeira</option>
                             <option value="configuracoes">Configurações</option>

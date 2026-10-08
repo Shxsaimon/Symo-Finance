@@ -67,6 +67,10 @@ $appName = 'Symo';
                         <i class="bi bi-credit-card-2-front-fill"></i>
                         <span>Cartões de Crédito</span>
                     </a>
+                    <a href="<?= BASE_URL ?>/investimentos" class="sidebar-nav-link <?= str_starts_with($currentUri, '/investimentos') ? 'active' : '' ?>">
+                        <i class="bi bi-piggy-bank-fill"></i>
+                        <span>Investimentos</span>
+                    </a>
 
                     <div class="sidebar-section-title">Cadastros</div>
                     <a href="<?= BASE_URL ?>/contas" class="sidebar-nav-link <?= str_starts_with($currentUri, '/contas') ? 'active' : '' ?>">

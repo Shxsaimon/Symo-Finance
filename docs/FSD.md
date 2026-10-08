@@ -804,7 +804,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Informações e Componentes:**
 * Seletor de Período (Mês e Ano corrente) e filtro rápido de conta;
 * 4 Cards de Indicadores Principais (KPIs com numerais tabulares):
-1. Saldo Atual (somatório das contas ativas incluídas pelo usuário, exceto as do tipo `investimento`);
+1. Saldo Atual (somatório das contas ativas incluídas pelo usuário, exceto as do tipo `investimento`), com o total investido exibido abaixo;
 2. Total de Receitas Realizadas no Mês;
 3. Total de Despesas Pagas no Mês;
 4. Balanço Líquido Mensal (com badge semântico verde para positivo ou vermelho para negativo).
@@ -835,7 +835,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Gestão de instituições financeiras, caixas e saldos.
 * **Usuários:** Proprietário da conta; compartilhamento de conta ainda não está implementado.
-* **Informações:** Cards de Saldo Atual e de Investimentos com textos explicativos sobre o valor exibido, seguidos da relação de contas com tipo, saldo individual e badge de status. O Saldo Atual exclui contas de investimento e contas desmarcadas; o card de Investimentos soma os saldos das contas ativas desse tipo. Modal de criação e edição com seletor de cor personalizada.
+* **Informações:** Cards de Saldo Atual e de Investimentos com textos explicativos sobre o valor exibido, seguidos da relação de contas com tipo, saldo individual e badge de status. O Saldo Atual exclui contas de investimento e contas desmarcadas; o card de Investimentos exibe o total investido (posições ativas da aba Investimentos mais contas legadas do tipo `investimento`). Novas contas não podem ser do tipo `investimento`; contas com posições ou movimentos de investimento vinculados não podem ser excluídas. Modal de criação e edição com seletor de cor personalizada.
 
 ### 12.5. Módulo de Cartões de Crédito e Faturas (`/cartoes`)
 
@@ -1385,6 +1385,34 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 * Logs existentes de `auditoria_logs` são históricos e não devem ser reescritos nem apagados durante a consolidação; snapshots e IDs auditados permanecem como registrados.
 * Os dados padrão para novos usuários não devem mais clonar linhas de meios de pagamento por usuário.
 * Testes devem cobrir isolamento das preferências entre usuários, autorização do `dev`, seleção para novos lançamentos e exibição/edição de lançamentos históricos.
+
+### 27.5. Critérios Funcionais para a Aba Investimentos (Fase 19)
+
+1. A aba Investimentos fica no mesmo grupo de movimentação do menu que contém Lançamentos, Transferências e Cartão de Crédito.
+2. Uma posição representa uma aplicação ou reserva (por exemplo, uma "caixinha") e não é uma conta bancária. Campos: nome livre; conta vinculada obrigatória (ativa e que não seja do tipo legado `investimento`); custodiante opcional em texto livre; classe opcional (renda fixa, renda variável, fundos, previdência, criptoativos, outros, não informado); finalidade opcional, apenas como etiqueta.
+3. O saldo inicial pode ser zero ou maior, com data editável (padrão: hoje), e não movimenta nenhuma conta.
+4. Uma conta pode ter várias posições; cada posição tem uma única conta. A troca de conta vale só para operações futuras e cada movimento preserva a conta utilizada. Com a conta inativa, a posição e o histórico permanecem e aportes/resgates ficam bloqueados até reativar a conta ou trocá-la.
+5. Todas as movimentações têm data editável e registram operações realizadas fora do Symo, sem integração bancária:
+   * Aporte: exige saldo suficiente na conta, debita a conta e credita a posição de forma atômica.
+   * Resgate: exige saldo suficiente na posição, debita a posição e credita a conta de forma atômica.
+   * Rendimento: aumenta a posição pelo valor efetivo informado, sem afetar contas nem receitas e sem cálculo de impostos ou taxas.
+   * Atualização de valor: o usuário informa o novo total e o Symo registra a diferença como ajuste, fora do resumo de rendimentos.
+6. Movimentos podem ser editados e excluídos, com recálculo atômico e auditoria. Qualquer falha desfaz a operação inteira.
+7. Aportes e resgates aparecem apenas no histórico da posição, fora das listas de receitas, despesas e transferências.
+8. O resgate total não encerra a posição: ela permanece ativa com valor zero, e o usuário pode desativá-la manualmente somente quando o valor atual for zero. A posição desativada mantém o histórico e pode ser reativada. A lista padrão mostra as ativas; as encerradas ficam acessíveis por filtro.
+9. Lista única com filtros por conta, custodiante, classe, finalidade e status; tela própria por posição com resumo, histórico e ações; resumo mensal de rendimentos nessa aba, com navegação por mês (padrão: mês atual).
+10. O Dashboard exibe o total investido, separado do Saldo Atual, no card de Saldo Atual. O card "Investimentos" da aba Contas passa a exibir o total investido das posições ativas, com link para a aba.
+11. Contas legadas do tipo `investimento` permanecem intactas e separadas, sem migração automática; o tipo deixa de ser oferecido em novos cadastros. O card da aba Contas soma as posições ativas e os saldos das contas legadas ativas desse tipo; o Dashboard soma somente as posições.
+12. Os investimentos são privados por usuário e não herdam o compartilhamento da Fase 18.
+13. Fora da primeira versão: carência, vencimento, rentabilidade automática, metas e integração externa.
+
+### 27.6. Critérios Técnicos para a Aba Investimentos
+
+* Criar tabelas de posições e de movimentos, ambas com `usuario_id`, índices de escopo e valores monetários em `DECIMAL`; implementar primeiro para PostgreSQL/Neon e considerar o MySQL legado.
+* Aporte e resgate executam em transação única, com bloqueio das linhas envolvidas para evitar saldo negativo em concorrência.
+* Validar no backend a propriedade da posição, da conta e do movimento (IDOR), CSRF em todas as ações mutáveis e escape HTML nas views.
+* Registrar auditoria de criação, edição, exclusão, encerramento e reativação.
+* Testes devem cobrir atomicidade, saldos insuficientes, troca de conta, conta inativa, recálculo na edição/exclusão e isolamento entre usuários.
 
 ---
 

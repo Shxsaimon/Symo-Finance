@@ -14,6 +14,7 @@ class Feedback extends Model
         'meios_pagamento',
         'cartoes',
         'transferencias',
+        'investimentos',
         'relatorios',
         'lixeira',
         'configuracoes',

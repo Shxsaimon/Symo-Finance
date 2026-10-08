@@ -61,6 +61,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
 | **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
+| **Fase 19** | Investimentos | Implementada e validada no ambiente de testes; pendente de commit e aplicação em produção |
 
 ---
 
@@ -254,3 +255,12 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [ ] Definir ciclo do convite, aceite/recusa, identidade do participante e revogação.
 - [ ] Definir permissões e implementar o escopo nas telas e operações autorizadas.
 - **Estado:** Roadmap; detalhamento técnico e implementação pendentes.
+
+### Fase 19 — Investimentos
+- [x] Alinhar escopo, regras de movimentação e localização no menu Movimentações; registrar FSD e plano.
+- [x] Migration 020 (`investimentos` e `investimento_movimentos`) aplicada no ambiente de testes.
+- [x] Model, controller, rotas e views (lista, filtros, detalhe, aporte, resgate, rendimento, atualização de valor, edição e exclusão de movimentos).
+- [x] Dashboard e aba Contas exibem o total investido; novas contas não aceitam o tipo `investimento`; conta com investimento vinculado não pode ser excluída.
+- [x] Validação transacional no ambiente de testes: saldos, bloqueios de saldo insuficiente, desativação manual (somente com valor zerado)/reativação e isolamento entre usuários.
+- [ ] Teste manual no navegador, commit e aplicação da migration em produção pelo workflow oficial.
+- **Estado:** Implementada; pendente de validação manual e deploy.

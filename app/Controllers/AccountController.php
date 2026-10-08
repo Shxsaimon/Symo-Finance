@@ -30,7 +30,7 @@ class AccountController extends Controller
 
         $contas = $this->accountModel->getAllAccounts();
         $saldoAtual = $this->accountModel->getCurrentBalance();
-        $saldoInvestimentos = $this->accountModel->getInvestmentBalance();
+        $saldoInvestimentos = $this->accountModel->getInvestmentBalance() + (new Investment())->getTotalInvested();
 
         $this->render('accounts/index', [
             'title'              => 'Contas Bancárias e Carteiras — Symo',

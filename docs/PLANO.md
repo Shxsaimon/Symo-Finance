@@ -351,3 +351,24 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [ ] Aplicar o escopo autorizado a consultas, saldos, dashboard, relatórios, exportação, lixeira e auditoria.
   - [ ] Testar IDOR, revogação imediata, autoria, permissões e isolamento em todos os fluxos afetados.
 - **Critérios de aceite:** Convites pendentes não concedem acesso; o participante vê apenas lançamentos posteriores ao aceite e da conta autorizada; revogação encerra o acesso; e transferências nunca cruzam proprietários.
+
+### Fase 19 — Investimentos
+- **Estado:** Implementada e validada no ambiente de testes; pendente de teste manual e aplicação em produção.
+- **Objetivo:** Criar a aba Investimentos para registrar posições (aplicações e reservas/"caixinhas") sem exigir conta bancária do tipo `investimento`.
+- **Regras já alinhadas:**
+  - Posição: nome livre, conta vinculada obrigatória (ativa e não do tipo legado `investimento`), custodiante opcional em texto livre, classe opcional e finalidade opcional (apenas etiqueta). Saldo inicial zero ou maior, com data editável, sem movimentar contas.
+  - Uma conta pode ter várias posições; cada posição tem uma conta, que pode ser trocada apenas para operações futuras, preservando a conta de cada movimento. Conta inativa bloqueia aportes e resgates.
+  - Movimentações com data editável: aporte (debita conta, credita posição), resgate (inverso), ambos atômicos e com validação de saldo; rendimento (aumenta a posição, sem afetar conta nem receitas); atualização de valor (ajuste pela diferença, fora do resumo de rendimentos).
+  - Edição e exclusão de movimentos com recálculo atômico e auditoria. Aportes e resgates aparecem só no histórico da posição.
+  - Resgate total mantém a posição ativa; a desativação é manual e só permitida com valor zerado; a posição desativada mantém histórico e pode ser reativada.
+  - Telas: lista com filtros (conta, custodiante, classe, finalidade, status), tela da posição, resumo mensal de rendimentos e card de total investido no Dashboard, separado do Saldo Atual. O card "Investimentos" da aba Contas passa a exibir o total investido.
+  - Contas legadas do tipo `investimento` permanecem intactas, sem migração automática; o tipo deixa de ser oferecido em novos cadastros.
+  - Dados privados por usuário, sem herdar o compartilhamento da Fase 18.
+  - Fora da primeira versão: carência, vencimento, rentabilidade automática, metas e integração externa.
+- **Checklist:**
+  - [x] Confirmar critérios de aceite e atualizar o FSD.
+  - [x] Migration (PostgreSQL e MySQL), models, controller, rotas e views.
+  - [x] Auditoria, CSRF, validação de propriedade e testes transacionais.
+  - [x] Ajustar aba Contas e Dashboard.
+- **Critérios de aceite:** Aporte e resgate são atômicos e respeitam saldos; rendimento e ajuste não alteram contas; o total investido soma apenas posições novas e fica fora do Saldo Atual; nenhum dado vaza entre usuários.
+- **Localização na interface:** a aba Investimentos fica no mesmo grupo de movimentação de Lançamentos, Transferências e Cartão de Crédito.

@@ -72,6 +72,7 @@ class DashboardController extends Controller
             'cartoes'             => $cartoes,
             'contas'              => $contas,
             'contasNoSaldoAtual'  => $contasNoSaldoAtual,
+            'totalInvestido'      => (new Investment())->getTotalInvested(),
         ], 'layouts/main');
     }
 }

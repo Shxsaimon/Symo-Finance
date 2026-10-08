@@ -17,7 +17,7 @@ Este arquivo define o contexto técnico, as regras de segurança, os limites de 
 O **Symo Finance** é uma plataforma web de gestão financeira pessoal para pessoas, casais, famílias, freelancers e MEIs.
 
 - Cada usuário possui uma conta financeira individual e privada por padrão.
-- Contas, categorias, cartões, transações, transferências, relatórios, preferências e lixeira permanecem isolados por usuário. O Saldo Atual inclui contas ativas marcadas para inclusão, exceto contas do tipo `investimento`, que ficam sempre fora e são exibidas separadamente no resumo de Contas; essa preferência não altera saldos individuais nem o uso das contas em lançamentos/transferências. Meios de pagamento estão em transição do cadastro por usuário para catálogo global; a aplicação das migrations 018 e 019 deve preceder a ativação da versão correspondente em produção.
+- Contas, categorias, cartões, transações, transferências, relatórios, preferências e lixeira permanecem isolados por usuário. O Saldo Atual inclui contas ativas marcadas para inclusão, exceto contas do tipo `investimento`, que ficam sempre fora e são exibidas separadamente no resumo de Contas; a aba Investimentos (Fase 19, menu Movimentações) registra posições que não são contas bancárias e ficam fora do Saldo Atual; essa preferência não altera saldos individuais nem o uso das contas em lançamentos/transferências. Meios de pagamento estão em transição do cadastro por usuário para catálogo global; a aplicação das migrations 018 e 019 deve preceder a ativação da versão correspondente em produção.
 - O cadastro público cria um usuário `admin` da própria conta, com categorias e preferências padrão; meios de pagamento vêm do catálogo global e a disponibilidade inicial é ativa.
 - O perfil `dev` é um usuário técnico criado pelo seed, responsável pela operação global da plataforma. Como usuário financeiro, mantém escopo próprio por `usuario_id`, igual ao `admin`.
 - O perfil `operador` permanece no código por compatibilidade, não é usado no produto atual e não será um papel global no modelo futuro.
@@ -127,7 +127,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 │   ├── config.php               # Leitura das configurações
 │   └── database.php             # Conexão PDO PostgreSQL/MySQL legado
 ├── database/
-│   ├── migrations/              # Migrations 001 a 019
+│   ├── migrations/              # Migrations 001 a 020
 │   └── seeds/                   # Seed do dev e configurações globais
 ├── public/                      # CSS, JS, fontes e imagens públicas
 ├── storage/                     # Fallback legado de logs/uploads locais
@@ -212,8 +212,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 ## 11. Banco de Dados e Migrations
 
-- Tabelas atuais: `usuarios`, `contas`, `categorias`, `meios_pagamento`, `transacoes`, `transferencias`, `cartoes_credito`, `faturas_cartao`, `auditoria_logs`, `seguranca_logs`, `erros_logs`, `configuracoes`, `migracoes`, `sessoes`, `configuracoes_usuario` e `feedback`.
-- Migrations 013 a 016 introduzem `dev`, `google_id`, senha anulável para OAuth futuro, `usuario_id` nas entidades financeiras, preferências por usuário e feedback. A migration 018 globaliza o catálogo de meios de pagamento e cria disponibilidade individual; a 019 adiciona a preferência que controla a inclusão das contas no Saldo Atual.
+- Tabelas atuais: `usuarios`, `contas`, `categorias`, `meios_pagamento`, `transacoes`, `transferencias`, `cartoes_credito`, `faturas_cartao`, `auditoria_logs`, `seguranca_logs`, `erros_logs`, `configuracoes`, `migracoes`, `sessoes`, `configuracoes_usuario`, `feedback`, `investimentos` e `investimento_movimentos`.
+- Migrations 013 a 016 introduzem `dev`, `google_id`, senha anulável para OAuth futuro, `usuario_id` nas entidades financeiras, preferências por usuário e feedback. A migration 018 globaliza o catálogo de meios de pagamento e cria disponibilidade individual; a 019 adiciona a preferência que controla a inclusão das contas no Saldo Atual; a 020 cria as tabelas da aba Investimentos (posições vinculadas a uma conta e movimentos de aporte, resgate, rendimento e atualização de valor, sempre isolados por `usuario_id`).
 - PostgreSQL é o banco oficial. Ao escrever SQL compatível, verificar diferenças de `NOW()`, `CURRENT_DATE`, `EXTRACT`, tipos identity, `RETURNING`, `INTERVAL`, `ENUM/CHECK`, quoting e `lastInsertId()`.
 - A classe `SymoPostgresConnection` normaliza somente compatibilidades conhecidas; não usar essa normalização como justificativa para escrever SQL ambíguo.
 - Migrations destrutivas ou que assumam tabelas vazias devem documentar essa condição e exigir fluxo `fresh` autorizado.

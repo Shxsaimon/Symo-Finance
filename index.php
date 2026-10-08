@@ -239,6 +239,19 @@ Router::post('/transferencias/salvar', [TransferController::class, 'store']);
 Router::post('/transferencias/excluir/{id}', [TransferController::class, 'delete']);
 
 // -------------------------------------------------------------
+// FASE 19: INVESTIMENTOS
+// -------------------------------------------------------------
+Router::get('/investimentos', [InvestmentController::class, 'index']);
+Router::get('/investimentos/{id}', [InvestmentController::class, 'show']);
+Router::post('/investimentos/salvar', [InvestmentController::class, 'store']);
+Router::post('/investimentos/atualizar/{id}', [InvestmentController::class, 'update']);
+Router::post('/investimentos/reativar/{id}', [InvestmentController::class, 'reactivate']);
+Router::post('/investimentos/desativar/{id}', [InvestmentController::class, 'deactivate']);
+Router::post('/investimentos/movimentos/salvar/{id}', [InvestmentController::class, 'storeMovement']);
+Router::post('/investimentos/movimentos/atualizar/{id}', [InvestmentController::class, 'updateMovement']);
+Router::post('/investimentos/movimentos/excluir/{id}', [InvestmentController::class, 'deleteMovement']);
+
+// -------------------------------------------------------------
 // FASE 11: RELATÓRIOS ANALÍTICOS E EXPORTAÇÃO CSV
 // -------------------------------------------------------------
 Router::get('/relatorios', [ReportController::class, 'index']);

@@ -30,8 +30,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 <!-- Resumo Rápido de Saldos -->
 <div class="row g-3 mb-4">
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="symo-card">
+    <div class="col-12 col-md">
+        <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="label-caps">Saldo Atual</span>
                 <i class="bi bi-wallet2 text-primary fs-4" style="color: var(--symo-primary-brand) !important;"></i>
@@ -42,8 +42,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
             <div class="text-muted small">Valor total das contas ativas consideradas no Saldo Atual.</div>
         </div>
     </div>
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="symo-card">
+    <div class="col-12 col-md">
+        <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="label-caps">Investimentos</span>
                 <i class="bi bi-graph-up-arrow fs-4" style="color: var(--symo-primary-brand);"></i>
@@ -51,7 +51,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
             <div class="kpi-value fs-2 fw-bold <?= $saldoInvestimentos >= 0 ? 'text-success' : 'text-danger' ?>">
                 <?= FormatHelper::currency($saldoInvestimentos) ?>
             </div>
-            <div class="text-muted small">Valor investido nas contas ativas de investimento.</div>
+            <div class="text-muted small">Valor investido nas posições ativas da aba Investimentos, fora do Saldo Atual.</div>
         </div>
     </div>
 </div>
@@ -189,7 +189,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <select class="form-select" id="tipo" name="tipo">
                                     <option value="corrente" selected>Conta Corrente</option>
                                     <option value="poupanca">Poupança</option>
-                                    <option value="investimento">Investimentos</option>
                                     <option value="dinheiro">Dinheiro Físico</option>
                                     <option value="outros">Outros</option>
                                 </select>
@@ -202,7 +201,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                         <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" id="incluir_saldo_atual" name="incluir_saldo_atual" value="1" checked>
                             <label class="form-check-label fw-semibold" for="incluir_saldo_atual">Incluir no saldo atual</label>
-                            <div class="form-text">Contas do tipo Investimentos ficam sempre fora do total atual.</div>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
@@ -252,7 +250,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <select class="form-select" id="edit_tipo" name="tipo">
                                     <option value="corrente">Conta Corrente</option>
                                     <option value="poupanca">Poupança</option>
-                                    <option value="investimento">Investimentos</option>
                                     <option value="dinheiro">Dinheiro Físico</option>
                                     <option value="outros">Outros</option>
                                 </select>
@@ -262,17 +259,16 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                 <input type="color" class="form-control form-control-color w-100" id="edit_cor" name="cor">
                             </div>
                         </div>
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="edit_incluir_saldo_atual" name="incluir_saldo_atual" value="1">
-                            <label class="form-check-label fw-semibold" for="edit_incluir_saldo_atual">Incluir no saldo atual</label>
-                            <div class="form-text">Contas do tipo Investimentos ficam sempre fora do total atual.</div>
-                        </div>
                         <div class="mb-3">
                             <label for="edit_status" class="form-label fw-semibold">Status</label>
                             <select class="form-select" id="edit_status" name="status">
                                 <option value="ativa">Ativa</option>
                                 <option value="inativa">Inativa</option>
                             </select>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="edit_incluir_saldo_atual" name="incluir_saldo_atual" value="1">
+                            <label class="form-check-label fw-semibold" for="edit_incluir_saldo_atual">Incluir no saldo atual</label>
                         </div>
                     </div>
                     <div class="modal-footer border-top bg-light">
@@ -290,26 +286,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
             const formEditar = document.getElementById('formEditarConta');
             const modalEditarEl = document.getElementById('modalEditarConta');
             const modalEditar = new bootstrap.Modal(modalEditarEl);
-            const tipoNovaConta = document.getElementById('tipo');
-            const incluirSaldoNovaConta = document.getElementById('incluir_saldo_atual');
-            const tipoEditarConta = document.getElementById('edit_tipo');
             const incluirSaldoEditarConta = document.getElementById('edit_incluir_saldo_atual');
-
-            const atualizarDisponibilidadeSaldo = (tipoSelect, incluirSaldo) => {
-                const investimento = tipoSelect.value === 'investimento';
-                incluirSaldo.disabled = investimento;
-                if (investimento) {
-                    incluirSaldo.checked = false;
-                }
-            };
-
-            tipoNovaConta.addEventListener('change', () => {
-                atualizarDisponibilidadeSaldo(tipoNovaConta, incluirSaldoNovaConta);
-            });
-            tipoEditarConta.addEventListener('change', () => {
-                atualizarDisponibilidadeSaldo(tipoEditarConta, incluirSaldoEditarConta);
-            });
-            atualizarDisponibilidadeSaldo(tipoNovaConta, incluirSaldoNovaConta);
 
             editButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -326,7 +303,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                     document.getElementById('edit_instituicao').value = instituicao;
                     document.getElementById('edit_tipo').value = tipo;
                     incluirSaldoEditarConta.checked = incluirSaldoAtual;
-                    atualizarDisponibilidadeSaldo(tipoEditarConta, incluirSaldoEditarConta);
                     document.getElementById('edit_cor').value = cor;
                     document.getElementById('edit_status').value = status;
 

@@ -258,7 +258,12 @@ class Account extends Model
         $stmtTransf->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
         $stmtTransf->execute();
         $resTransf = $stmtTransf->fetch();
-        return ((int) ($resTransf['total'] ?? 0)) > 0;
+        if (((int) ($resTransf['total'] ?? 0)) > 0) {
+            return true;
+        }
+
+        // 3. Checa posições e movimentos de investimentos vinculados
+        return (new Investment())->hasPositionsForAccount($id);
     }
 
     /**
@@ -279,7 +284,7 @@ class Account extends Model
         if ($this->hasTransactions($id)) {
             return [
                 'success' => false,
-                'message' => 'Esta conta possui lançamentos ou transferências vinculadas e não pode ser excluída. Recomendamos inativá-la.'
+                'message' => 'Esta conta possui lançamentos, transferências ou investimentos vinculados e não pode ser excluída. Recomendamos inativá-la.'
             ];
         }
 

@@ -54,7 +54,7 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
 <!-- 1. CARDS DE INDICADORES FINANCEIROS (KPIS) -->
 <div class="row g-3 mb-4">
     <!-- Card 1: Saldo Atual -->
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="label-caps">Saldo Atual</span>
@@ -72,8 +72,26 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
         </div>
     </div>
 
+    <!-- Card: Investimentos -->
+    <div class="col-12 col-sm-6 col-xl">
+        <div class="symo-card h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="label-caps">Investimentos</span>
+                <div class="icon-box" style="background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-graph-up-arrow fs-5"></i>
+                </div>
+            </div>
+            <div class="kpi-value fs-3 fw-bold mb-1 tabular-nums" style="color: var(--symo-primary-brand);">
+                <?= FormatHelper::currency((float) $totalInvestido) ?>
+            </div>
+            <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.8rem;">
+                <i class="bi bi-piggy-bank"></i>
+                <span>Valor investido</span>
+            </div>
+        </div>
+    </div>
     <!-- Card 2: Receitas do Mês -->
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="label-caps">Receitas de <?= $mesesNomes[$mes] ?></span>
@@ -84,17 +102,17 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
             <div class="kpi-value fs-3 fw-bold mb-1 text-success tabular-nums">
                 <?= FormatHelper::currency((float) $resumoMes['total_receitas']) ?>
             </div>
-            <div class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
-                <span class="text-success"><i class="bi bi-check2"></i> Realizadas: <?= FormatHelper::currency((float) $resumoMes['receitas_recebidas']) ?></span>
+            <div class="d-flex flex-wrap column-gap-3 row-gap-1 text-muted" style="font-size: 0.8rem;">
+                <span class="text-nowrap text-success"><i class="bi bi-check2"></i> Realizadas: <?= FormatHelper::currency((float) $resumoMes['receitas_recebidas']) ?></span>
                 <?php if ((float)$resumoMes['receitas_pendentes'] > 0): ?>
-                    <span class="text-secondary"><i class="bi bi-clock"></i> Pendente: <?= FormatHelper::currency((float) $resumoMes['receitas_pendentes']) ?></span>
+                    <span class="text-nowrap text-secondary"><i class="bi bi-clock"></i> Pendente: <?= FormatHelper::currency((float) $resumoMes['receitas_pendentes']) ?></span>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 
     <!-- Card 3: Despesas do Mês -->
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="label-caps">Despesas de <?= $mesesNomes[$mes] ?></span>
@@ -105,17 +123,17 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
             <div class="kpi-value fs-3 fw-bold mb-1 text-danger tabular-nums">
                 <?= FormatHelper::currency((float) $resumoMes['total_despesas']) ?>
             </div>
-            <div class="d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
-                <span class="text-danger"><i class="bi bi-check2"></i> Pagas: <?= FormatHelper::currency((float) $resumoMes['despesas_pagas']) ?></span>
+            <div class="d-flex flex-wrap column-gap-3 row-gap-1 text-muted" style="font-size: 0.8rem;">
+                <span class="text-nowrap text-danger"><i class="bi bi-check2"></i> Pagas: <?= FormatHelper::currency((float) $resumoMes['despesas_pagas']) ?></span>
                 <?php if ((float)$resumoMes['despesas_pendentes'] > 0): ?>
-                    <span class="text-secondary"><i class="bi bi-clock"></i> Pendente: <?= FormatHelper::currency((float) $resumoMes['despesas_pendentes']) ?></span>
+                    <span class="text-nowrap text-secondary"><i class="bi bi-clock"></i> Pendente: <?= FormatHelper::currency((float) $resumoMes['despesas_pendentes']) ?></span>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 
     <!-- Card 4: Balanço Líquido -->
-    <div class="col-12 col-sm-6 col-xl-3">
+    <div class="col-12 col-sm-6 col-xl">
         <div class="symo-card h-100">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <span class="label-caps">Balanço Líquido</span>

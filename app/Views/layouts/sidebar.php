@@ -45,6 +45,10 @@ $isActive = function (string $path) use ($currentUri): string {
             <i class="bi bi-credit-card-2-front-fill"></i>
             <span>Cartões de Crédito</span>
         </a>
+        <a href="<?= BASE_URL ?>/investimentos" class="sidebar-nav-link <?= $isActive('/investimentos') ?>">
+            <i class="bi bi-piggy-bank-fill"></i>
+            <span>Investimentos</span>
+        </a>
 
         <!-- 3. Cadastros Básicos -->
         <div class="sidebar-section-title">Cadastros</div>
