@@ -1104,9 +1104,9 @@ Os dados anteriores e novos são serializados em JSON padrão:
 1. Preferências por usuário em `configuracoes_usuario`: símbolo da moeda, separadores e registros por página.
 2. Configurações globais em `configuracoes`, exclusivas do `dev`: nome da aplicação, identidade visual, logotipo, status de migrations e integração com GitHub Actions.
 
-### 20.2. Arquivo de Configuração Técnica em Código (`config/config.php`)
+### 20.2. Configuração Técnica (`config/config.php`)
 
-Credenciais e parâmetros técnicos do ambiente **não** são salvos em `.env`. Ficam centralizados no arquivo PHP dedicado `config/config.php`:
+`config/config.php` organiza as configurações da aplicação, define valores padrão não sensíveis e lê os valores específicos de cada ambiente por meio de `getenv()`. O arquivo não carrega `.env` nem deve armazenar credenciais em código versionado. As variáveis são fornecidas ao processo PHP antes da execução: localmente, por um script PowerShell; na Vercel e no GitHub Actions, pelas variáveis de ambiente e Secrets configurados nessas plataformas.
 
 ```php
 <?php
@@ -1114,12 +1114,12 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 return [
     'app' => [
-        'name'        => 'Symo',
-        'env'         => 'development', // 'development' ou 'production'
-        'debug'       => true,           // false em produção
-        'base_url'    => '',             // Detectada dinamicamente ou informada
-        'timezone'    => 'America/Sao_Paulo',
-        'session_ttl' => 3600,           // 60 minutos
+        'name'        => getenv('APP_NAME') ?: 'Symo',
+        'env'         => getenv('APP_ENV') ?: 'development',
+        'debug'       => filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),
+        'base_url'    => rtrim((string) (getenv('APP_BASE_URL') ?: ''), '/'),
+        'timezone'    => getenv('APP_TIMEZONE') ?: 'America/Sao_Paulo',
+        'session_ttl' => max(60, (int) (getenv('APP_SESSION_TTL') ?: 3600)),
     ],
     'database' => [
         'url'      => getenv('DATABASE_URL') ?: '',
