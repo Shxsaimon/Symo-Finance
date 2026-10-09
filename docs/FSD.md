@@ -142,12 +142,14 @@ Este diretório representa a raiz versionada enviada à Vercel e executável loc
 │   │   ├── Account.php
 │   │   ├── Category.php
 │   │   ├── PaymentMethod.php
+│   │   ├── CreditCard.php
 │   │   ├── Transaction.php
 │   │   ├── CreditCardInvoice.php
 │   │   ├── Transfer.php
 │   │   ├── AuditLog.php
 │   │   ├── Setting.php
 │   │   ├── Feedback.php
+│   │   ├── Investment.php
 │   │   └── Trash.php
 │   │
 │   ├── Views/                   # Telas e Templates da Aplicação
@@ -397,11 +399,13 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 | Ativar / Inativar Meios de Pagamento | Individual | Legado; sem compartilhamento ativo | Individual |
 | Criar / Editar / Alterar Status Global de Meios | Não | Não | Sim |
 | Gerenciar Cartões e Faturas | Próprios | Legado; sem compartilhamento ativo | Próprios |
+| Gerenciar Investimentos e Movimentações | Próprios | Legado; sem compartilhamento ativo | Próprios |
 | Emitir Relatórios e Exportar CSV | Próprios | Legado; sem compartilhamento ativo | Próprios |
 | Lixeira | Própria | Legado; sem compartilhamento ativo | Própria |
+| Triagem e Gestão de Feedbacks | Não | Não | Sim |
 | Auditoria e Gestão de Usuários | Não | Não | Sim |
 | Configurações globais, logotipo e migrations | Não | Não | Sim |
-| Alterar Própria Senha e Avatar | Sim | Sim | Sim |
+| Alterar Própria Senha, Avatar e Preferências | Sim | Sim | Sim |
 
 ---
 
@@ -585,7 +589,6 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 #### Tabela `meios_pagamento`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `usuario_id`: INTEGER NOT NULL, FK para `usuarios`
 * `name`: VARCHAR(80) NOT NULL
 * `is_credit`: TINYINT(1) NOT NULL DEFAULT 0
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
@@ -595,7 +598,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `deleted_by`: INT UNSIGNED NULL
 * *Índices:* `idx_payment_methods_status (status)`, `idx_payment_methods_deleted_at (deleted_at)`
 
-**Transição da Fase 17:** a migration remove `usuario_id` da tabela de catálogo. O `dev` altera o status global para `inativo` ou `ativo`; essa mudança não altera preferências individuais nem referências históricas.
+O catálogo de meios de pagamento é global para todos os usuários. Somente o perfil `dev` pode criar ou alterar o status global da opção.
 
 #### Tabela `meios_pagamento_usuario`
 
@@ -604,7 +607,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'; preferência individual de disponibilidade.
 * *Chave primária:* (`usuario_id`, `meio_pagamento_id`).
 
-Sem preferência registrada, a opção é considerada ativa. A migration consolida referências antes de remover duplicatas e preserva transações e auditoria histórica.
+Sem preferência registrada, a opção é considerada ativa para o usuário.
 
 #### Tabela `cartoes_credito`
 
@@ -622,7 +625,7 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * `deleted_at`: DATETIME NULL
 * `deleted_by`: INT UNSIGNED NULL
 * *Foreign Keys:* `fk_credit_cards_account (default_account_id) REFERENCES accounts(id) ON DELETE SET NULL`
-* *Índices:* `idx_credit_cards_status (status)`, `idx_credit_cards_deleted_at (deleted_at)`
+* *Índices:* `idx_credit_cards_user_status (usuario_id, status, deleted_at)`, `idx_credit_cards_status (status)`, `idx_credit_cards_deleted_at (deleted_at)`
 
 #### Tabela `faturas_cartao`
 
@@ -641,8 +644,6 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * *Foreign Keys:*
 * `fk_invoices_card (credit_card_id) REFERENCES credit_cards(id) ON DELETE RESTRICT`
 * `fk_invoices_account (payment_account_id) REFERENCES accounts(id) ON DELETE SET NULL`
-
-
 * *Índices:* `idx_invoices_card_period (credit_card_id, reference_year, reference_month)`, `idx_invoices_status (status)`
 
 #### Tabela `transacoes`
@@ -676,9 +677,8 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * `fk_trans_payment_method (payment_method_id) REFERENCES payment_methods(id) ON DELETE RESTRICT`
 * `fk_trans_credit_card (credit_card_id) REFERENCES credit_cards(id) ON DELETE SET NULL`
 * `fk_trans_invoice (invoice_id) REFERENCES credit_card_invoices(id) ON DELETE SET NULL`
-
-
 * *Índices de Alto Desempenho:*
+* `idx_trans_user_id (user_id)`
 * `idx_trans_date (transaction_date)`
 * `idx_trans_due_date (due_date)`
 * `idx_trans_status (status)`
@@ -687,9 +687,7 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * `idx_trans_category (category_id)`
 * `idx_trans_installment (installment_group_id)`
 * `idx_trans_deleted_at (deleted_at)`
-* `idx_trans_dashboard_composite (deleted_at, status, due_date, type)`
-
-
+* `idx_trans_user_dashboard_composite (user_id, deleted_at, status, due_date, type)`
 
 #### Tabela `transferencias`
 
@@ -710,9 +708,7 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * `fk_transf_user (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 * `fk_transf_src (source_account_id) REFERENCES accounts(id) ON DELETE RESTRICT`
 * `fk_transf_dst (destination_account_id) REFERENCES accounts(id) ON DELETE RESTRICT`
-
-
-* *Índices:* `idx_transfers_date (transfer_date)`, `idx_transfers_deleted_at (deleted_at)`
+* *Índices:* `idx_transfers_user_id (user_id)`, `idx_transfers_date (transfer_date)`, `idx_transfers_deleted_at (deleted_at)`
 
 #### Tabela `auditoria_logs`
 
@@ -726,7 +722,7 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * `ip_address`: VARCHAR(45) NOT NULL
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 * *Foreign Keys:* `fk_audit_user (user_id) REFERENCES users(id) ON DELETE SET NULL`
-* *Índices:* `idx_audit_table_record (table_name, record_id)`, `idx_audit_created_at (created_at)`
+* *Índices:* `idx_audit_user_id (user_id)`, `idx_audit_table_record (table_name, record_id)`, `idx_audit_created_at (created_at)`
 
 #### Tabela `seguranca_logs`
 
@@ -739,15 +735,38 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 * *Índices:* `idx_sec_event (event)`, `idx_sec_ip (ip_address)`, `idx_sec_created_at (created_at)`
 
-#### Tabela `configuracoes` e `configuracoes_usuario`
+#### Tabela `sessoes`
+
+* `id`: VARCHAR(128) PRIMARY KEY
+* `user_id`: INT UNSIGNED NULL, FK para `usuarios`
+* `payload`: TEXT NOT NULL
+* `last_activity`: INT UNSIGNED NOT NULL
+* `ip_address`: VARCHAR(45) NULL
+* `user_agent`: VARCHAR(255) NULL
+* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Índices:* `idx_sessoes_last_activity (last_activity)`, `idx_sessoes_user_id (user_id)`
+
+#### Tabela `configuracoes` (Globais)
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
-* `configuracoes`: dados globais da plataforma, acessíveis ao `dev`.
-* `configuracoes_usuario`: `usuario_id`, chave, valor e tipo, com unicidade por usuário e chave; armazena moeda, separadores e paginação.
+* `setting_key`: VARCHAR(80) NOT NULL UNIQUE
+* `setting_value`: TEXT NULL
 * `type`: ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string'
 * `description`: VARCHAR(255) NULL
 * `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 * *Índice:* `idx_settings_key (setting_key)`
+
+#### Tabela `configuracoes_usuario` (Preferências Pessoais)
+
+* `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
+* `chave`: VARCHAR(80) NOT NULL
+* `valor`: TEXT NULL
+* `tipo`: ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string'
+* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Restrição:* UNIQUE (`usuario_id`, `chave`)
+* *Índice:* `idx_config_user_key (usuario_id, chave)`
 
 #### Tabela `migrations`
 
@@ -758,11 +777,46 @@ Sem preferência registrada, a opção é considerada ativa. A migration consoli
 
 #### Tabela `feedback`
 
-* `usuario_id`: usuário autenticado que enviou o item.
-* `texto`: conteúdo entre 10 e 3.000 caracteres.
-* `tela`: tela de origem validada e `tipo`: `correcao`, `melhoria` ou `duvida`.
-* `imagens`: URLs privadas do Vercel Blob em JSON/JSONB, com até 5 imagens por feedback.
-* `status`: `novo`, `em_analise`, `concluido` ou `descartado`, com timestamps de criação e atualização.
+* `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
+* `texto`: TEXT NOT NULL (entre 10 e 3.000 caracteres)
+* `tela`: VARCHAR(100) NOT NULL
+* `tipo`: ENUM('correcao', 'melhoria', 'duvida') NOT NULL
+* `imagens`: JSON NULL (array de URLs privadas do Blob)
+* `status`: ENUM('novo', 'em_analise', 'concluido', 'descartado') NOT NULL DEFAULT 'novo'
+* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Índices:* `idx_feedback_usuario (usuario_id)`, `idx_feedback_status (status)`
+
+#### Tabela `investimentos` (Fase 19)
+
+* `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
+* `conta_id`: INT UNSIGNED NOT NULL, FK para `contas`
+* `nome`: VARCHAR(100) NOT NULL
+* `custodiante`: VARCHAR(100) NULL
+* `classe`: ENUM('renda_fixa', 'renda_variavel', 'fundos', 'previdencia', 'criptoativos', 'outros', 'nao_informado') NOT NULL DEFAULT 'nao_informado'
+* `finalidade`: VARCHAR(100) NULL
+* `valor_atual`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
+* `data_inicio`: DATE NOT NULL
+* `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
+* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Índices:* `idx_investimentos_user_status (usuario_id, status)`, `idx_investimentos_conta (conta_id)`
+
+#### Tabela `investimento_movimentos` (Fase 19)
+
+* `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `usuario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
+* `investimento_id`: INT UNSIGNED NOT NULL, FK para `investimentos`
+* `conta_id`: INT UNSIGNED NOT NULL, FK para `contas`
+* `tipo`: ENUM('aporte', 'resgate', 'rendimento', 'atualizacao_valor') NOT NULL
+* `valor`: DECIMAL(15,2) NOT NULL
+* `data_movimento`: DATE NOT NULL
+* `observacao`: TEXT NULL
+* `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Índices:* `idx_invest_mov_user_invest (usuario_id, investimento_id)`, `idx_invest_mov_date (data_movimento)`
 
 #### Evolução Planejada: Tabela de Participantes de Conta
 
@@ -860,7 +914,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Emissão de extratos consolidados, análise de fluxo de caixa e exportação para planilhas.
 * **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro.
-* **Informações:** Painel de filtros obrigatórios de período (Mês/Ano ou Intervalo Personalizado), agrupamentos opcionais por categoria, conta ou centro de custo, tabela analítica consolidada e botão destacado de "Exportar para CSV".
+* **Informações:** Painel de filtros obrigatórios de período (Mês/Ano ou Intervalo Personalizado), agrupamentos opcionais por categoria, conta ou meio de pagamento, tabela analítica consolidada e botão destacado de "Exportar para CSV".
 
 ### 12.9. Módulo de Usuários (`/usuarios`)
 
@@ -880,11 +934,14 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Usuários:** Exclusivo `dev`.
 * **Informações:** Tabela com busca avançada por tabela, ação (`INSERT`, `UPDATE`, `SOFT_DELETE`, `RESTORE`), usuário e período. Modal com visualizador JSON lado a lado (*Diff* entre dados antigos e novos).
 
-### 12.12. Módulo de Configurações Globais (`/configuracoes`)
+### 12.12. Módulo de Configurações e Perfil do Usuário (`/configuracoes`)
 
-* **Objetivo:** Ajuste de preferências do sistema e logotipo.
-* **Usuários:** Todos para preferências pessoais; `dev` para funções globais.
-* **Informações:** Formulário de configurações gerais (Nome do Sistema, Moeda, Itens por Página, Fuso Horário), área de upload de logotipo com pré-visualização instantânea e botão de verificação de migrations do banco de dados.
+* **Objetivo:** Centralizar a edição do perfil individual do usuário, suas preferências pessoais de exibição e os parâmetros operacionais da plataforma.
+* **Usuários:** Todos os usuários autenticados para perfil e preferências pessoais; perfil `dev` para parâmetros globais da plataforma.
+* **Informações e Componentes:**
+  * **Aba/Bloco Perfil do Usuário (Todos os Usuários):** Formulário para alteração de nome, e-mail, foto de avatar (com upload seguro para o Vercel Blob privado e pré-visualização instantânea) e formulário para alteração de senha (exigindo senha atual, nova senha com mínimo de 8 caracteres e confirmação);
+  * **Aba/Bloco Preferências Pessoais (Todos os Usuários):** Seleção de moeda padrão (ex: BRL `R$`), separadores de milhar/decimal e quantidade padrão de itens por página nas listagens (`configuracoes_usuario`);
+  * **Aba/Bloco Configurações Globais da Plataforma (Exclusivo `dev`):** Ajuste do nome do sistema, fuso horário, upload do logotipo da aplicação e painel de controle e status de execução das migrations do banco de dados.
 
 ### 12.13. Consulta de Feedbacks Recebidos (`/feedbacks`)
 
@@ -974,7 +1031,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Valores Monetários:** Devem ser estritamente positivos ($> 0.00$), com precisão de 2 casas e armazenamento em `NUMERIC(15,2)` no PostgreSQL.
 * **Datas:** Não é permitido o lançamento de transações com formatos inválidos. Datas de vencimento devem ser coerentes com o ciclo da movimentação.
 * **Sanitização de Strings:** Toda entrada textual é sanitizada contra espaços excessivos e tags HTML. Toda saída renderizada nas Views passa obrigatoriamente por `htmlspecialchars($var, ENT_QUOTES, 'UTF-8')`.
-* **Proteção contra CSRF:** Todo formulário HTML deve incluir um token anti-CSRF oculto (`<input type="hidden" name="csrf_token" value="...">`), validado obrigatoriamente pelo Controller antes do processamento.
+* **Proteção contra CSRF:** Todo formulário HTML mutável deve incluir um token anti-CSRF oculto (`<?= CsrfHelper::inputField() ?>` renderizando `<input type="hidden" name="csrf_token" value="...">`). Para requisições assíncronas em JavaScript (`fetch`/`AJAX`), o token ativo é disponibilizado na meta tag `<meta name="csrf-token" content="<?= CsrfHelper::getToken() ?>">` no layout mestre e enviado via corpo (`csrf_token`) ou cabeçalho HTTP (`X-CSRF-TOKEN`), sendo validado obrigatoriamente pelo Controller antes do processamento.
 
 ### 14.2. Regras de Negócio Específicas
 
@@ -1219,8 +1276,8 @@ return [
 
 1. **Prevenção contra SQL Injection:** Uso exclusivo de PDO com *Prepared Statements* e *Bound Parameters* em todas as operações de banco. Proibida concatenação de variáveis em queries SQL.
 2. **Prevenção contra Cross-Site Scripting (XSS):** Aplicação de `htmlspecialchars($dado, ENT_QUOTES, 'UTF-8')` em todas as variáveis renderizadas nas Views.
-3. **Prevenção contra Cross-Site Request Forgery (CSRF):** Geração de token criptográfico único por sessão (`CsrfHelper::generate()`) e validação mandatória em todas as requisições com métodos `POST`, `PUT` ou `DELETE`.
-4. **Proteção de Dados Sensíveis:** As senhas nunca são gravadas ou trafegadas em texto puro, sendo armazenadas exclusivamente sob hash BCRYPT.
+3. **Prevenção contra Cross-Site Request Forgery (CSRF):** Geração de token criptográfico único por sessão (`CsrfHelper::generateToken()`) e validação mandatória em todas as requisições mutantes (`POST`, `PUT`, `DELETE`). O token é transmitido via formulário (`csrf_token`), meta tag no layout ou cabeçalho HTTP `X-CSRF-TOKEN` em chamadas assíncronas.
+4. **Proteção de Dados Sensíveis e Segredos:** As senhas nunca são gravadas ou trafegadas em texto puro, sendo armazenadas sob hash BCRYPT. Segredos e tokens de infraestrutura (`BLOB_READ_WRITE_TOKEN`, `BLOB_PROXY_SECRET`, `GITHUB_ACTIONS_TOKEN`, `DATABASE_URL`) ficam estritamente no ambiente server-side/Vercel/GitHub Secrets, sendo inacessíveis ao navegador.
 5. **Prevenção de Enumeração de Usuários:** Respostas de erro na autenticação são sempre genéricas ("E-mail ou senha inválidos").
 6. **Proteção contra Injeção de Cabeçalhos e Cliques (Clickjacking):** Envio dos cabeçalhos de segurança HTTP na resposta principal:
 * `X-Frame-Options: SAMEORIGIN`

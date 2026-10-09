@@ -7,7 +7,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 08/10/2026
-- **Fase Prioritária Atual:** Fase 17 — Catálogo global de meios de pagamento (concluída)
+- **Fase Prioritária Atual:** Revisão e Consolidação do FSD (Concluída)
+- **Revisão Técnica do FSD:** FSD completamente revisado, autossuficiente e consolidado com os 12 critérios técnicos aprovados (DDLs completas de `sessoes`, `configuracoes_usuario`, `feedback`, `investimentos` e `investimento_movimentos`, índices atualizados com `usuario_id`, alinhamento de CSRF async e Perfil do Usuário integrado nas Configurações).
 
 
 
