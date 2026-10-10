@@ -93,8 +93,8 @@ $appName = 'Symo';
                         <span>Relatórios Analíticos</span>
                     </a>
 
+                    <div class="sidebar-section-title">Administração</div>
                     <?php if ($isAdmin): ?>
-                        <div class="sidebar-section-title">Administração</div>
                         <?php if ($isDev): ?>
                         <a href="<?= BASE_URL ?>/usuarios" class="sidebar-nav-link <?= str_starts_with($currentUri, '/usuarios') ? 'active' : '' ?>">
                             <i class="bi bi-people-fill"></i>
@@ -122,6 +122,10 @@ $appName = 'Symo';
                             <span>Configurações</span>
                         </a>
                     <?php endif; ?>
+                    <a href="<?= BASE_URL ?>/perfil" class="sidebar-nav-link <?= str_starts_with($currentUri, '/perfil') ? 'active' : '' ?>">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Perfil</span>
+                    </a>
                 </nav>
 
                 <div class="sidebar-footer mt-auto">

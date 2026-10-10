@@ -6,13 +6,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 08/10/2026
-- **Fase Prioritária Atual:** Revisão e Consolidação do FSD (Concluída)
-- **Revisão Técnica do FSD:** FSD completamente revisado, autossuficiente e consolidado com os 12 critérios técnicos aprovados (DDLs completas de `sessoes`, `configuracoes_usuario`, `feedback`, `investimentos` e `investimento_movimentos`, índices atualizados com `usuario_id`, alinhamento de CSRF async e Perfil do Usuário integrado nas Configurações).
+- **Data da Última Atualização:** 09/10/2026
+- **Fase Prioritária Atual:** Fase 20 implementada; validação integrada pendente
+- **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
 
 
 
-- **Próximo Passo Recomendado:** Publicar o ajuste de reativação e validar o fluxo integrado. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta permanece na Fase 18.
+- **Próximo Passo Recomendado:** Validar o fluxo da Fase 20 em ambiente integrado e autenticado; permanecem também pendentes a publicação/validação integrada da Fase 17, OAuth Google e testes manuais da Fase 14. Compartilhamento por conta permanece na Fase 18.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
@@ -60,6 +60,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 | **Fase 19** | Investimentos | Concluída; |
+| **Fase 20** | Perfil do usuário e acesso pela navegação | Implementada; validação integrada pendente |
 
 ---
 
@@ -262,3 +263,15 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Validação transacional no ambiente de testes: saldos, bloqueios de saldo insuficiente, desativação manual (somente com valor zerado)/reativação e isolamento entre usuários.
 - [x] Teste manual no navegador, commit e aplicação da migration em produção pelo workflow oficial.
 - **Estado:** Concluída;
+
+### Fase 20 — Perfil do usuário e acesso pela navegação
+- [x] Alinhar que `/perfil` permanece separado de `/configuracoes`.
+- [x] Definir que o perfil terá seção/aba própria na navegação principal, próxima à seção Administração.
+- [x] Definir edição do e-mail com validação de formato e unicidade, sem confirmação por e-mail.
+- [x] Atualizar o FSD e registrar o escopo pendente no plano.
+- [x] Implementar o item **Perfil** dentro da seção Administração, abaixo de Configurações, na navegação desktop/mobile e no menu do usuário.
+- [x] Implementar edição própria do e-mail com validação de formato, unicidade, auditoria e atualização da sessão.
+- [x] Preservar o papel e status do usuário; validar senha atual, confirmação e mínimo de 8 caracteres para troca.
+- [x] Executar `php -l` nos arquivos PHP alterados e `git diff --check`.
+- [ ] Validar autorização, unicidade, CSRF, avatar e atualização da sessão em ambiente integrado.
+- **Estado:** Implementada; validação integrada pendente.

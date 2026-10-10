@@ -356,7 +356,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 4. **Conciliação Bancária via OFX / Extratos:** Não haverá leitura, parsing ou importação automática de arquivos bancários nos formatos OFX, CSV bancário ou PDF.
 5. **Integração Direta com APIs Bancárias (Open Finance):** Não haverá sincronização automática de saldos ou extratos bancários via webhooks ou APIs.
 6. **Emissão de Boletos, Cobranças ou Gateways de Pagamento:** Não haverá emissão de cobranças, links de pagamento, integração com Stripe, Asaas, Mercado Pago ou geração de boletos.
-7. **Conversão Multi-Moeda em Tempo Real:** O sistema operará em moeda única selecionada nas configurações globais (padrão BRL `R$`), sem conversão cambial dinâmica no mesmo painel.
+7. **Conversão Multi-Moeda em Tempo Real:** A preferência de moeda/símbolo altera somente a exibição dos valores; não há conversão cambial nem moeda armazenada por lançamento.
 8. **Compartilhamento amplo de todo o perfil financeiro:** O estado atual é individual por usuário. A futura colaboração será restrita a contas financeiras selecionadas, por convite e permissão; não haverá compartilhamento automático de todas as entidades.
 9. **Exportação Nativa em PDF com Layout Gráfico:** Não haverá gerador interno de relatórios em formato PDF (apenas exportação em formato tabular CSV).
 10. **Envio Ativo de Notificações por E-mail (Lembretes de Vencimento):** Não haverá rotinas agendadas (Cron Jobs) para disparo de e-mails diários de contas a vencer.
@@ -934,16 +934,25 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Usuários:** Exclusivo `dev`.
 * **Informações:** Tabela com busca avançada por tabela, ação (`INSERT`, `UPDATE`, `SOFT_DELETE`, `RESTORE`), usuário e período. Modal com visualizador JSON lado a lado (*Diff* entre dados antigos e novos).
 
-### 12.12. Módulo de Configurações e Perfil do Usuário (`/configuracoes`)
+### 12.12. Módulo de Configurações Pessoais e do Sistema (`/configuracoes`)
 
-* **Objetivo:** Centralizar a edição do perfil individual do usuário, suas preferências pessoais de exibição e os parâmetros operacionais da plataforma.
-* **Usuários:** Todos os usuários autenticados para perfil e preferências pessoais; perfil `dev` para parâmetros globais da plataforma.
+* **Objetivo:** Centralizar as preferências pessoais de exibição e os parâmetros operacionais da plataforma, mantendo o perfil do usuário na rota própria `/perfil`.
+* **Usuários:** Todos os usuários autenticados para preferências pessoais; perfil `dev` para parâmetros globais da plataforma.
 * **Informações e Componentes:**
-  * **Aba/Bloco Perfil do Usuário (Todos os Usuários):** Formulário para alteração de nome, e-mail, foto de avatar (com upload seguro para o Vercel Blob privado e pré-visualização instantânea) e formulário para alteração de senha (exigindo senha atual, nova senha com mínimo de 8 caracteres e confirmação);
-  * **Aba/Bloco Preferências Pessoais (Todos os Usuários):** Seleção de moeda padrão (ex: BRL `R$`), separadores de milhar/decimal e quantidade padrão de itens por página nas listagens (`configuracoes_usuario`);
-  * **Aba/Bloco Configurações Globais da Plataforma (Exclusivo `dev`):** Ajuste do nome do sistema, fuso horário, upload do logotipo da aplicação e painel de controle e status de execução das migrations do banco de dados.
+  * **Preferências Pessoais (Todos os Usuários):** Símbolo da moeda usado apenas na exibição, separadores de milhar/decimal e quantidade padrão de itens por página nas listagens (`configuracoes_usuario`). Não há conversão cambial;
+  * **Configurações Globais da Plataforma (Exclusivo `dev`):** Ajuste do nome do sistema, upload do logotipo da aplicação e painel para disparar os workflows de status, migrations e seed pelo GitHub Actions. O painel pode exibir status e logs da execução, sem expor segredos ou credenciais.
+* **Fuso horário:** Não é uma configuração editável neste módulo. O valor técnico usado pelo runtime PHP vem da variável de ambiente `APP_TIMEZONE`.
 
-### 12.13. Consulta de Feedbacks Recebidos (`/feedbacks`)
+### 12.13. Módulo de Perfil do Usuário (`/perfil`)
+
+* **Objetivo:** Permitir que cada usuário gerencie os dados do próprio perfil e suas credenciais.
+* **Usuários:** Todos os usuários autenticados, restritos ao próprio registro.
+* **Navegação:** Exibir o item **Perfil** dentro da seção **Administração**, imediatamente abaixo de **Configurações**, disponível a todos os usuários autenticados e vinculado à rota `/perfil`. Não criar uma seção de navegação separada para Perfil.
+* **Informações e Componentes:** Formulário para alteração do nome, e-mail e avatar, além da alteração de senha. O avatar usa upload privado pelo Vercel Blob, com pré-visualização instantânea. A troca de senha exige senha atual, nova senha com mínimo de 8 caracteres e confirmação.
+* **Validação do e-mail:** Exigir formato válido, máximo de 150 caracteres e unicidade entre usuários, normalizando espaços externos e letras maiúsculas/minúsculas. Não exigir confirmação ou verificação por e-mail.
+* **Segurança:** A alteração deve ser autorizada no backend e limitada ao usuário autenticado; formulários mutáveis exigem CSRF.
+
+### 12.14. Consulta de Feedbacks Recebidos (`/feedbacks`)
 
 * **Objetivo:** Permitir a triagem operacional das sugestões, dúvidas e correções enviadas pelos usuários.
 * **Usuários:** Exclusivamente o perfil `dev`, com autorização também validada no Controller.

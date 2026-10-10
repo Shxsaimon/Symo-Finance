@@ -53,6 +53,31 @@ class AuthHelper
     }
 
     /**
+     * Atualiza os dados de identidade da sessão após a edição do próprio perfil.
+     *
+     * @param array<string, mixed> $usuario
+     * @return void
+     */
+    public static function refreshUserData(array $usuario): void
+    {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+            session_start();
+        }
+
+        if (
+            empty($_SESSION[self::SESSION_USER_ID])
+            || (int) $_SESSION[self::SESSION_USER_ID] !== (int) ($usuario['id'] ?? 0)
+        ) {
+            throw new LogicException('Não é possível atualizar a sessão de outro usuário.');
+        }
+
+        $_SESSION[self::SESSION_USER_NAME] = (string) $usuario['nome'];
+        $_SESSION[self::SESSION_USER_EMAIL] = (string) $usuario['email'];
+        $_SESSION[self::SESSION_USER_ROLE] = (string) $usuario['perfil'];
+        $_SESSION[self::SESSION_USER_AVATAR] = $usuario['avatar'] ?? null;
+    }
+
+    /**
      * Encerra a sessão do usuário de forma segura, limpando todos os dados e invalidando o cookie de sessão.
      *
      * @return void

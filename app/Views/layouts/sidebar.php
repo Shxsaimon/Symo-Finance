@@ -72,9 +72,9 @@ $isActive = function (string $path) use ($currentUri): string {
             <span>Relatórios Analíticos</span>
         </a>
 
-        <!-- 5. Administração e preferências -->
+        <!-- 5. Administração -->
+        <div class="sidebar-section-title">Administração</div>
         <?php if ($isDev || $isAdmin): ?>
-            <div class="sidebar-section-title">Administração</div>
             <?php if ($isDev): ?>
             <a href="<?= BASE_URL ?>/usuarios" class="sidebar-nav-link <?= $isActive('/usuarios') ?>">
                 <i class="bi bi-people-fill"></i>
@@ -100,6 +100,10 @@ $isActive = function (string $path) use ($currentUri): string {
                 <span>Configurações</span>
             </a>
         <?php endif; ?>
+        <a href="<?= BASE_URL ?>/perfil" class="sidebar-nav-link <?= $isActive('/perfil') ?>">
+            <i class="bi bi-person-circle"></i>
+            <span>Perfil</span>
+        </a>
     </nav>
 
     <!-- Rodapé da Sidebar: Usuário Autenticado -->

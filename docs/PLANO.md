@@ -24,6 +24,8 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 16:** Correção dos achados prioritários de isolamento e integridade financeira
 - **Fase 17:** Catálogo global de meios de pagamento
 - **Fase 18:** Compartilhamento por conta (roadmap)
+- **Fase 19:** Investimentos
+- **Fase 20:** Perfil do usuário e acesso pela navegação
 
 ---
 
@@ -372,3 +374,24 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Ajustar aba Contas e Dashboard.
 - **Critérios de aceite:** Aporte e resgate são atômicos e respeitam saldos; rendimento e ajuste não alteram contas; o total investido soma apenas posições novas e fica fora do Saldo Atual; nenhum dado vaza entre usuários.
 - **Localização na interface:** a aba Investimentos fica no mesmo grupo de movimentação de Lançamentos, Transferências e Cartão de Crédito.
+
+### Fase 20 — Perfil do usuário e acesso pela navegação
+- **Estado:** Implementada; testes integrados pendentes.
+- **Objetivo:** Tornar o perfil acessível pela navegação principal e permitir que cada usuário atualize o próprio e-mail sem exigir verificação por e-mail.
+- **Regras já alinhadas:**
+  - O perfil permanece na rota existente `/perfil`, separado de `/configuracoes`.
+  - A navegação principal terá o item **Perfil** dentro da seção **Administração**, imediatamente abaixo de **Configurações**, disponível a todos os usuários autenticados; não haverá seção de navegação própria para Perfil.
+  - Cada usuário poderá alterar somente os dados do próprio perfil.
+  - O e-mail deve passar pela validação de formato existente, respeitar o limite de 150 caracteres e ser único após remoção de espaços externos e normalização para minúsculas.
+  - Não haverá confirmação nem verificação de posse do e-mail.
+  - A tela `/configuracoes` mantém preferências pessoais de exibição e os controles globais exclusivos do `dev`; moeda continua sendo apenas formatação de exibição.
+  - Fuso horário não será editável no painel. `APP_TIMEZONE` permanece uma configuração técnica do runtime.
+  - O painel do `dev` poderá disparar e exibir status e logs do GitHub Actions para migrations, sem expor segredos ou credenciais.
+- **Checklist de implementação:**
+  - [x] Incluir o item **Perfil** dentro de **Administração**, abaixo de **Configurações**, na navegação desktop e mobile; incluir também o acesso no menu do usuário.
+  - [x] Tornar o campo de e-mail editável no perfil e persistir a alteração somente no registro do usuário autenticado.
+  - [x] Validar formato, limite de 150 caracteres e unicidade no backend, normalizando espaços externos e letras para minúsculas; preservar papel e status da conta.
+  - [x] Atualizar os dados da sessão após a alteração sem simular um novo login.
+  - [x] Preservar CSRF e auditoria; exigir senha atual, confirmação e mínimo de 8 caracteres para troca de senha; manter validações do avatar.
+  - [ ] Testar em ambiente integrado e autenticado e-mail inválido, duplicado, válido ainda não verificado, tentativa de alterar outro usuário e sessão após atualização.
+- **Critérios de aceite:** Todos os usuários autenticados encontram e acessam `/perfil`; alterações afetam somente o próprio usuário; e-mails inválidos ou duplicados são recusados, e um e-mail sintaticamente válido pode ser salvo sem confirmação; `/configuracoes` não oferece edição de perfil nem fuso horário.

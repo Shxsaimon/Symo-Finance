@@ -75,6 +75,102 @@ class User extends Model
     }
 
     /**
+     * Valida nome e e-mail para a edição do próprio perfil.
+     *
+     * @param int $userId
+     * @param array<string, mixed> $data
+     * @return array{success: bool, message: string}
+     */
+    public function validateOwnProfile(int $userId, array $data): array
+    {
+        $usuarioAntigo = $this->find($userId);
+        if (!$usuarioAntigo) {
+            return ['success' => false, 'message' => 'Usuário não encontrado.'];
+        }
+
+        $nome = trim((string) ($data['nome'] ?? $usuarioAntigo['nome']));
+        $email = trim(strtolower((string) ($data['email'] ?? $usuarioAntigo['email'])));
+
+        if ($nome === '' || mb_strlen($nome) < 3) {
+            return ['success' => false, 'message' => 'O nome completo deve conter no mínimo 3 caracteres.'];
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'O endereço de e-mail informado é inválido.'];
+        }
+
+        if (mb_strlen($email) > 150) {
+            return ['success' => false, 'message' => 'O e-mail deve conter no máximo 150 caracteres.'];
+        }
+
+        if ($this->emailExists($email, $userId)) {
+            return ['success' => false, 'message' => 'Este e-mail já está em uso por outro usuário.'];
+        }
+
+        return ['success' => true, 'message' => 'Dados do perfil válidos.'];
+    }
+
+    /**
+     * Atualiza somente os dados de perfil do próprio usuário.
+     *
+     * @param int $userId
+     * @param array<string, mixed> $data
+     * @return array{success: bool, message: string}
+     */
+    public function updateOwnProfile(int $userId, array $data): array
+    {
+        $validation = $this->validateOwnProfile($userId, $data);
+        if (!$validation['success']) {
+            return $validation;
+        }
+
+        $usuarioAntigo = $this->find($userId);
+        if (!$usuarioAntigo) {
+            return ['success' => false, 'message' => 'Usuário não encontrado.'];
+        }
+
+        $nome = trim((string) ($data['nome'] ?? $usuarioAntigo['nome']));
+        $email = trim(strtolower((string) ($data['email'] ?? $usuarioAntigo['email'])));
+        $avatar = array_key_exists('avatar', $data) ? $data['avatar'] : $usuarioAntigo['avatar'];
+
+        $sql = "UPDATE `{$this->tabela}`
+                SET nome = :nome, email = :email, avatar = :avatar, atualizado_em = NOW()
+                WHERE id = :id AND excluido_em IS NULL";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
+        $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+        $stmt->bindValue(':avatar', $avatar, $avatar !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+
+        try {
+            $stmt->execute();
+        } catch (PDOException $e) {
+            if (in_array((string) $e->getCode(), ['23000', '23505'], true)) {
+                return ['success' => false, 'message' => 'Este e-mail já está em uso por outro usuário.'];
+            }
+            throw $e;
+        }
+
+        $this->logAudit(
+            'UPDATE',
+            $userId,
+            [
+                'nome' => $usuarioAntigo['nome'],
+                'email' => $usuarioAntigo['email'],
+                'avatar' => $usuarioAntigo['avatar'],
+            ],
+            [
+                'nome' => $nome,
+                'email' => $email,
+                'avatar' => $avatar,
+            ],
+            $userId
+        );
+
+        return ['success' => true, 'message' => 'Perfil atualizado com sucesso.'];
+    }
+
+    /**
      * Atualiza o timestamp de última atividade/acesso do usuário.
      *
      * @param int $userId

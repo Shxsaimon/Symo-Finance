@@ -74,8 +74,8 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
                     </div>
                     <div class="col-md-6">
                         <label for="email" class="form-label fw-semibold">E-mail</label>
-                        <input type="email" class="form-control" id="email" value="<?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?>" disabled readonly title="O e-mail só pode ser alterado pelo Administrador na tela de Usuários">
-                        <small class="text-muted">O e-mail é a sua chave única de acesso.</small>
+                        <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?>" required maxlength="150" autocomplete="email">
+                        <small class="text-muted">O e-mail deve ser válido e exclusivo. Não é necessária confirmação por e-mail.</small>
                     </div>
                 </div>
 
@@ -93,13 +93,17 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
                 <p class="text-muted small mb-3">Preencha os campos abaixo apenas se desejar trocar a sua senha atual.</p>
 
                 <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label for="nova_senha" class="form-label fw-semibold">Nova Senha</label>
-                        <input type="password" class="form-control" id="nova_senha" name="nova_senha" minlength="6" placeholder="Deixe em branco para manter">
+                    <div class="col-md-4">
+                        <label for="senha_atual" class="form-label fw-semibold">Senha Atual</label>
+                        <input type="password" class="form-control" id="senha_atual" name="senha_atual" autocomplete="current-password" placeholder="Obrigatória para alterar">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label for="nova_senha" class="form-label fw-semibold">Nova Senha</label>
+                        <input type="password" class="form-control" id="nova_senha" name="nova_senha" minlength="8" autocomplete="new-password" placeholder="Mínimo de 8 caracteres">
+                    </div>
+                    <div class="col-md-4">
                         <label for="confirmacao_senha" class="form-label fw-semibold">Confirmar Nova Senha</label>
-                        <input type="password" class="form-control" id="confirmacao_senha" name="confirmacao_senha" minlength="6" placeholder="Repita a nova senha">
+                        <input type="password" class="form-control" id="confirmacao_senha" name="confirmacao_senha" minlength="8" autocomplete="new-password" placeholder="Repita a nova senha">
                     </div>
                 </div>
 
@@ -112,4 +116,3 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
         </div>
     </div>
 </div>
-

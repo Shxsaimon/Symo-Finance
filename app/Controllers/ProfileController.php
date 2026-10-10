@@ -6,7 +6,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Controlador de Perfil Pessoal (ProfileController)
  *
- * Permite a qualquer usuário autenticado (admin ou operador)
+ * Permite a qualquer usuário autenticado
  * atualizar seus dados cadastrais, alterar senha e enviar foto de avatar.
  */
 class ProfileController extends Controller
@@ -62,6 +62,43 @@ class ProfileController extends Controller
         }
 
         $nome = trim((string) ($_POST['nome'] ?? $user['nome']));
+        $email = trim((string) ($_POST['email'] ?? $user['email']));
+        $senhaAtual = (string) ($_POST['senha_atual'] ?? '');
+        $novaSenha = (string) ($_POST['nova_senha'] ?? '');
+        $confirmacaoSenha = (string) ($_POST['confirmacao_senha'] ?? '');
+        $alterandoSenha = $senhaAtual !== '' || $novaSenha !== '' || $confirmacaoSenha !== '';
+
+        if ($alterandoSenha) {
+            if ($senhaAtual === '' || $novaSenha === '' || $confirmacaoSenha === '') {
+                FlashHelper::set('error', 'Preencha a senha atual, a nova senha e a confirmação para alterar sua senha.');
+                $this->redirect('/perfil');
+            }
+
+            if (mb_strlen($novaSenha) < 8) {
+                FlashHelper::set('error', 'A nova senha deve conter no mínimo 8 caracteres.');
+                $this->redirect('/perfil');
+            }
+
+            if ($novaSenha !== $confirmacaoSenha) {
+                FlashHelper::set('error', 'A confirmação de senha não confere com a nova senha digitada.');
+                $this->redirect('/perfil');
+            }
+
+            if (empty($user['senha']) || !password_verify($senhaAtual, (string) $user['senha'])) {
+                FlashHelper::set('error', 'A senha atual informada está incorreta.');
+                $this->redirect('/perfil');
+            }
+        }
+
+        $validation = $this->userModel->validateOwnProfile($userId, [
+            'nome' => $nome,
+            'email' => $email,
+        ]);
+        if (!$validation['success']) {
+            FlashHelper::set('error', $validation['message']);
+            $this->redirect('/perfil');
+        }
+
         $avatarFilename = $user['avatar'];
 
         if (!empty($_FILES['avatar']) && ($_FILES['avatar']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -75,44 +112,39 @@ class ProfileController extends Controller
 
         $dadosUpdate = [
             'nome'   => $nome,
-            'email'  => $user['email'], // Preserva email
-            'perfil' => $user['perfil'], // Preserva perfil
-            'status' => $user['status'], // Preserva status
+            'email'  => $email,
             'avatar' => $avatarFilename,
         ];
 
-        $res = $this->userModel->updateUser($userId, $dadosUpdate, $userId);
-
-        // Se informou alteração de senha
-        $novaSenha = (string) ($_POST['nova_senha'] ?? '');
-        $confirmacaoSenha = (string) ($_POST['confirmacao_senha'] ?? '');
-
-        if (!empty($novaSenha)) {
-            if ($novaSenha !== $confirmacaoSenha) {
-                FlashHelper::set('error', 'A confirmação de senha não confere com a nova senha digitada.');
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            $res = $this->userModel->updateOwnProfile($userId, $dadosUpdate);
+            if (!$res['success']) {
+                $db->rollBack();
+                FlashHelper::set('error', $res['message']);
                 $this->redirect('/perfil');
             }
 
-            if (mb_strlen($novaSenha) < 6) {
-                FlashHelper::set('error', 'A nova senha deve conter no mínimo 6 caracteres.');
-                $this->redirect('/perfil');
+            if ($alterandoSenha && !$this->userModel->updatePassword($userId, $novaSenha)) {
+                throw new RuntimeException('Não foi possível atualizar a senha do usuário.');
             }
 
-            $this->userModel->updatePassword($userId, $novaSenha);
-        }
-
-        if ($res['success']) {
-            // Atualiza dados na sessão ativa
-            $userAtualizado = $this->userModel->find($userId);
-            if ($userAtualizado) {
-                AuthHelper::login($userAtualizado);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
             }
-            FlashHelper::set('success', 'Perfil atualizado com sucesso.');
-        } else {
-            FlashHelper::set('error', $res['message']);
+            throw $e;
         }
 
+        $userAtualizado = $this->userModel->find($userId);
+        if (!$userAtualizado) {
+            throw new RuntimeException('O perfil foi salvo, mas não foi possível recarregar os dados do usuário.');
+        }
+
+        AuthHelper::refreshUserData($userAtualizado);
+        FlashHelper::set('success', 'Perfil atualizado com sucesso.');
         $this->redirect('/perfil');
     }
 }
-

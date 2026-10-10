@@ -62,6 +62,12 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                         <span>Dashboard</span>
                     </a>
                 </li>
+                <li>
+                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="<?= BASE_URL ?>/perfil">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Perfil</span>
+                    </a>
+                </li>
                 <?php if (AuthHelper::isAdmin()): ?>
                     <li>
                         <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="<?= BASE_URL ?>/configuracoes">
