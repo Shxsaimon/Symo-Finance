@@ -12,7 +12,6 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 
 
-- **Próximo Passo Recomendado:** Executar a migration da Fase 17 pelo workflow oficial e validar os fluxos integrados. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta permanece na Fase 18.
 - **Próximo Passo Recomendado:** Publicar o ajuste de reativação e validar o fluxo integrado. OAuth Google e testes manuais da Fase 14 continuam pendentes; compartilhamento por conta permanece na Fase 18.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
@@ -30,10 +29,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Painel GitHub Actions:** A tela de Configurações dispara `status`, `migrate` e `seed` pelo workflow via API do GitHub, acompanha jobs e disponibiliza os logs para administradores. Requer `GITHUB_ACTIONS_TOKEN` na Vercel.
 - **Logs GitHub Actions:** O download dos logs trata o redirecionamento temporário `302` da API e exibe o conteúdo completo em modal dentro da tela de Configurações.
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
-- **Planejamento de evolução:** `AGENTS.md` agora orienta alinhar ideias de desenvolvimento e sugerir seu registro em `docs/PLANO.md`; as Fases 15 (feedbacks) e 16 (achados prioritários) foram adicionadas e atualizadas.
+- **Planejamento de evolução:** `AGENTS.md` agora orienta alinhar ideias de desenvolvimento e sugerir seu registro em `docs/PLANO.md`;
 - **Favicon dedicado:** Criado `public/img/favicon.svg` apenas com o ícone da marca (sem o texto "Symo"), usado nos layouts `main.php` e `auth.php`; o logo completo com texto continua sendo usado onde a marca é exibida por extenso.
-- **Menu mobile por perfil:** O menu lateral mobile passou a exibir Gestão de Usuários e Trilha de Auditoria somente ao `dev`, alinhado à sidebar desktop e ao bloqueio 403 do backend.
-- **Perfil dev na gestão de usuários:** A tabela agora identifica explicitamente o perfil `dev` como `DEV`, em vez de exibi-lo incorretamente como `OPERADOR`.
 - **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
 - **Revisão Ortográfica do README:** `README.md` totalmente revisado quanto à grafia, acentuação e ortografia em português do Brasil (pt-BR), preservando o vocabulário, clareza técnica e estrutura originais.
 - **Atualização do Contexto para Agentes:** `AGENTS.md` revisado para refletir o FSD aprovado, com Vercel/Neon/Blob/GitHub Actions como stack oficial, PostgreSQL como banco principal, `admin` e `dev` com escopo financeiro próprio, `dev` com funções globais da plataforma, `operador` legado, isolamento por `usuario_id` e segredos por variáveis de ambiente.
@@ -62,7 +59,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
 | **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
-| **Fase 19** | Investimentos | Implementada e validada no ambiente de testes; pendente de commit e aplicação em produção |
+| **Fase 19** | Investimentos | Concluída; |
 
 ---
 
@@ -263,5 +260,5 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Model, controller, rotas e views (lista, filtros, detalhe, aporte, resgate, rendimento, atualização de valor, edição e exclusão de movimentos).
 - [x] Dashboard e aba Contas exibem o total investido; novas contas não aceitam o tipo `investimento`; conta com investimento vinculado não pode ser excluída.
 - [x] Validação transacional no ambiente de testes: saldos, bloqueios de saldo insuficiente, desativação manual (somente com valor zerado)/reativação e isolamento entre usuários.
-- [ ] Teste manual no navegador, commit e aplicação da migration em produção pelo workflow oficial.
-- **Estado:** Implementada; pendente de validação manual e deploy.
+- [x] Teste manual no navegador, commit e aplicação da migration em produção pelo workflow oficial.
+- **Estado:** Concluída;

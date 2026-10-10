@@ -246,10 +246,17 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 ## 14. Protocolo dos Arquivos Vivos
 
+### Autoridade e função de cada documento
+
+- `docs/FSD.md` é a fonte de verdade para o comportamento, as regras de negócio e os critérios funcionais atuais. Em caso de divergência, seguir o FSD; não alterar o FSD para fazê-lo coincidir com registros antigos do plano ou do status.
+- `docs/PLANO.md` contextualiza o trabalho a executar. Cada fase planejada deve explicitar nome, objetivo, checklist de tarefas, validações, critérios de pronto, arquivos/pastas envolvidos e dependências, seguindo a estrutura estabelecida nas fases 1 a 13.
+- `docs/STATUS.md` acompanha o progresso: manter a visão geral das fases e, em cada fase, um checklist do que precisa ser feito, marcando com `[x]` somente o que foi concluído, seguido de um campo `Estado` que sintetize a situação da implementação. Pode conter informações gerais úteis sobre o sistema, mas não deve substituir o detalhamento de execução do plano.
+- Plano e status também preservam o histórico do trabalho realizado. Itens concluídos podem registrar a abordagem adotada naquele momento, mesmo que o comportamento tenha sido alterado depois. Não reescrever esse histórico para simular que a implementação atual sempre foi assim; quando necessário, registrar no plano o escopo atual a executar e manter o FSD como referência normativa.
+
 ### Alinhamento de ideias de desenvolvimento
 
 - Quando o usuário desenvolvedor trouxer ideias ou necessidades em uma conversa de alinhamento, primeiro esclarecer objetivo, escopo e critérios de aceite antes de iniciar a implementação.
-- Depois que a necessidade estiver alinhada, sugerir registrá-la em `docs/PLANO.md`, que continua sendo a referência para organizar as próximas evoluções mesmo após as fases iniciais.
+- Depois que a necessidade estiver alinhada, sugerir registrá-la em `docs/PLANO.md`, que contextualiza o que deverá ser feito e continua sendo a referência para organizar as próximas evoluções mesmo após as fases iniciais.
 - Incluir a funcionalidade no plano quando o usuário confirmar ou já solicitar explicitamente seu registro/execução; preservar prioridades e dependências acordadas.
 - Ao iniciar uma demanda planejada, consultar o plano junto aos demais arquivos vivos e atualizar seu estado real ao concluir.
 
@@ -276,7 +283,7 @@ Use caminhos relativos à raiz do projeto nas documentações. Não usar links `
 
 ### Ao finalizar
 
-1. Atualizar `docs/STATUS.md` com o estado real e tarefas concluídas.
+1. Atualizar `docs/STATUS.md` marcando no checklist somente tarefas concluídas e atualizando o `Estado` da fase, sem remover o histórico pertinente nem acrescentar detalhamento de execução que pertence ao plano.
 2. Atualizar este `AGENTS.md` se a alteração mudou stack, arquitetura, segurança, comandos, escopo, estrutura ou convenções para agentes.
 3. Registrar em `docs/ERROS.md` somente erros, incompatibilidades ou bloqueios encontrados e resolvidos.
 4. Executar validações adequadas e informar exatamente o que foi executado.
