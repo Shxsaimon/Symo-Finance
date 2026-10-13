@@ -391,15 +391,21 @@ body {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  min-height: 46px;
+  box-sizing: border-box;
 }
 
-.btn-symo-primary:hover {
+.btn-symo-primary:hover,
+.btn-symo-primary:focus {
   background-color: var(--symo-primary);
   color: #ffffff;
+  text-decoration: none;
 }
 
 .btn-symo-primary.btn-sm {
   padding: 0.25rem 0.5rem;
+  min-height: auto;
 }
 
 .btn-symo-secondary {
@@ -413,12 +419,17 @@ body {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  min-height: 46px;
+  box-sizing: border-box;
 }
 
-.btn-symo-secondary:hover {
+.btn-symo-secondary:hover,
+.btn-symo-secondary:focus {
   background-color: var(--symo-surface-container-low);
   border-color: var(--symo-primary-brand);
   color: var(--symo-primary-brand);
+  text-decoration: none;
 }
 
 .btn-symo-status {

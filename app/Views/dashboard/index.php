@@ -44,7 +44,7 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
             <?php endfor; ?>
         </select>
 
-        <a href="<?= BASE_URL ?>/transacoes" class="btn-symo-primary btn-sm d-flex align-items-center gap-1 text-nowrap shadow-sm">
+        <a href="<?= BASE_URL ?>/transacoes" class="btn-symo-primary d-flex align-items-center gap-2 text-nowrap text-decoration-none shadow-sm">
             <i class="bi bi-plus-lg"></i>
             <span>Novo Lançamento</span>
         </a>
