@@ -40,27 +40,10 @@ $corCartao = !empty($fatura['cartao_cor']) ? htmlspecialchars($fatura['cartao_co
         </div>
     </div>
     <div class="d-flex gap-2">
-        <?php if ($fatura['status'] === 'aberta'): ?>
-            <form action="<?= BASE_URL ?>/faturas/fechar/<?= $fatura['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Deseja realmente fechar esta fatura?');">
-                <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
-                <input type="hidden" name="redirect_to" value="<?= BASE_URL ?>/faturas/<?= $fatura['id'] ?>">
-                <button type="submit" class="btn btn-outline-warning fw-semibold">
-                    <i class="bi bi-lock me-1"></i> Fechar Fatura
-                </button>
-            </form>
-        <?php elseif ($fatura['status'] === 'fechada'): ?>
+        <?php if ($fatura['status'] === 'fechada'): ?>
             <button type="button" class="btn btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#modalPagarFaturaInvoice">
                 <i class="bi bi-cash-stack me-1"></i> Pagar Fatura
             </button>
-            <?php if ($isAdmin): ?>
-                <form action="<?= BASE_URL ?>/faturas/reabrir/<?= $fatura['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Deseja reabrir esta fatura?');">
-                    <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
-                    <input type="hidden" name="redirect_to" value="<?= BASE_URL ?>/faturas/<?= $fatura['id'] ?>">
-                    <button type="submit" class="btn btn-outline-secondary fw-semibold">
-                        <i class="bi bi-unlock me-1"></i> Reabrir
-                    </button>
-                </form>
-            <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>
@@ -153,7 +136,7 @@ $corCartao = !empty($fatura['cartao_cor']) ? htmlspecialchars($fatura['cartao_co
                             </td>
                             <td>
                                 <span class="fw-bold" style="color: var(--symo-on-surface);">
-                                    <?= htmlspecialchars($t['descricao'], ENT_QUOTES, 'UTF-8') ?>
+                                    <?= htmlspecialchars(FormatHelper::transactionDescription($t), ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                                 <?php if (!empty($t['total_parcelas']) && (int)$t['total_parcelas'] > 1): ?>
                                     <span class="badge text-bg-light border ms-1">

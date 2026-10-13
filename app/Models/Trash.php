@@ -181,9 +181,30 @@ class Trash extends Model
             return ['success' => false, 'message' => 'Transação não encontrada na lixeira.'];
         }
 
+        if (!empty($transacao['fatura_id'])) {
+            (new CreditCardInvoice())->closeMaturedInvoicesForCard(
+                (int) $transacao['cartao_credito_id'],
+                $currentUserId
+            );
+        }
+
         $this->beginTransaction();
 
         try {
+            $invoice = null;
+            if (!empty($transacao['fatura_id'])) {
+                $invoice = (new CreditCardInvoice())->findForUpdate(
+                    (int) $transacao['fatura_id'],
+                    $currentUserId
+                );
+                if ($invoice === null) {
+                    throw new InvalidArgumentException('A fatura vinculada à compra não está disponível.');
+                }
+                if ($invoice['status'] === 'paga') {
+                    throw new InvalidArgumentException('Não é possível restaurar uma compra vinculada a uma fatura já paga.');
+                }
+            }
+
             // 1. Limpa as flags de exclusão
             $sqlUp = "UPDATE `transacoes` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND {$this->ownerClause('usuario_id')}";
             $stmtUp = $this->db->prepare($sqlUp);
@@ -196,7 +217,7 @@ class Trash extends Model
             $contaId = !empty($transacao['conta_id']) ? (int) $transacao['conta_id'] : null;
             $valor = (float) $transacao['valor'];
 
-            if ($contaId !== null && in_array($status, ['pago', 'recebido'], true)) {
+            if (empty($transacao['fatura_id']) && $contaId !== null && in_array($status, ['pago', 'recebido'], true)) {
                 $ajuste = ($transacao['tipo'] === 'receita') ? $valor : -$valor;
                 $sqlSaldo = "UPDATE `contas` SET saldo_atual = saldo_atual + :ajuste, atualizado_em = NOW() WHERE id = :conta_id AND usuario_id = :usuario_id";
                 $stmtSaldo = $this->db->prepare($sqlSaldo);
@@ -207,6 +228,10 @@ class Trash extends Model
                 if ($stmtSaldo->rowCount() !== 1) {
                     throw new RuntimeException('A conta vinculada não pertence ao usuário da transação.');
                 }
+            }
+
+            if ($invoice !== null) {
+                (new CreditCardInvoice())->recalculateTotal((int) $invoice['id']);
             }
 
             // 3. Log de Auditoria
@@ -331,4 +356,3 @@ class Trash extends Model
         $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
     }
 }
-

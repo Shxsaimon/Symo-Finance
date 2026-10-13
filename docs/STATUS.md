@@ -6,13 +6,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 09/10/2026
-- **Fase Prioritária Atual:** Fase 20 implementada; validação integrada pendente
+- **Data da Última Atualização:** 12/10/2026
+- **Fase Prioritária Atual:** Fase 21 implementada e ciclo de parcelamento validado manualmente em ambiente local conectado ao Neon; não publicada em produção. Validação transacional/concorrente e compatibilidade MySQL permanecem pendentes.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
 
 
 
-- **Próximo Passo Recomendado:** Validar o fluxo da Fase 20 em ambiente integrado e autenticado; permanecem também pendentes a publicação/validação integrada da Fase 17, OAuth Google e testes manuais da Fase 14. Compartilhamento por conta permanece na Fase 18.
+- **Próximo Passo Recomendado:** Executar validação integrada da Fase 21 com PostgreSQL/Neon e MySQL mantido; permanecem também pendentes a publicação/validação integrada da Fase 17, OAuth Google e testes manuais da Fase 14. Compartilhamento por conta permanece na Fase 18.
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
@@ -60,7 +60,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 | **Fase 19** | Investimentos | Concluída; |
-| **Fase 20** | Perfil do usuário e acesso pela navegação | Implementada; validação integrada pendente |
+| **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
+| **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Implementada; ciclo de parcelamento validado manualmente em ambiente local conectado ao Neon; validação integrada de banco pendente |
 
 ---
 
@@ -273,5 +274,25 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Implementar edição própria do e-mail com validação de formato, unicidade, auditoria e atualização da sessão.
 - [x] Preservar o papel e status do usuário; validar senha atual, confirmação e mínimo de 8 caracteres para troca.
 - [x] Executar `php -l` nos arquivos PHP alterados e `git diff --check`.
-- [ ] Validar autorização, unicidade, CSRF, avatar e atualização da sessão em ambiente integrado.
-- **Estado:** Implementada; validação integrada pendente.
+- [x] Validar autorização, unicidade, CSRF, avatar e atualização da sessão em ambiente integrado.
+- **Estado:** Concluída.
+
+### Fase 21 — Correção do fluxo de despesas e ciclos de faturas de cartão
+- [x] Alinhar que o meio de pagamento define a modalidade: crédito exige cartão; os demais meios exigem conta bancária e status.
+- [x] Alinhar que o campo do modal se chamará **Data da Compra** e representa a data em que a compra ocorreu.
+- [x] Definir a fronteira exclusiva do fechamento: antes do dia entra no ciclo corrente; no dia ou depois, no próximo.
+- [x] Alinhar fechamento automático das faturas, pagamento integral com validação de saldo e alerta sem bloqueio quando o limite for excedido.
+- [x] Definir ciclo consecutivo para parcelas, preservando a data mensal de cada parcela e ajustando dias inexistentes ao último dia do mês.
+- [x] Alinhar preservação do histórico de cartões inativos e possibilidade de corrigir a fatura associada à compra.
+- [x] Definir ajuste do vencimento para o próximo dia útil quando cair em fim de semana ou feriado bancário nacional; a fonte/calendário confiável deve ser definida na implementação.
+- [x] Registrar o escopo, os critérios de aceite e as validações previstas em `docs/PLANO.md`.
+- [x] Atualizar o FSD e implementar o fluxo de despesas, associação às faturas e progressão mensal de parcelas.
+- [x] Automatizar o fechamento das faturas, corrigir associações quando necessário e aplicar vencimento em dia útil.
+- [x] Implementar alerta não bloqueante de limite, bloqueio de cartão inativo e pagamento integral com validação atômica de saldo; preservar CSRF, auditoria e isolamento por usuário.
+- [x] Executar `php -l` nos arquivos PHP alterados e `git diff --check`.
+- [x] Criar e executar teste focado da fronteira de fechamento, parcelas e calendário de vencimentos não úteis.
+- [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
+- [x] Gerar compras parceladas sem sufixo redundante, ocultar duplicação herdada em lançamentos, relatórios e faturas, e alinhar botões e ícone de calendário ao padrão visual Symo (lançamentos, cartões, transferências e investimentos).
+- [x] Corrigir link da ação de fatura nos compromissos pendentes do dashboard para a fatura específica (`/faturas/{fatura_id}`).
+- [ ] Executar validação integrada das operações transacionais e concorrentes em PostgreSQL/Neon e MySQL mantido.
+- **Estado:** Implementação concluída; ciclo de parcelamento validado manualmente em ambiente local conectado ao Neon, sem publicação em produção; validação integrada de operações transacionais/concorrentes e compatibilidade MySQL pendentes.

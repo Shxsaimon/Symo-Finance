@@ -97,7 +97,7 @@ $anoAtual = (int) date('Y');
             </select>
         </div>
         <div class="col-12 col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-sm btn-primary w-100 fw-semibold">
+            <button type="submit" class="btn btn-sm btn-symo-primary w-100 fw-semibold">
                 <i class="bi bi-funnel me-1"></i> Filtrar
             </button>
             <a href="<?= BASE_URL ?>/transferencias" class="btn btn-sm btn-outline-secondary" title="Limpar Filtros">

@@ -217,8 +217,6 @@ Router::post('/cartoes/salvar', [CreditCardController::class, 'store']);
 Router::post('/cartoes/atualizar/{id}', [CreditCardController::class, 'update']);
 Router::post('/cartoes/status/{id}', [CreditCardController::class, 'toggle']);
 Router::post('/cartoes/excluir/{id}', [CreditCardController::class, 'delete']);
-Router::post('/faturas/fechar/{id}', [CreditCardController::class, 'closeInvoice']);
-Router::post('/faturas/reabrir/{id}', [CreditCardController::class, 'reopenInvoice']);
 Router::post('/faturas/pagar/{id}', [CreditCardController::class, 'payInvoice']);
 
 // -------------------------------------------------------------

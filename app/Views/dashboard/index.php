@@ -261,7 +261,14 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
 
                                     <!-- Descrição / Categoria -->
                                     <td>
-                                        <div class="fw-semibold text-truncate" style="max-width: 180px;"><?= htmlspecialchars($item['descricao'], ENT_QUOTES, 'UTF-8') ?></div>
+                                        <div class="fw-semibold text-truncate" style="max-width: 180px;">
+                                            <?= htmlspecialchars(FormatHelper::transactionDescription($item), ENT_QUOTES, 'UTF-8') ?>
+                                            <?php if (!empty($item['total_parcelas']) && (int)$item['total_parcelas'] > 1): ?>
+                                                <span class="badge text-bg-light border text-muted ms-1" style="font-size: 0.7rem;">
+                                                    <?= (int)$item['numero_parcela'] ?>/<?= (int)$item['total_parcelas'] ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="small text-muted d-flex align-items-center gap-1">
                                             <i class="bi <?= htmlspecialchars($item['categoria_icone'] ?? 'bi-tag', ENT_QUOTES, 'UTF-8') ?>" style="color: <?= htmlspecialchars($item['categoria_cor'] ?? '#6F02FF', ENT_QUOTES, 'UTF-8') ?>;"></i>
                                             <span><?= htmlspecialchars($item['categoria_nome'] ?? 'Sem categoria', ENT_QUOTES, 'UTF-8') ?></span>
@@ -287,7 +294,7 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
                                     <!-- Ação -->
                                     <td class="text-center">
                                         <?php if (!empty($item['cartao_credito_id'])): ?>
-                                            <a href="<?= BASE_URL ?>/cartoes/ver/<?= $item['cartao_credito_id'] ?>" class="btn btn-sm btn-outline-primary py-0 px-2 text-nowrap" style="font-size: 0.75rem;" title="Ver fatura do cartão">
+                                            <a href="<?= BASE_URL ?>/faturas/<?= (int) $item['fatura_id'] ?>" class="btn btn-sm btn-outline-primary py-0 px-2 text-nowrap" style="font-size: 0.75rem;" title="Ver fatura do cartão">
                                                 <i class="bi bi-receipt"></i> Fatura
                                             </a>
                                         <?php else: ?>

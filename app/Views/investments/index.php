@@ -102,7 +102,7 @@ $qs = $qsFiltros($filters);
             <input type="text" class="form-control form-control-sm" id="f_fin" name="finalidade" maxlength="120" value="<?= $e($filters['finalidade']) ?>">
         </div>
         <div class="col-6 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn-symo-primary justify-content-center flex-grow-1 py-1"><i class="bi bi-funnel"></i> Filtrar</button>
+            <button type="submit" class="btn btn-sm btn-symo-primary justify-content-center flex-grow-1 fw-semibold"><i class="bi bi-funnel me-1"></i> Filtrar</button>
             <a href="<?= BASE_URL ?>/investimentos" class="btn btn-sm btn-outline-secondary" title="Limpar filtros"><i class="bi bi-x-lg"></i></a>
         </div>
     </form>

@@ -129,6 +129,32 @@ class FormatHelper
     }
 
     /**
+     * Remove dos lançamentos parcelados o sufixo legado que duplica o badge da parcela.
+     * Aceita tanto o array da transação quanto uma string de descrição diretamente.
+     *
+     * @param array<string, mixed>|string $transaction
+     */
+    public static function transactionDescription(array|string $transaction): string
+    {
+        if (is_string($transaction)) {
+            return (string) preg_replace('/\s+\[\d+\/\d+\]$/', '', $transaction);
+        }
+
+        $description = (string) ($transaction['descricao'] ?? '');
+        $installment = (int) ($transaction['numero_parcela'] ?? 0);
+        $installmentCount = (int) ($transaction['total_parcelas'] ?? 0);
+
+        if ($installmentCount > 1 && $installment > 0) {
+            $suffix = sprintf(' [%d/%d]', $installment, $installmentCount);
+            if (str_ends_with($description, $suffix)) {
+                return substr($description, 0, -strlen($suffix));
+            }
+        }
+
+        return $description;
+    }
+
+    /**
      * Escapa dados para saída segura em HTML contra XSS.
      *
      * @param mixed $data

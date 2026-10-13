@@ -96,9 +96,20 @@ class TransactionController extends Controller
         $dataVencimento = !empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : $dataTransacao;
         $categoriaId = (int) ($_POST['categoria_id'] ?? 1);
         $meioPagamentoId = (int) ($_POST['meio_pagamento_id'] ?? 0);
-        $destinoTipo = trim((string) ($_POST['destino_tipo'] ?? 'conta')); // 'conta' ou 'cartao'
-        $contaId = ($destinoTipo === 'conta' && !empty($_POST['conta_id'])) ? (int) $_POST['conta_id'] : null;
-        $cartaoCreditoId = ($destinoTipo === 'cartao' && !empty($_POST['cartao_credito_id'])) ? (int) $_POST['cartao_credito_id'] : null;
+        $meioSelecionado = $meioPagamentoId > 0
+            ? $this->paymentMethodModel->getForHistoricalTransaction($meioPagamentoId)
+            : null;
+        $meioEhCredito = $meioSelecionado !== null
+            && in_array($meioSelecionado['eh_credito'], [true, 1, '1', 't', 'true'], true);
+        $contaId = $tipo === 'despesa' && $meioEhCredito
+            ? null
+            : (!empty($_POST['conta_id']) ? (int) $_POST['conta_id'] : null);
+        $cartaoCreditoId = $tipo === 'despesa' && $meioEhCredito && !empty($_POST['cartao_credito_id'])
+            ? (int) $_POST['cartao_credito_id']
+            : null;
+        if ($tipo === 'despesa') {
+            $dataVencimento = $dataTransacao;
+        }
         $status = trim((string) ($_POST['status'] ?? ($tipo === 'receita' ? 'recebido' : 'pago')));
         $observacoes = !empty($_POST['observacoes']) ? trim((string) $_POST['observacoes']) : null;
         $parcelado = trim((string) ($_POST['parcelado'] ?? '0'));
@@ -158,7 +169,7 @@ class TransactionController extends Controller
             FlashHelper::set('error', 'Erro ao salvar lançamento: ' . $e->getMessage());
         }
 
-        $dt = new DateTimeImmutable($dataVencimento);
+        $dt = new DateTimeImmutable($tipo === 'despesa' ? $dataTransacao : $dataVencimento);
         $mes = $dt->format('n');
         $ano = $dt->format('Y');
 
@@ -199,6 +210,16 @@ class TransactionController extends Controller
             exit;
         }
 
+        $referenciaFatura = null;
+        if (!empty($transacao['fatura_id'])) {
+            $invoiceModel = new CreditCardInvoice();
+            $invoiceModel->closeMaturedInvoicesForCard(
+                (int) $transacao['cartao_credito_id'],
+                $userId
+            );
+            $referenciaFatura = $invoiceModel->find((int) $transacao['fatura_id']);
+        }
+
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
             'id'                => $transacao['id'],
@@ -211,9 +232,18 @@ class TransactionController extends Controller
             'conta_id'          => $transacao['conta_id'],
             'categoria_id'      => $transacao['categoria_id'],
             'meio_pagamento_id' => $transacao['meio_pagamento_id'],
-                        'meio_pagamento_nome' => $meioPagamento['nome'],
+            'meio_pagamento_nome' => $meioPagamento['nome'],
+            'meio_pagamento_eh_credito' => in_array(
+                $meioPagamento['eh_credito'],
+                [true, 1, '1', 't', 'true'],
+                true
+            ),
             'cartao_credito_id' => $transacao['cartao_credito_id'],
             'fatura_id'         => $transacao['fatura_id'],
+            'fatura_referencia' => $referenciaFatura !== null
+                ? sprintf('%04d-%02d', $referenciaFatura['ano_referencia'], $referenciaFatura['mes_referencia'])
+                : null,
+            'fatura_paga'       => $referenciaFatura !== null && $referenciaFatura['status'] === 'paga',
             'observacoes'       => $transacao['observacoes'] ?? '',
         ]);
         exit;
@@ -244,6 +274,9 @@ class TransactionController extends Controller
         $meioPagamentoId = isset($_POST['meio_pagamento_id']) ? (int) $_POST['meio_pagamento_id'] : null;
         $contaId = !empty($_POST['conta_id']) ? (int) $_POST['conta_id'] : null;
         $status = trim((string) ($_POST['status'] ?? 'pendente'));
+        $faturaReferencia = !empty($_POST['fatura_referencia'])
+            ? trim((string) $_POST['fatura_referencia'])
+            : null;
         $observacoes = !empty($_POST['observacoes']) ? trim((string) $_POST['observacoes']) : null;
 
         if (empty($descricao)) {
@@ -264,6 +297,9 @@ class TransactionController extends Controller
                 'status'            => $status,
                 'observacoes'       => $observacoes,
             ];
+            if ($faturaReferencia !== null) {
+                $dataAtualizacao['fatura_referencia'] = $faturaReferencia;
+            }
             if ($dataVencimento !== null) {
                 $dataAtualizacao['data_vencimento'] = $dataVencimento;
             }

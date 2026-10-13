@@ -26,6 +26,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 18:** Compartilhamento por conta (roadmap)
 - **Fase 19:** Investimentos
 - **Fase 20:** Perfil do usuário e acesso pela navegação
+- **Fase 21:** Correção do fluxo de despesas e ciclos de faturas de cartão
 
 ---
 
@@ -376,7 +377,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Localização na interface:** a aba Investimentos fica no mesmo grupo de movimentação de Lançamentos, Transferências e Cartão de Crédito.
 
 ### Fase 20 — Perfil do usuário e acesso pela navegação
-- **Estado:** Implementada; testes integrados pendentes.
+- **Estado:** Concluída.
 - **Objetivo:** Tornar o perfil acessível pela navegação principal e permitir que cada usuário atualize o próprio e-mail sem exigir verificação por e-mail.
 - **Regras já alinhadas:**
   - O perfil permanece na rota existente `/perfil`, separado de `/configuracoes`.
@@ -393,5 +394,38 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Validar formato, limite de 150 caracteres e unicidade no backend, normalizando espaços externos e letras para minúsculas; preservar papel e status da conta.
   - [x] Atualizar os dados da sessão após a alteração sem simular um novo login.
   - [x] Preservar CSRF e auditoria; exigir senha atual, confirmação e mínimo de 8 caracteres para troca de senha; manter validações do avatar.
-  - [ ] Testar em ambiente integrado e autenticado e-mail inválido, duplicado, válido ainda não verificado, tentativa de alterar outro usuário e sessão após atualização.
+  - [x] Testar em ambiente integrado e autenticado e-mail inválido, duplicado, válido ainda não verificado, tentativa de alterar outro usuário e sessão após atualização.
 - **Critérios de aceite:** Todos os usuários autenticados encontram e acessam `/perfil`; alterações afetam somente o próprio usuário; e-mails inválidos ou duplicados são recusados, e um e-mail sintaticamente válido pode ser salvo sem confirmação; `/configuracoes` não oferece edição de perfil nem fuso horário.
+
+### Fase 21 — Correção do fluxo de despesas e ciclos de faturas de cartão
+- **Estado:** Implementação concluída; validação funcional local do ciclo de parcelamento com Neon aprovada, sem publicação em produção; validação transacional/concorrente e compatibilidade MySQL pendentes.
+- **Objetivo:** Remover a seleção duplicada de destino e meio de pagamento, garantir que compras no cartão sejam associadas ao ciclo de fatura correto e manter coerentes as parcelas, o limite e a quitação da fatura.
+- **Regras já alinhadas:**
+  - O meio de pagamento define a modalidade: meios marcados como crédito exigem a seleção de um cartão; os demais exigem uma conta bancária e permitem informar o status pago ou pendente.
+  - No modal de despesa, substituir o rótulo **Data de Vencimento** por **Data da Compra**. A data informada representa quando a compra ocorreu.
+  - Em despesas fora do cartão, `data_transacao` e `data_vencimento` permanecem iguais. Em compras no cartão, `data_transacao` guarda a data da compra e `data_vencimento` acompanha o vencimento da fatura vinculada.
+  - O fechamento é exclusivo: compras anteriores ao dia de fechamento pertencem ao ciclo que fecha naquele mês; compras feitas no próprio dia ou depois pertencem ao ciclo seguinte.
+  - O vencimento decorre da sequência do ciclo: se o dia de vencimento for posterior ao fechamento, ocorre no mesmo mês; se for igual ou anterior, ocorre no mês seguinte.
+  - O vencimento calculado que cair em fim de semana ou feriado bancário nacional será ajustado para o próximo dia útil. O calendário é implementado localmente em helper versionado, sem depender de consulta externa em tempo de execução.
+  - As faturas mudam automaticamente de aberta para fechada conforme o ciclo, atualizadas sob demanda nas consultas e operações; pagamentos continuam sendo integrais, em conta bancária ativa, e devem ser recusados se não houver saldo suficiente.
+  - O limite excedido deve gerar alerta, mas não bloquear o registro. Cartões inativos não aceitam novas compras, mas seu histórico e suas faturas permanecem acessíveis.
+  - Compras parceladas geram uma parcela por ciclo mensal consecutivo. Cada parcela conserva sua própria `data_transacao`, no mesmo dia da parcela inicial; quando o mês não tiver esse dia, usa seu último dia (por exemplo, dia 31 ajustado para 28 ou 29 em fevereiro, depois dia 31 em março e dia 30 em abril).
+  - Deve ser possível corrigir manualmente a fatura vinculada a uma compra quando o ciclo calculado não corresponder ao lançamento efetivo do emissor.
+- **Checklist de implementação:**
+  - [x] Atualizar o FSD com as regras aprovadas para data da compra, ciclos de fatura, parcelas, vencimento em dias não úteis e pagamento integral.
+  - [x] Remover **Forma de Saída** e derivar os campos de conta/cartão e status a partir do meio de pagamento; validar compatibilidade também no backend.
+  - [x] Alterar o rótulo do campo para **Data da Compra** e preservar a distinção entre data da compra e vencimento da fatura.
+  - [x] Associar compras avulsas e parceladas ao ciclo calculado pela data da compra, aplicando a fronteira exclusiva do fechamento.
+  - [x] Gerar datas de parcelas mês a mês sem transbordo de calendário em meses curtos.
+  - [x] Automatizar o fechamento de faturas e permitir corrigir a fatura de uma compra, preservando os totais das faturas afetadas e a auditoria.
+  - [x] Ajustar vencimentos que caiam em fins de semana ou feriados bancários nacionais para o próximo dia útil, com calendário local e versionado.
+  - [x] Alertar sobre limite excedido sem bloquear compras; impedir novas compras em cartão inativo sem bloquear o acesso ao histórico.
+  - [x] Validar no backend saldo suficiente e atomicidade ao pagar faturas integralmente; preservar CSRF, autorização, isolamento por usuário e auditoria.
+  - [x] Criar teste focado para fronteira do fechamento, sequência mensal e vencimentos em fins de semana/feriados.
+  - [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
+  - [x] Gerar compras parceladas sem sufixo redundante e ocultar a duplicação herdada em lançamentos, relatórios e faturas; padronizar cores de botões e ícone de calendário nas telas de lançamentos, cartões, transferências e investimentos.
+  - [x] Corrigir link de visualização da fatura no widget de compromissos pendentes do dashboard para a fatura correta (`/faturas/{fatura_id}`).
+  - [ ] Executar validações integradas com PostgreSQL/Neon e MySQL mantido, incluindo operações transacionais e concorrência.
+- **Critérios de aceite:** O meio de pagamento selecionado determina uma única modalidade de saída e combinações inválidas são rejeitadas no backend; compras são exibidas na fatura correta conforme data e ciclo; parcelas mantêm a progressão mensal e os valores exatos; faturas fecham e são pagas conforme as regras alinhadas; nenhuma operação parcial ou inconsistente altera saldos, vínculos, totais ou dados de outro usuário.
+- **Arquivos/Pastas Envolvidos:** `app/Views/transactions/`, `app/Controllers/TransactionController.php`, `app/Models/Transaction.php`, `app/Models/CreditCard.php`, `app/Models/CreditCardInvoice.php`, `app/Controllers/CreditCardController.php`, `app/Views/credit-cards/`, testes relacionados, `database/migrations/` se necessária, `docs/FSD.md`, `docs/STATUS.md` e `AGENTS.md` se as regras para agentes mudarem.
+- **Dependências:** Fases 6, 7 e 8 concluídas; requer manter as regras de isolamento e atomicidade estabelecidas na Fase 16.

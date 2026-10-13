@@ -277,11 +277,12 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 * **Usuários Envolvidos:** `admin` e `dev` administram somente os próprios dados financeiros. O papel `operador` é legado e não representa compartilhamento ativo no estado atual.
 * **Ações Permitidas:**
 * Registo de Receita (à vista, com data de recebimento, conta bancária, categoria e status 'recebido' ou 'pendente');
-* Registo de Despesa (à vista, com data de vencimento/pagamento, conta ou cartão de crédito, categoria, status 'pago' ou 'pendente');
-* Registo de Compras Parceladas (geração automática de $N$ lançamentos vinculados com sufixo numérico `[1/N]`, calculando datas de vencimento mensais e valores com tratamento de dízima residual na primeira parcela);
+* Registo de Despesa com escolha da forma de pagamento. Meios de crédito exigem cartão e geram compra pendente vinculada à fatura; os demais exigem conta bancária e permitem status `pago` ou `pendente`;
+* O campo do modal de despesa é **Data da Compra**. Em despesas fora do crédito, `data_transacao` e `data_vencimento` usam essa data; no crédito, `data_transacao` registra a compra e `data_vencimento` acompanha o vencimento da fatura;
+* Registo de Compras Parceladas (geração automática de $N$ lançamentos vinculados, com a descrição original sem sufixo de parcela; o número da parcela é exibido separadamente e sufixos legados correspondentes são omitidos na exibição, com datas mensais ancoradas na data da compra e ajuste ao último dia de meses sem o dia original; valores mantêm tratamento de resíduo de centavos na primeira parcela);
 * Filtros por período, tipo, conta, categoria, meio de pagamento, cartão, status, texto e autor quando permitido;
 * Alteração e exclusão lógica de transações.
-* A edição preserva a data de lançamento (`data_transacao`); somente a data de vencimento pode ser alterada pelo campo correspondente.
+* A edição preserva a data de lançamento (`data_transacao`). Para compras no crédito, é possível corrigir a fatura associada enquanto ela não estiver paga; o total das faturas afetadas é recalculado.
 
 
 * **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa individual, preservando a autoria necessária à futura colaboração por conta.
@@ -297,8 +298,12 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 * **Objetivo:** Controlar os limites de crédito, despesas agrupadas por fatura e pagamento consolidado mensal.
 * **Usuários Envolvidos:** Proprietário do cartão; cartões não são compartilhados na primeira fase colaborativa.
-* **Ações Permitidas:** Cadastro de cartões com limite total, dia de fecho e dia de vencimento; lançamento de despesas no cartão; agrupamento de faturas (Aberta, Fechada, Paga); liquidação da fatura gerando a dedução em uma conta bancária de escolha.
-* **Resultado Esperado:** Previsibilidade do montante da fatura do mês sem duplicar débitos em conta corrente antes do pagamento efetivo.
+* **Ciclo da compra:** A forma de pagamento de crédito exige cartão ativo. Compras antes do dia de fechamento entram no ciclo corrente; compras no dia do fechamento ou depois entram no ciclo seguinte. Parcelas seguem ciclos mensais consecutivos, preservando o dia original quando existente.
+* **Faturas:** O status passa de aberta para fechada automaticamente após a data de fechamento, sem ação manual de fechamento ou reabertura. O vencimento ocorre no mesmo mês quando seu dia é posterior ao fechamento e no mês seguinte quando é igual ou anterior; vencimentos em fins de semana ou feriados bancários nacionais avançam para o próximo dia útil, segundo calendário interno versionado.
+* **Limite:** Exceder o limite disponível gera alerta informativo, sem bloquear o lançamento. Cartões inativos não aceitam novas compras; histórico e faturas permanecem acessíveis.
+* **Pagamento:** A fatura fechada é quitada integralmente por débito em conta bancária ativa. A operação é atômica e recusada se a conta não possuir saldo suficiente. A compra no crédito não debita conta bancária individualmente; a conta é afetada somente pelo pagamento consolidado da fatura.
+* **Correção de associação:** Uma compra vinculada pode ser movida para outra fatura do mesmo cartão antes da quitação, com recálculo dos totais e auditoria. Faturas pagas não recebem novas compras nem permitem mover ou excluir as compras já quitadas.
+* **Resultado Esperado:** Previsibilidade do montante da fatura sem duplicar débitos em conta corrente antes do pagamento efetivo.
 
 ### 6.6. Módulo de Cadastros Básicos (Contas, Categorias e Meios de Pagamento)
 
@@ -877,10 +882,10 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 * **Objetivo:** Listagem geral, busca filtrada, auditoria e manutenção de receitas e despesas.
 * **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro. O perfil `operador` é legado até existir compartilhamento por conta.
 * **Filtros e Buscas:** Período de datas (de/até), Tipo (Receita/Despesa), Categoria, Conta Financeira, Meio de Pagamento, Status (Pendente/Pago/Recebido) e Busca textual por descrição.
-* **Tabela de Dados:** Alta densidade com linhas zebradas sutis (`Surface-Container-Low`), colunas para Data, Tipo (badge semântico), Descrição (com identificação de parcela `[1/12]`), Categoria, Conta/Cartão, Valor (numerais tabulares), Status e Botões de Ação (Visualizar Detalhes, Editar, Excluir).
+* **Tabela de Dados:** Alta densidade com linhas zebradas sutis (`Surface-Container-Low`), colunas para Data, Tipo (badge semântico), Descrição (com identificação da parcela em badge separado, como `1/12`), Categoria, Conta/Cartão, Valor (numerais tabulares), Status e Botões de Ação (Visualizar Detalhes, Editar, Excluir).
 * **Modais Interativos:**
 * Modal de Lançamento de Receita;
-* Modal de Lançamento de Despesa (com opção de compra parcelada e seleção de cartão);
+* Modal de Lançamento de Despesa (forma de pagamento determina seleção de conta ou cartão, campo Data da Compra e opção de parcelamento);
 * Modal de Detalhes da Transação (exibindo autor, histórico de edições e logs de auditoria para Administrador).
 
 
@@ -895,7 +900,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Gestão de cartões, limites e fechamento/pagamento de faturas mensais.
 * **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro.
-* **Informações:** Card visual do cartão com limite total, limite disponível (barra de progresso), dia de fecho e dia de vencimento. Tabela de faturas históricas com status (Aberta, Fechada, Paga) e botão de ação para "Pagar Fatura" (dispara liquidação em conta corrente).
+* **Informações:** Card visual do cartão com limite total, limite disponível (barra de progresso), dia de fecho e dia de vencimento. Tabela de faturas históricas com status (Aberta, Fechada, Paga); faturas fechadas podem ser pagas integralmente em conta bancária ativa com saldo suficiente. O fechamento ocorre automaticamente conforme o calendário do cartão.
 
 ### 12.6. Módulo de Transferências (`/transferencias`)
 
@@ -1002,17 +1007,14 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 13.3. Fluxo de Fechamento e Pagamento de Fatura de Cartão
 
 1. **Perfil:** Proprietário do cartão e da conta de pagamento.
-2. **Pré-condições:** Existirem faturas fechadas com valor consolidado > 0 e conta corrente ativa com saldo disponível.
+2. **Pré-condições:** Existir fatura fechada com valor consolidado positivo e conta bancária ativa com saldo igual ou superior ao total.
 3. **Passo a Passo:**
-* O utilizador acessa o módulo de Cartões e visualiza a fatura fechada do mês;
-* Clica no botão "Liquidar / Pagar Fatura";
-* Seleciona a Conta Bancária de débito para liquidação e confirma a data de pagamento;
-* O backend abre uma transação PDO;
-* Atualiza o status da fatura para `paga` na tabela `credit_card_invoices`;
-* Atualiza o status de todas as transações vinculadas àquela fatura para `pago`;
-* Deduz o valor total da fatura do saldo atual da conta bancária selecionada;
-* Restabelece o limite de crédito disponível no cartão;
-* Comita a operação e gera log de auditoria.
+* Ao consultar ou operar faturas, o sistema atualiza o status para `fechada` quando a data de fechamento já passou;
+* O utilizador seleciona uma fatura fechada, uma conta bancária ativa e a data de pagamento;
+* O backend bloqueia a fatura durante a operação atômica, recalcula seu total e valida novamente o saldo da conta;
+* Se houver saldo suficiente, debita o total consolidado, marca a fatura e as compras vinculadas como pagas e registra a conta de pagamento na fatura;
+* O limite utilizado é liberado após a quitação. Compras vinculadas não recebem a conta usada no pagamento, evitando que sua edição, exclusão ou restauração contabilize novamente o débito consolidado;
+* A operação é auditada e confirmada integralmente; em caso de saldo insuficiente ou falha, nenhuma alteração financeira parcial permanece.
 
 
 4. **Resultado:** Fatura liquidada, saldo bancário debitado e limite do cartão liberado.
@@ -1045,12 +1047,11 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 14.2. Regras de Negócio Específicas
 
 1. **Transações Pendentes vs. Realizadas:**
-* Transações com status `pendente` (a pagar ou a receber) não afetam a coluna `current_balance` da conta bancária.
-* Transações com status `pago` ou `recebido` afetam imediatamente o `current_balance` da conta vinculada.
-
-
-2. **Edição de Transações Realizadas:** Caso o usuário altere o valor ou a conta de uma transação já efetivada, o sistema reverte o saldo antigo na conta anterior e aplica o novo saldo na conta selecionada em transação atômica.
-3. **Regra de Parcelamento:** O somatório de todas as $N$ parcelas geradas deve ser matematicamente idêntico ao valor total informado no formulário. Quaisquer frações residuais de centavos geradas pela divisão devem ser somadas à primeira parcela.
+* Transações bancárias com status `pendente` (a pagar ou a receber) não afetam o saldo da conta;
+* Receitas recebidas e despesas pagas fora do crédito afetam a conta vinculada;
+* Compras de cartão de crédito não afetam individualmente o saldo de conta, mesmo após serem marcadas como pagas pela quitação da fatura; o débito real é o pagamento consolidado da fatura.
+2. **Edição de Transações Realizadas:** Caso o usuário altere o valor ou a conta de uma transação bancária já efetivada, o sistema reverte o saldo antigo e aplica o novo saldo em transação atômica. Compras de cartão seguem as regras de fatura e não geram ajuste bancário individual.
+3. **Regra de Parcelamento:** O somatório de todas as $N$ parcelas geradas deve ser matematicamente idêntico ao valor total informado no formulário. Quaisquer frações residuais de centavos geradas pela divisão devem ser somadas à primeira parcela. Cada parcela avança um mês a partir da data ancorada, usando o último dia quando o mês não possuir o dia original.
 4. **Exclusão de Contas e Categorias com Histórico:** Não é permitida a exclusão física (*Hard Delete*) de contas bancárias ou categorias que possuam transações financeiras vinculadas. O sistema aplica inativação ou exclusão lógica, preservando a integridade dos relatórios históricos.
 5. **Transferência entre Mesma Conta:** É terminantemente proibido selecionar a mesma conta como Origem e Destino em uma transferência.
 6. **Isolamento de Dados:** Conta, categoria, meio de pagamento e cartão usados em um lançamento precisam pertencer ao usuário autenticado. A futura conta compartilhada deverá substituir essa regra por uma checagem explícita de participação e permissão.

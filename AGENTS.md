@@ -18,6 +18,7 @@ O **Symo Finance** é uma plataforma web de gestão financeira pessoal para pess
 
 - Cada usuário possui uma conta financeira individual e privada por padrão.
 - Contas, categorias, cartões, transações, transferências, relatórios, preferências e lixeira permanecem isolados por usuário. O Saldo Atual inclui contas ativas marcadas para inclusão, exceto contas do tipo `investimento`, que ficam sempre fora e são exibidas separadamente no resumo de Contas; a aba Investimentos (Fase 19, menu Movimentações) registra posições que não são contas bancárias e ficam fora do Saldo Atual; essa preferência não altera saldos individuais nem o uso das contas em lançamentos/transferências. Meios de pagamento estão em transição do cadastro por usuário para catálogo global; a aplicação das migrations 018 e 019 deve preceder a ativação da versão correspondente em produção.
+- Em despesas, o meio de pagamento define a modalidade: crédito exige cartão ativo e associa a compra à fatura do ciclo; outros meios exigem conta bancária. A data informada é a data da compra, parcelas preservam seu dia mensal quando possível, faturas fecham automaticamente após o fechamento e seu pagamento integral debita a conta escolhida uma única vez. Exceder o limite gera alerta, mas não bloqueia a compra.
 - O cadastro público cria um usuário `admin` da própria conta, com categorias e preferências padrão; meios de pagamento vêm do catálogo global e a disponibilidade inicial é ativa.
 - O perfil `dev` é um usuário técnico criado pelo seed, responsável pela operação global da plataforma. Como usuário financeiro, mantém escopo próprio por `usuario_id`, igual ao `admin`.
 - O perfil `operador` permanece no código por compatibilidade, não é usado no produto atual e não será um papel global no modelo futuro.
@@ -110,6 +111,8 @@ git diff --check
 
 Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no ambiente local. Não alterar o código apenas para contornar uma ausência local do executável.
 
+Para validar o calendário de ciclos de cartão sem dependências externas, execute `php tests\credit_card_calendar_test.php`.
+
 ---
 
 ## 6. Estrutura Atual do Repositório
@@ -131,6 +134,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 │   └── seeds/                   # Seed do dev e configurações globais
 ├── public/                      # CSS, JS, fontes e imagens públicas
 ├── storage/                     # Fallback legado de logs/uploads locais
+├── tests/                       # Testes executáveis focados
 ├── .github/workflows/           # Migrations remotas
 ├── index.php                    # Front Controller
 ├── migrate.php                  # CLI de migrations e seeds
@@ -150,6 +154,7 @@ Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no
 - A tela de esqueci a senha existe, mas não há recuperação por e-mail implementada.
 - Contas compartilhadas são roadmap. Não criar tabelas, rotas ou telas desse recurso sem especificação complementar e aprovação.
 - A Fase 17 implementa o catálogo global de meios de pagamento: somente `dev` cria, edita e altera o status global entre ativo e inativo; qualquer usuário autenticado, inclusive `dev`, ativa/inativa opções apenas para si. A inativação global impede novos usos para todos e pode ser revertida pelo `dev`, sem alterar preferências pessoais ou vínculos históricos. A migration remapeia as transações antes de remover duplicatas, valida a integridade e preserva a auditoria. Executar o workflow oficial da migration antes de ativar o código em produção. A Fase 18, compartilhamento por conta, continua no roadmap; categorias, cartões, faturas e preferências continuam pessoais.
+- O fluxo de cartão segue as regras da Fase 21 do FSD: a fronteira do fechamento é exclusiva; vencimentos em fins de semana e feriados bancários nacionais avançam para o próximo dia útil; o calendário é local/versionado, sem consulta externa em runtime; faturas pagas não recebem novas compras nem permitem mover ou excluir as compras já quitadas.
 - Fora de escopo: Open Finance, OFX, importação bancária, boletos, gateways de pagamento, anexos de comprovantes, metas orçamentárias, recorrência infinita, conversão cambial em tempo real, PDF nativo e notificações de vencimento por e-mail.
 
 ---

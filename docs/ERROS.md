@@ -21,6 +21,20 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 
 ## Registros de Ocorrências
 
+## 2026-10-12 - Erro 404 ao consultar fatura na listagem de compromissos pendentes do dashboard
+
+- **Sintoma:** Ao clicar no botão "Fatura" de uma despesa com cartão no widget de compromissos pendentes do dashboard, a aplicação retornava erro 404 na rota `/cartoes/ver/{id}`.
+- **Causa:** O link da ação no dashboard apontava incorretamente para `/cartoes/ver/{cartao_credito_id}`, uma rota inexistente na aplicação. A rota oficial para visualização de faturas é `/faturas/{id}`.
+- **Solução aplicada:** O botão no widget de compromissos pendentes do dashboard foi corrigido para apontar diretamente para a fatura correspondente da compra via `/faturas/{fatura_id}`, mantendo apenas as rotas oficiais registradas em `index.php`.
+- **Como evitar no futuro:** Sempre mapear rotas de links na interface contra a tabela de rotas registradas em `index.php` e validar ações contextuais que direcionam a recursos específicos (como faturas individuais vs. visão geral de cartões).
+
+## 2026-10-12 - Ciclo e liquidação de compras no cartão inconsistentes
+
+- **Sintoma:** A forma de saída duplicava a modalidade já representada pelo meio de pagamento; compras podiam cair em ciclo inadequado e a edição posterior podia contabilizar novamente o débito de uma fatura já paga.
+- **Causa:** A seleção de destino não era derivada do meio de pagamento, o ciclo não aplicava o limite de fechamento e a conta usada na quitação era associada também às compras da fatura.
+- **Solução aplicada:** O meio de pagamento passou a determinar conta ou cartão; compras usam o ciclo de fechamento, a liquidação integral registra o débito apenas na fatura e associações pagas são protegidas contra alteração financeira.
+- **Como evitar no futuro:** Cobrir com testes os limites de ciclo, o saldo antes/depois da quitação e as operações de edição, exclusão e restauração de compras no crédito.
+
 ## 2026-10-05 - Página local sem CSS/JS no servidor embutido do PHP
 
 - **Sintoma:** Em `php -S localhost:8000 index.php`, a tela abria sem estilos e com modais visíveis, impedindo a navegação.

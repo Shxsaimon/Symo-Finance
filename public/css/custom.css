@@ -398,6 +398,10 @@ body {
   color: #ffffff;
 }
 
+.btn-symo-primary.btn-sm {
+  padding: 0.25rem 0.5rem;
+}
+
 .btn-symo-secondary {
   background-color: #ffffff;
   color: var(--symo-primary-brand);

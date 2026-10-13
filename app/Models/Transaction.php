@@ -80,6 +80,9 @@ class Transaction extends Model
         $faturaId = null;
 
         $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, $cartaoCreditoId);
+        if ($tipo === 'despesa') {
+            $this->validateExpensePaymentDestination($meioPagamentoId, $contaId, $cartaoCreditoId, $userId);
+        }
         $contaOwnerId = $contaId !== null ? $this->accountOwnerId($contaId, $userId) : null;
 
         // INÍCIO DA TRANSAÇÃO ATÔMICA
@@ -87,14 +90,16 @@ class Transaction extends Model
         try {
             // Se for despesa no cartão de crédito, localiza ou gera a fatura
             if ($tipo === 'despesa' && $cartaoCreditoId !== null) {
-                $dt = new DateTimeImmutable($dataTransacao);
-                $mesRef = (int) $dt->format('n');
-                $anoRef = (int) $dt->format('Y');
-
                 $invoiceModel = new CreditCardInvoice();
-                $fatura = $invoiceModel->getOrCreateInvoice($cartaoCreditoId, $mesRef, $anoRef);
+                $fatura = $invoiceModel->getOrCreateInvoiceForPurchase($cartaoCreditoId, $dataTransacao);
+                $fatura = $invoiceModel->findForUpdate((int) $fatura['id'], $userId)
+                    ?? throw new InvalidArgumentException('A fatura da compra não está disponível.');
+                if ($fatura['status'] === 'paga') {
+                    throw new InvalidArgumentException('Não é possível incluir uma nova compra em uma fatura já paga.');
+                }
                 $faturaId = (int) $fatura['id'];
                 $status = 'pendente'; // Despesa no cartão fica pendente até a fatura ser paga
+                $dataPagamento = null;
                 $contaId = null; // Não debita conta no momento da compra
                 if (!empty($fatura['data_vencimento'])) {
                     $dataVencimento = $fatura['data_vencimento'];
@@ -188,6 +193,11 @@ class Transaction extends Model
         $observacoes = !empty($data['observacoes']) ? trim((string) $data['observacoes']) : null;
 
         $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, $cartaoCreditoId);
+        $this->validateExpensePaymentDestination($meioPagamentoId, $contaId, $cartaoCreditoId, $userId);
+
+        if ($totalParcelas < 2 || $totalParcelas > 72) {
+            throw new InvalidArgumentException('A quantidade de parcelas deve estar entre 2 e 72.');
+        }
 
         // Cálculo de parcelas com ajuste de dízima residual na 1ª parcela
         $valorBase = floor(($valorTotal / $totalParcelas) * 100) / 100;
@@ -199,7 +209,6 @@ class Transaction extends Model
 
         $this->db->beginTransaction();
         try {
-            $dtBase = new DateTimeImmutable($dataPrimeiraParcela);
             $invoiceModel = new CreditCardInvoice();
 
             for ($i = 1; $i <= $totalParcelas; $i++) {
@@ -207,8 +216,7 @@ class Transaction extends Model
                 $valorParcela = ($i === 1) ? round($valorBase + $residuo, 2) : $valorBase;
                 
                 // Data da parcela atual (mês a mês)
-                $dtParcela = $dtBase->modify('+' . ($i - 1) . ' month');
-                $dataTransacao = $dtParcela->format('Y-m-d');
+                $dataTransacao = CreditCardCalendar::installmentDate($dataPrimeiraParcela, $i - 1);
                 $dataVencimento = $dataTransacao;
                 $faturaId = null;
                 $status = 'pendente';
@@ -216,9 +224,12 @@ class Transaction extends Model
 
                 // Se for cartão, vincula à fatura do mês correspondente
                 if ($cartaoCreditoId !== null) {
-                    $mesRef = (int) $dtParcela->format('n');
-                    $anoRef = (int) $dtParcela->format('Y');
-                    $fatura = $invoiceModel->getOrCreateInvoice($cartaoCreditoId, $mesRef, $anoRef);
+                    $fatura = $invoiceModel->getOrCreateInvoiceForPurchase($cartaoCreditoId, $dataTransacao);
+                    $fatura = $invoiceModel->findForUpdate((int) $fatura['id'], $userId)
+                        ?? throw new InvalidArgumentException('A fatura da parcela não está disponível.');
+                    if ($fatura['status'] === 'paga') {
+                        throw new InvalidArgumentException('Não é possível incluir uma parcela em uma fatura já paga.');
+                    }
                     $faturaId = (int) $fatura['id'];
                     $faturasAfetadas[$faturaId] = true;
                     $contaParcelaId = null;
@@ -226,8 +237,6 @@ class Transaction extends Model
                         $dataVencimento = $fatura['data_vencimento'];
                     }
                 }
-
-                $descricaoParcela = "{$descricao} [{$i}/{$totalParcelas}]";
 
                 $sql = "INSERT INTO `transacoes` (
                             usuario_id, tipo, descricao, valor, data_transacao, data_vencimento,
@@ -243,7 +252,7 @@ class Transaction extends Model
 
                 $stmt = $this->db->prepare($sql);
                 $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
-                $stmt->bindValue(':descricao', $descricaoParcela, PDO::PARAM_STR);
+                $stmt->bindValue(':descricao', $descricao, PDO::PARAM_STR);
                 $stmt->bindValue(':valor', $valorParcela);
                 $stmt->bindValue(':data_transacao', $dataTransacao, PDO::PARAM_STR);
                 $stmt->bindValue(':data_vencimento', $dataVencimento, PDO::PARAM_STR);
@@ -305,14 +314,25 @@ class Transaction extends Model
             throw new RuntimeException('Você não possui autorização para editar lançamentos de outros usuários.');
         }
 
-        $tipo = $data['tipo'] ?? $old['tipo'];
+        $isCreditCharge = !empty($old['fatura_id']);
+        $tipo = $isCreditCharge ? 'despesa' : ($data['tipo'] ?? $old['tipo']);
         $descricao = isset($data['descricao']) ? trim((string) $data['descricao']) : $old['descricao'];
         $valor = isset($data['valor']) ? (float) $data['valor'] : (float) $old['valor'];
         $dataVencimento = $data['data_vencimento'] ?? $old['data_vencimento'];
-        $status = $data['status'] ?? $old['status'];
+        $status = $isCreditCharge ? $old['status'] : ($data['status'] ?? $old['status']);
         $categoriaId = isset($data['categoria_id']) ? (int) $data['categoria_id'] : (int) $old['categoria_id'];
-        $meioPagamentoId = isset($data['meio_pagamento_id']) ? (int) $data['meio_pagamento_id'] : (int) $old['meio_pagamento_id'];
-        $contaId = array_key_exists('conta_id', $data) ? (!empty($data['conta_id']) ? (int) $data['conta_id'] : null) : (!empty($old['conta_id']) ? (int) $old['conta_id'] : null);
+        $meioPagamentoId = $isCreditCharge
+            ? (int) $old['meio_pagamento_id']
+            : (isset($data['meio_pagamento_id']) ? (int) $data['meio_pagamento_id'] : (int) $old['meio_pagamento_id']);
+        if (!$isCreditCharge && $meioPagamentoId !== (int) $old['meio_pagamento_id']) {
+            $paymentMethod = (new PaymentMethod())->getForHistoricalTransaction($meioPagamentoId);
+            if ($paymentMethod !== null && in_array($paymentMethod['eh_credito'], [true, 1, '1', 't', 'true'], true)) {
+                throw new InvalidArgumentException('Meios de crédito só podem ser usados em despesas vinculadas a um cartão e à respectiva fatura.');
+            }
+        }
+        $contaId = $isCreditCharge
+            ? (!empty($old['conta_id']) ? (int) $old['conta_id'] : null)
+            : (array_key_exists('conta_id', $data) ? (!empty($data['conta_id']) ? (int) $data['conta_id'] : null) : (!empty($old['conta_id']) ? (int) $old['conta_id'] : null));
         $observacoes = isset($data['observacoes']) ? trim((string) $data['observacoes']) : $old['observacoes'];
         $dataPagamento = ($status === 'pago' || $status === 'recebido') ? ($data['data_pagamento'] ?? $old['data_pagamento'] ?? date('Y-m-d')) : null;
 
@@ -320,12 +340,66 @@ class Transaction extends Model
             ? $meioPagamentoId
             : null;
         $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, null, $historicalPaymentMethodId);
-        $contaOwnerId = $contaId !== null ? $this->accountOwnerId($contaId, $userId) : null;
+        $contaOwnerId = !$isCreditCharge && $contaId !== null
+            ? $this->accountOwnerId($contaId, $userId)
+            : null;
+        $faturaId = !empty($old['fatura_id']) ? (int) $old['fatura_id'] : null;
+
+        if ($isCreditCharge) {
+            (new CreditCardInvoice())->closeMaturedInvoicesForCard(
+                (int) $old['cartao_credito_id'],
+                $userId
+            );
+        }
 
         $this->db->beginTransaction();
         try {
+            $invoiceModel = null;
+            $oldInvoice = null;
+            if ($isCreditCharge) {
+                $invoiceModel = new CreditCardInvoice();
+                $oldInvoice = $invoiceModel->findForUpdate((int) $old['fatura_id'], $userId);
+                if (!$oldInvoice) {
+                    throw new InvalidArgumentException('A fatura vinculada à compra não está disponível.');
+                }
+                if ($oldInvoice['status'] === 'paga') {
+                    $status = 'pago';
+                    $dataPagamento = !empty($oldInvoice['pago_em'])
+                        ? substr((string) $oldInvoice['pago_em'], 0, 10)
+                        : ($old['data_pagamento'] ?? date('Y-m-d'));
+                }
+                if ($oldInvoice['status'] === 'paga' && abs($valor - (float) $old['valor']) >= 0.005) {
+                    throw new InvalidArgumentException('Não é possível alterar o valor de uma compra vinculada a uma fatura paga.');
+                }
+            }
+
+            if ($isCreditCharge && !empty($data['fatura_referencia'])) {
+                if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $data['fatura_referencia'])) {
+                    throw new InvalidArgumentException('A referência da fatura informada é inválida.');
+                }
+
+                if (!$oldInvoice || $oldInvoice['status'] === 'paga') {
+                    throw new InvalidArgumentException('Não é possível alterar uma compra vinculada a uma fatura paga.');
+                }
+
+                [$anoRef, $mesRef] = array_map('intval', explode('-', (string) $data['fatura_referencia']));
+                $targetInvoice = $invoiceModel->getOrCreateInvoice(
+                    (int) $old['cartao_credito_id'],
+                    $mesRef,
+                    $anoRef
+                );
+                $targetInvoice = $invoiceModel->findForUpdate((int) $targetInvoice['id'], $userId)
+                    ?? throw new InvalidArgumentException('A fatura de destino não está disponível.');
+                if ($targetInvoice['status'] === 'paga') {
+                    throw new InvalidArgumentException('Não é possível mover a compra para uma fatura já paga.');
+                }
+
+                $faturaId = (int) $targetInvoice['id'];
+                $dataVencimento = (string) $targetInvoice['data_vencimento'];
+            }
+
             // 1. Reverte o saldo antigo da conta anterior (se estava liquidado)
-            if (!empty($old['conta_id'])) {
+            if (!$isCreditCharge && !empty($old['conta_id'])) {
                 $oldContaId = (int) $old['conta_id'];
                 $oldValor = (float) $old['valor'];
                 if ($old['tipo'] === 'receita' && $old['status'] === 'recebido') {
@@ -336,7 +410,7 @@ class Transaction extends Model
             }
 
             // 2. Aplica o novo saldo na conta (se estiver liquidado)
-            if ($contaId !== null) {
+            if (!$isCreditCharge && $contaId !== null) {
                 if ($tipo === 'receita' && $status === 'recebido') {
                     $this->adjustAccountBalance($contaId, $valor, (int) $contaOwnerId);
                 } elseif ($tipo === 'despesa' && $status === 'pago') {
@@ -350,6 +424,7 @@ class Transaction extends Model
                         data_vencimento = :data_vencimento,
                         data_pagamento = :data_pagamento, status = :status, conta_id = :conta_id,
                         categoria_id = :categoria_id, meio_pagamento_id = :meio_pagamento_id,
+                        fatura_id = :fatura_id,
                         observacoes = :observacoes, atualizado_em = NOW()
                     WHERE id = :id AND usuario_id = :usuario_escopo AND excluido_em IS NULL";
 
@@ -363,15 +438,18 @@ class Transaction extends Model
             $stmt->bindValue(':conta_id', $contaId, $contaId !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
             $stmt->bindValue(':categoria_id', $categoriaId, PDO::PARAM_INT);
             $stmt->bindValue(':meio_pagamento_id', $meioPagamentoId, PDO::PARAM_INT);
+            $stmt->bindValue(':fatura_id', $faturaId, $faturaId !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
             $stmt->bindValue(':observacoes', $observacoes, $observacoes !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->bindValue(':usuario_escopo', $userId, PDO::PARAM_INT);
             $success = $stmt->execute();
 
             // 4. Se tiver fatura vinculada, recalcula o total
-            if (!empty($old['fatura_id'])) {
-                $invoiceModel = new CreditCardInvoice();
+            if (!empty($old['fatura_id']) && $oldInvoice['status'] !== 'paga') {
                 $invoiceModel->recalculateTotal((int) $old['fatura_id']);
+                if ($faturaId !== (int) $old['fatura_id']) {
+                    $invoiceModel->recalculateTotal((int) $faturaId);
+                }
             }
 
             $this->logAudit('UPDATE', $id, $old, [
@@ -380,6 +458,7 @@ class Transaction extends Model
                 'valor'     => $valor,
                 'status'    => $status,
                 'conta_id'  => $contaId,
+                'fatura_id' => $faturaId,
             ], $userId);
 
             $this->db->commit();
@@ -451,10 +530,27 @@ class Transaction extends Model
             return ['success' => false, 'message' => 'Você não possui permissão para excluir lançamentos de terceiros.'];
         }
 
+        if (!empty($trans['fatura_id'])) {
+            (new CreditCardInvoice())->closeMaturedInvoicesForCard(
+                (int) $trans['cartao_credito_id'],
+                $userId
+            );
+        }
+
         $this->db->beginTransaction();
         try {
+            if (!empty($trans['fatura_id'])) {
+                $invoice = (new CreditCardInvoice())->findForUpdate((int) $trans['fatura_id'], $userId);
+                if ($invoice === null) {
+                    throw new InvalidArgumentException('A fatura vinculada à compra não está disponível.');
+                }
+                if ($invoice['status'] === 'paga') {
+                    throw new InvalidArgumentException('Não é possível excluir uma compra vinculada a uma fatura já paga.');
+                }
+            }
+
             // Reverte saldo bancário caso estivesse pago/recebido
-            if (!empty($trans['conta_id'])) {
+            if (empty($trans['fatura_id']) && !empty($trans['conta_id'])) {
                 $contaId = (int) $trans['conta_id'];
                 $valor = (float) $trans['valor'];
                 if ($trans['tipo'] === 'receita' && $trans['status'] === 'recebido') {
@@ -469,7 +565,7 @@ class Transaction extends Model
             }
 
             // Recalcula total da fatura se houver
-            if (!empty($trans['fatura_id'])) {
+            if (!empty($trans['fatura_id']) && $invoice['status'] !== 'paga') {
                 $invoiceModel = new CreditCardInvoice();
                 $invoiceModel->recalculateTotal((int) $trans['fatura_id']);
             }
@@ -817,6 +913,47 @@ class Transaction extends Model
         }
 
         return (int) $ownerId;
+    }
+
+    private function validateExpensePaymentDestination(
+        int $paymentMethodId,
+        ?int $accountId,
+        ?int $creditCardId,
+        int $userId
+    ): void {
+        $paymentMethod = (new PaymentMethod())->getForHistoricalTransaction($paymentMethodId);
+        if ($paymentMethod === null) {
+            throw new InvalidArgumentException('O meio de pagamento selecionado não está disponível.');
+        }
+
+        $isCredit = in_array($paymentMethod['eh_credito'], [true, 1, '1', 't', 'true'], true);
+        if ($isCredit) {
+            if ($creditCardId === null || $accountId !== null) {
+                throw new InvalidArgumentException('Meios de pagamento de crédito exigem a seleção de um cartão.');
+            }
+
+            $stmt = $this->db->prepare("SELECT 1 FROM cartoes_credito
+                WHERE id = :id AND usuario_id = :usuario_id AND status = 'ativo'
+                    AND excluido_em IS NULL LIMIT 1");
+            $stmt->execute(['id' => $creditCardId, 'usuario_id' => $userId]);
+            if ($stmt->fetchColumn() === false) {
+                throw new InvalidArgumentException('O cartão selecionado está inativo ou indisponível para novas compras.');
+            }
+
+            return;
+        }
+
+        if ($accountId === null || $creditCardId !== null) {
+            throw new InvalidArgumentException('Este meio de pagamento exige uma conta bancária e não aceita cartão de crédito.');
+        }
+
+        $stmt = $this->db->prepare("SELECT 1 FROM contas
+            WHERE id = :id AND usuario_id = :usuario_id AND status = 'ativa'
+                AND excluido_em IS NULL LIMIT 1");
+        $stmt->execute(['id' => $accountId, 'usuario_id' => $userId]);
+        if ($stmt->fetchColumn() === false) {
+            throw new InvalidArgumentException('A conta selecionada está inativa ou indisponível para novas despesas.');
+        }
     }
 
     private function validateRelatedOwnership(

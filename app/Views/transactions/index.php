@@ -134,7 +134,7 @@ $anoAtual = (int) date('Y');
             </select>
         </div>
         <div class="col-12 col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-sm btn-primary w-100 fw-semibold">
+            <button type="submit" class="btn btn-sm btn-symo-primary w-100 fw-semibold">
                 <i class="bi bi-funnel me-1"></i> Filtrar
             </button>
             <a href="<?= BASE_URL ?>/transacoes" class="btn btn-sm btn-outline-secondary" title="Limpar Filtros">
@@ -206,7 +206,7 @@ $anoAtual = (int) date('Y');
                             <!-- Descrição -->
                             <td>
                                 <div class="fw-bold" style="color: var(--symo-on-surface);">
-                                    <?= htmlspecialchars($t['descricao'], ENT_QUOTES, 'UTF-8') ?>
+                                    <?= htmlspecialchars(FormatHelper::transactionDescription($t), ENT_QUOTES, 'UTF-8') ?>
                                     <?php if (!empty($t['total_parcelas']) && (int)$t['total_parcelas'] > 1): ?>
                                         <span class="badge text-bg-light border text-muted ms-1" style="font-size: 0.75rem;">
                                             <?= $t['numero_parcela'] ?>/<?= $t['total_parcelas'] ?>
@@ -300,8 +300,6 @@ $anoAtual = (int) date('Y');
             <form action="<?= BASE_URL ?>/transacoes/salvar" method="POST">
                 <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
                 <input type="hidden" name="tipo" value="receita">
-                <input type="hidden" name="destino_tipo" value="conta">
-
                 <div class="modal-header border-bottom bg-success text-white">
                     <h5 class="modal-title fw-bold" id="modalNovaReceitaLabel">
                         <i class="bi bi-arrow-down-circle me-1"></i> Nova Receita
@@ -310,24 +308,24 @@ $anoAtual = (int) date('Y');
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="rec_descricao" class="form-label fw-semibold">Descrição *</label>
+                        <label for="rec_descricao" class="form-label fw-semibold">Descrição</label>
                         <input type="text" class="form-control" id="rec_descricao" name="descricao" placeholder="Ex: Salário Mensal, Freelance, Rendimentos" required>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="rec_valor" class="form-label fw-semibold">Valor (R$) *</label>
+                            <label for="rec_valor" class="form-label fw-semibold">Valor (R$)</label>
                             <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-success" id="rec_valor" name="valor" placeholder="R$ 0,00" required>
                         </div>
                         <div class="col-6">
-                            <label for="rec_data" class="form-label fw-semibold">Data de Recebimento *</label>
+                            <label for="rec_data" class="form-label fw-semibold">Data de Recebimento</label>
                             <input type="date" class="form-control" id="rec_data" name="data_transacao" value="<?= date('Y-m-d') ?>" required>
                         </div>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="rec_categoria" class="form-label fw-semibold">Categoria *</label>
+                            <label for="rec_categoria" class="form-label fw-semibold">Categoria</label>
                             <select class="form-select" id="rec_categoria" name="categoria_id" required>
                                 <?php foreach ($categoriasReceita as $cat): ?>
                                     <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
@@ -335,7 +333,7 @@ $anoAtual = (int) date('Y');
                             </select>
                         </div>
                         <div class="col-6">
-                            <label for="rec_conta" class="form-label fw-semibold">Conta de Destino *</label>
+                            <label for="rec_conta" class="form-label fw-semibold">Conta de Destino</label>
                             <select class="form-select" id="rec_conta" name="conta_id" required>
                                 <?php foreach ($contas as $acc): ?>
                                     <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
@@ -346,7 +344,7 @@ $anoAtual = (int) date('Y');
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="rec_meio" class="form-label fw-semibold">Meio de Pagamento *</label>
+                            <label for="rec_meio" class="form-label fw-semibold">Meio de Pagamento</label>
                             <select class="form-select" id="rec_meio" name="meio_pagamento_id" required>
                                 <?php foreach ($meiosPagamento as $mp): ?>
                                     <option value="<?= $mp['id'] ?>"><?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?></option>
@@ -392,41 +390,47 @@ $anoAtual = (int) date('Y');
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="desp_descricao" class="form-label fw-semibold">Descrição *</label>
+                        <label for="desp_descricao" class="form-label fw-semibold">Descrição</label>
                         <input type="text" class="form-control" id="desp_descricao" name="descricao" placeholder="Ex: Supermercado, Aluguel, Farmácia" required>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="desp_valor" class="form-label fw-semibold">Valor (R$) *</label>
+                            <label for="desp_valor" class="form-label fw-semibold">Valor (R$)</label>
                             <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-danger" id="desp_valor" name="valor" placeholder="R$ 0,00" required>
                         </div>
                         <div class="col-6">
-                            <label for="desp_data" class="form-label fw-semibold">Data de Vencimento *</label>
+                            <label for="desp_data" class="form-label fw-semibold">Data da Compra</label>
                             <input type="date" class="form-control" id="desp_data" name="data_transacao" value="<?= date('Y-m-d') ?>" required>
                         </div>
                     </div>
 
-                    <!-- Tipo de Destino: Conta Corrente vs Cartão de Crédito -->
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold d-block">Forma de Saída *</label>
-                        <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" name="destino_tipo" id="destino_conta" value="conta" checked autocomplete="off">
-                            <label class="btn btn-outline-primary" for="destino_conta">
-                                <i class="bi bi-bank me-1"></i> Conta Bancária
-                            </label>
-
-                            <input type="radio" class="btn-check" name="destino_tipo" id="destino_cartao" value="cartao" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="destino_cartao">
-                                <i class="bi bi-credit-card-2-front me-1"></i> Cartão de Crédito
-                            </label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="desp_categoria" class="form-label fw-semibold">Categoria</label>
+                            <select class="form-select" id="desp_categoria" name="categoria_id" required>
+                                <?php foreach ($categoriasDespesa as $cat): ?>
+                                    <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="desp_meio" class="form-label fw-semibold">Forma de Pagamento</label>
+                            <select class="form-select" id="desp_meio" name="meio_pagamento_id" required>
+                                <option value="" selected disabled>Selecione</option>
+                                <?php foreach ($meiosPagamento as $mp): ?>
+                                    <option value="<?= $mp['id'] ?>" data-eh-credito="<?= in_array($mp['eh_credito'], [true, 1, '1', 't', 'true'], true) ? '1' : '0' ?>">
+                                        <?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Select Condicional: Conta Bancária -->
                     <div class="mb-3" id="wrapper_select_conta">
-                        <label for="desp_conta" class="form-label fw-semibold">Conta para Débito *</label>
+                        <label for="desp_conta" class="form-label fw-semibold">Conta Bancária</label>
                         <select class="form-select" id="desp_conta" name="conta_id">
+                            <option value="" selected disabled>Selecione uma conta</option>
                             <?php foreach ($contas as $acc): ?>
                                 <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
                             <?php endforeach; ?>
@@ -435,35 +439,20 @@ $anoAtual = (int) date('Y');
 
                     <!-- Select Condicional: Cartão de Crédito -->
                     <div class="mb-3 d-none" id="wrapper_select_cartao">
-                        <label for="desp_cartao" class="form-label fw-semibold">Cartão de Crédito *</label>
-                        <select class="form-select" id="desp_cartao" name="cartao_credito_id">
-                            <?php if (empty($cartoes)): ?>
-                                <option value="">Nenhum cartão cadastrado</option>
-                            <?php else: ?>
-                                <?php foreach ($cartoes as $c): ?>
-                                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nome'], ENT_QUOTES, 'UTF-8') ?> (Disp: <?= FormatHelper::currency((float)$c['limite_disponivel']) ?>)</option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                        <label for="desp_cartao" class="form-label fw-semibold">Cartão de Crédito</label>
+                        <select class="form-select" id="desp_cartao" name="cartao_credito_id" disabled>
+                            <option value="" selected disabled>Selecione um cartão</option>
+                            <?php foreach ($cartoes as $c): ?>
+                                <?php if ($c['status'] === 'ativo'): ?>
+                                    <option value="<?= $c['id'] ?>" data-limite-disponivel="<?= htmlspecialchars((string) $c['limite_disponivel'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars($c['nome'], ENT_QUOTES, 'UTF-8') ?> (Disp.: <?= FormatHelper::currency((float) $c['limite_disponivel']) ?>)
+                                    </option>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label for="desp_categoria" class="form-label fw-semibold">Categoria *</label>
-                            <select class="form-select" id="desp_categoria" name="categoria_id" required>
-                                <?php foreach ($categoriasDespesa as $cat): ?>
-                                    <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label for="desp_meio" class="form-label fw-semibold">Meio de Pagamento *</label>
-                            <select class="form-select" id="desp_meio" name="meio_pagamento_id" required>
-                                <?php foreach ($meiosPagamento as $mp): ?>
-                                    <option value="<?= $mp['id'] ?>"><?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+                    <div class="alert alert-warning py-2 d-none" id="desp_alerta_limite" role="status">
+                        A compra ultrapassa o limite disponível do cartão. O lançamento será permitido, mas confira o limite com a instituição.
                     </div>
 
                     <!-- Opção de Parcelamento -->
@@ -478,7 +467,7 @@ $anoAtual = (int) date('Y');
                                 <input type="number" class="form-control text-center tabular-nums" id="desp_total_parcelas" name="total_parcelas" min="2" max="72" value="2">
                                 <span class="input-group-text">parcelas mensais</span>
                             </div>
-                            <small class="text-muted d-block mt-1">O sistema gerará automaticamente os lançamentos com sufixo [1/N] e datas mensais.</small>
+                            <small class="text-muted d-block mt-1">O sistema gerará um lançamento por parcela e exibirá a numeração separadamente ao lado da descrição.</small>
                         </div>
                     </div>
 
@@ -519,24 +508,28 @@ $anoAtual = (int) date('Y');
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label for="edit_descricao" class="form-label fw-semibold">Descrição *</label>
+                        <label for="edit_descricao" class="form-label fw-semibold">Descrição</label>
                         <input type="text" class="form-control" id="edit_descricao" name="descricao" required>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="edit_valor" class="form-label fw-semibold">Valor (R$) *</label>
+                            <label for="edit_valor" class="form-label fw-semibold">Valor (R$)</label>
                             <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold" id="edit_valor" name="valor" required>
                         </div>
-                        <div class="col-6">
-                            <label for="edit_data_vencimento" class="form-label fw-semibold">Data *</label>
+                        <div class="col-6" id="edit_wrapper_data">
+                            <label for="edit_data_vencimento" class="form-label fw-semibold">Data</label>
                             <input type="date" class="form-control" id="edit_data_vencimento" name="data_vencimento" required>
+                        </div>
+                        <div class="col-6 d-none" id="edit_wrapper_fatura">
+                            <label for="edit_fatura_referencia" class="form-label fw-semibold">Fatura correta</label>
+                            <input type="month" class="form-control" id="edit_fatura_referencia" name="fatura_referencia">
                         </div>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="edit_categoria_id" class="form-label fw-semibold">Categoria *</label>
+                            <label for="edit_categoria_id" class="form-label fw-semibold">Categoria</label>
                             <select class="form-select" id="edit_categoria_id" name="categoria_id" required>
                                 <optgroup label="Despesas">
                                     <?php foreach ($categoriasDespesa as $cat): ?>
@@ -550,18 +543,20 @@ $anoAtual = (int) date('Y');
                                 </optgroup>
                             </select>
                         </div>
-                        <div class="col-6">
+                        <div class="col-6" id="edit_wrapper_meio">
                             <label for="edit_meio_pagamento_id" class="form-label fw-semibold">Meio de Pagamento</label>
                             <select class="form-select" id="edit_meio_pagamento_id" name="meio_pagamento_id">
                                 <?php foreach ($meiosPagamento as $mp): ?>
-                                    <option value="<?= $mp['id'] ?>"><?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                    <option value="<?= $mp['id'] ?>" data-eh-credito="<?= in_array($mp['eh_credito'], [true, 1, '1', 't', 'true'], true) ? '1' : '0' ?>">
+                                        <?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-6" id="edit_wrapper_conta">
                             <label for="edit_conta_id" class="form-label fw-semibold">Conta Bancária</label>
                             <select class="form-select" id="edit_conta_id" name="conta_id">
                                 <option value="">Nenhuma / Cartão</option>
@@ -570,7 +565,7 @@ $anoAtual = (int) date('Y');
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-6">
+                        <div class="col-6" id="edit_wrapper_status">
                             <label for="edit_status" class="form-label fw-semibold">Status</label>
                             <select class="form-select" id="edit_status" name="status">
                                 <option value="pendente">Pendente</option>
@@ -596,34 +591,47 @@ $anoAtual = (int) date('Y');
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // 1. Controle de Destino na Nova Despesa (Conta vs Cartão)
-        const radioConta = document.getElementById('destino_conta');
-        const radioCartao = document.getElementById('destino_cartao');
+        // A modalidade do meio de pagamento define se a despesa usa conta ou cartão.
+        const selectMeioDespesa = document.getElementById('desp_meio');
         const wrapConta = document.getElementById('wrapper_select_conta');
         const wrapCartao = document.getElementById('wrapper_select_cartao');
         const wrapStatus = document.getElementById('wrapper_status_despesa');
-
-        function toggleDestino() {
-            if (radioCartao.checked) {
-                wrapConta.classList.add('d-none');
-                wrapCartao.classList.remove('d-none');
-                wrapStatus.classList.add('d-none'); // Despesa no cartão é sempre pendente até fechar fatura
-            } else {
-                wrapConta.classList.remove('d-none');
-                wrapCartao.classList.add('d-none');
-                wrapStatus.classList.remove('d-none');
-            }
-        }
-
-        if (radioConta && radioCartao) {
-            radioConta.addEventListener('change', toggleDestino);
-            radioCartao.addEventListener('change', toggleDestino);
-        }
-
-        // 2. Controle do Toggle de Parcelamento
+        const selectContaDespesa = document.getElementById('desp_conta');
+        const selectCartaoDespesa = document.getElementById('desp_cartao');
+        const statusDespesa = document.getElementById('desp_status');
+        const alertaLimite = document.getElementById('desp_alerta_limite');
+        const valorDespesa = document.getElementById('desp_valor');
         const checkParcelado = document.getElementById('check_parcelado');
         const wrapParcelas = document.getElementById('wrapper_parcelas');
 
+        function toggleExpensePayment() {
+            const selectedMethod = selectMeioDespesa?.selectedOptions[0];
+            const isCredit = selectedMethod?.dataset.ehCredito === '1';
+            wrapConta.classList.toggle('d-none', isCredit);
+            wrapCartao.classList.toggle('d-none', !isCredit);
+            wrapStatus.classList.toggle('d-none', isCredit);
+            selectContaDespesa.disabled = isCredit;
+            selectContaDespesa.required = !isCredit;
+            selectCartaoDespesa.disabled = !isCredit;
+            selectCartaoDespesa.required = isCredit;
+            statusDespesa.disabled = isCredit;
+            alertaLimite.classList.add('d-none');
+
+            if (isCredit && selectCartaoDespesa.selectedOptions[0]?.value) {
+                const disponivel = Number(selectCartaoDespesa.selectedOptions[0].dataset.limiteDisponivel || 0);
+                const valor = Number(valorDespesa.value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+                if (valor > disponivel) {
+                    alertaLimite.classList.remove('d-none');
+                }
+            }
+        }
+
+        selectMeioDespesa?.addEventListener('change', toggleExpensePayment);
+        selectCartaoDespesa?.addEventListener('change', toggleExpensePayment);
+        valorDespesa?.addEventListener('input', toggleExpensePayment);
+        toggleExpensePayment();
+
+        // 2. Controle do Toggle de Parcelamento
         if (checkParcelado && wrapParcelas) {
             checkParcelado.addEventListener('change', () => {
                 if (checkParcelado.checked) {
@@ -663,12 +671,31 @@ $anoAtual = (int) date('Y');
                     if (!meioAtualDisponivel) {
                         const optionHistorica = new Option(`${data.meio_pagamento_nome} (Histórico)`, data.meio_pagamento_id, true, true);
                         optionHistorica.dataset.historico = 'true';
+                        optionHistorica.dataset.ehCredito = data.meio_pagamento_eh_credito ? '1' : '0';
                         selectMeioPagamento.add(optionHistorica);
                     }
                     selectMeioPagamento.value = data.meio_pagamento_id;
                     document.getElementById('edit_conta_id').value = data.conta_id || '';
                     document.getElementById('edit_status').value = data.status;
                     document.getElementById('edit_observacoes').value = data.observacoes || '';
+                    const isCreditCharge = Boolean(data.fatura_id);
+                    selectMeioPagamento.querySelectorAll('option[data-eh-credito="1"]').forEach(option => {
+                        option.disabled = !isCreditCharge && option.value !== String(data.meio_pagamento_id);
+                    });
+                    const referenceWrapper = document.getElementById('edit_wrapper_fatura');
+                    const canCorrectInvoice = isCreditCharge && data.fatura_paga !== true;
+                    referenceWrapper.classList.toggle('d-none', !canCorrectInvoice);
+                    const referenceInput = document.getElementById('edit_fatura_referencia');
+                    referenceInput.value = data.fatura_referencia || '';
+                    referenceInput.disabled = !canCorrectInvoice;
+                    document.getElementById('edit_wrapper_data').classList.toggle('d-none', isCreditCharge);
+                    document.getElementById('edit_data_vencimento').disabled = isCreditCharge;
+                    document.getElementById('edit_wrapper_meio').classList.toggle('d-none', isCreditCharge);
+                    document.getElementById('edit_wrapper_conta').classList.toggle('d-none', isCreditCharge);
+                    document.getElementById('edit_wrapper_status').classList.toggle('d-none', isCreditCharge);
+                    selectMeioPagamento.disabled = isCreditCharge;
+                    document.getElementById('edit_conta_id').disabled = isCreditCharge;
+                    document.getElementById('edit_status').disabled = isCreditCharge;
 
                     modalEdit.show();
                 } catch (e) {
@@ -678,4 +705,3 @@ $anoAtual = (int) date('Y');
         });
     });
 </script>
-

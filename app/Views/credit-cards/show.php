@@ -12,29 +12,24 @@ $barraCor = ($porcentagem > 80) ? 'bg-danger' : (($porcentagem > 50) ? 'bg-warni
 ?>
 <!-- Cabeçalho de Navegação -->
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-3">
-        <a href="<?= BASE_URL ?>/cartoes" class="btn btn-outline-secondary btn-sm rounded-circle p-2" title="Voltar aos Cartões">
-            <i class="bi bi-arrow-left fs-5"></i>
-        </a>
-        <div>
-            <div class="d-flex align-items-center gap-2">
-                <div style="width: 16px; height: 16px; border-radius: 4px; background-color: <?= $corCartao ?>;"></div>
-                <h1 class="h3 fw-bold mb-0" style="color: var(--symo-on-surface);">
-                    <?= htmlspecialchars($cartao['nome'], ENT_QUOTES, 'UTF-8') ?>
-                </h1>
-                <?php if ($cartao['status'] === 'ativo'): ?>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Ativo</span>
-                <?php else: ?>
-                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">Inativo</span>
-                <?php endif; ?>
-            </div>
-            <p class="text-muted mb-0 small">
-                Conta padrão: <?= !empty($cartao['conta_padrao_nome']) ? htmlspecialchars($cartao['conta_padrao_nome'], ENT_QUOTES, 'UTF-8') : 'Não definida' ?>
-            </p>
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <div style="width: 16px; height: 16px; border-radius: 4px; background-color: <?= $corCartao ?>;"></div>
+            <h1 class="h3 fw-bold mb-0" style="color: var(--symo-on-surface);">
+                <?= htmlspecialchars($cartao['nome'], ENT_QUOTES, 'UTF-8') ?>
+            </h1>
+            <?php if ($cartao['status'] === 'ativo'): ?>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Ativo</span>
+            <?php else: ?>
+                <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">Inativo</span>
+            <?php endif; ?>
         </div>
+        <p class="text-muted mb-0 small">
+            Conta padrão: <?= !empty($cartao['conta_padrao_nome']) ? htmlspecialchars($cartao['conta_padrao_nome'], ENT_QUOTES, 'UTF-8') : 'Não definida' ?>
+        </p>
     </div>
     <div>
-        <a href="<?= BASE_URL ?>/cartoes" class="btn btn-outline-secondary">
+        <a href="<?= BASE_URL ?>/cartoes" class="btn btn-symo-primary">
             <i class="bi bi-grid me-1"></i> Todos os Cartões
         </a>
     </div>
@@ -108,7 +103,7 @@ $barraCor = ($porcentagem > 80) ? 'bg-danger' : (($porcentagem > 50) ? 'bg-warni
                     <?php foreach ($faturas as $f): ?>
                         <tr>
                             <td style="padding-left: 1.5rem;" class="fw-bold" style="color: var(--symo-on-surface);">
-                                <i class="bi bi-calendar-month text-primary me-2"></i>
+                                <i class="bi bi-calendar-month me-2" style="color: var(--symo-primary-brand);"></i>
                                 <?= sprintf('%02d/%04d', (int) $f['mes_referencia'], (int) $f['ano_referencia']) ?>
                             </td>
                             <td class="tabular-nums text-muted">
@@ -142,16 +137,7 @@ $barraCor = ($porcentagem > 80) ? 'bg-danger' : (($porcentagem > 50) ? 'bg-warni
                                         <i class="bi bi-list-ul"></i>
                                     </a>
 
-                                    <?php if ($f['status'] === 'aberta'): ?>
-                                        <!-- Fechar Fatura -->
-                                        <form action="<?= BASE_URL ?>/faturas/fechar/<?= $f['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Deseja realmente fechar esta fatura? Novos lançamentos deste mês não poderão ser inseridos nela sem reabertura.');">
-                                            <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
-                                            <input type="hidden" name="redirect_to" value="<?= BASE_URL ?>/cartoes/detalhes/<?= $cartao['id'] ?>">
-                                            <button type="submit" class="btn btn-outline-warning" title="Fechar Fatura">
-                                                <i class="bi bi-lock"></i>
-                                            </button>
-                                        </form>
-                                    <?php elseif ($f['status'] === 'fechada'): ?>
+                                    <?php if ($f['status'] === 'fechada'): ?>
                                         <!-- Pagar Fatura -->
                                         <button type="button" class="btn btn-success btn-pay-invoice"
                                                 data-id="<?= $f['id'] ?>"
@@ -162,16 +148,6 @@ $barraCor = ($porcentagem > 80) ? 'bg-danger' : (($porcentagem > 50) ? 'bg-warni
                                             <i class="bi bi-cash-stack me-1"></i> Pagar
                                         </button>
 
-                                        <?php if ($isAdmin): ?>
-                                            <!-- Reabrir Fatura -->
-                                            <form action="<?= BASE_URL ?>/faturas/reabrir/<?= $f['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Deseja reabrir esta fatura?');">
-                                                <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
-                                                <input type="hidden" name="redirect_to" value="<?= BASE_URL ?>/cartoes/detalhes/<?= $cartao['id'] ?>">
-                                                <button type="submit" class="btn btn-outline-secondary" title="Reabrir Fatura">
-                                                    <i class="bi bi-unlock"></i>
-                                                </button>
-                                            </form>
-                                        <?php endif; ?>
                                     <?php else: ?>
                                         <!-- Informações de Quitação -->
                                         <button type="button" class="btn btn-outline-success disabled" title="Paga em <?= FormatHelper::dateTime($f['pago_em']) ?> via <?= htmlspecialchars($f['conta_pagamento_nome'] ?? 'Conta bancária', ENT_QUOTES, 'UTF-8') ?>">

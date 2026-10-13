@@ -391,7 +391,7 @@ $exportUrl = BASE_URL . '/relatorios/exportar-csv?' . $queryParams;
                                 <!-- Descrição -->
                                 <td>
                                     <div class="fw-bold" style="color: var(--symo-on-surface);">
-                                        <?= htmlspecialchars($t['descricao'], ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars(FormatHelper::transactionDescription($t), ENT_QUOTES, 'UTF-8') ?>
                                         <?php if (!empty($t['total_parcelas']) && (int)$t['total_parcelas'] > 1): ?>
                                             <span class="badge text-bg-light border text-muted ms-1" style="font-size: 0.75rem;">
                                                 <?= $t['numero_parcela'] ?>/<?= $t['total_parcelas'] ?>
@@ -486,4 +486,3 @@ function alternarCamposPeriodo(tipo) {
     }
 }
 </script>
-

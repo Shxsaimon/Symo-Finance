@@ -248,6 +248,7 @@ class CreditCard extends Model
      */
     public function getCurrentOpenInvoice(int $cardId): ?array
     {
+        (new CreditCardInvoice())->closeMaturedInvoicesForCard($cardId, (int) AuthHelper::id());
         $sql = "SELECT * FROM `faturas_cartao`
                 WHERE cartao_credito_id = :card_id AND status = 'aberta'
                 ORDER BY ano_referencia DESC, mes_referencia DESC

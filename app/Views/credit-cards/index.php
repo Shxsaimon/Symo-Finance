@@ -130,7 +130,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
                     <!-- Rodapé de Ações -->
                     <div class="pt-3 border-top d-flex justify-content-between align-items-center">
-                        <a href="<?= BASE_URL ?>/cartoes/detalhes/<?= $c['id'] ?>" class="btn btn-sm btn-outline-primary fw-semibold">
+                        <a href="<?= BASE_URL ?>/cartoes/detalhes/<?= $c['id'] ?>" class="btn btn-sm btn-symo-primary fw-semibold">
                             <i class="bi bi-receipt me-1"></i> Ver Faturas
                         </a>
 
