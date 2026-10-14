@@ -111,8 +111,6 @@ git diff --check
 
 Quando o PHP não estiver no `PATH` do Windows, use o executável configurado no ambiente local. Não alterar o código apenas para contornar uma ausência local do executável.
 
-Para validar o calendário de ciclos de cartão sem dependências externas, execute `php tests\credit_card_calendar_test.php`.
-
 ---
 
 ## 6. Estrutura Atual do Repositório
@@ -134,7 +132,6 @@ Para validar o calendário de ciclos de cartão sem dependências externas, exec
 │   └── seeds/                   # Seed do dev e configurações globais
 ├── public/                      # CSS, JS, fontes e imagens públicas
 ├── storage/                     # Fallback legado de logs/uploads locais
-├── tests/                       # Testes executáveis focados
 ├── .github/workflows/           # Migrations remotas
 ├── index.php                    # Front Controller
 ├── migrate.php                  # CLI de migrations e seeds

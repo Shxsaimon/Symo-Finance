@@ -9,7 +9,6 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  * Exibe a árvore de módulos com marcação de rota ativa e restrição RBAC
  * para as funcionalidades administrativas exclusivas do Administrador.
  */
-$currentUser = AuthHelper::user();
 $isAdmin     = AuthHelper::isAdmin();
 $isDev       = AuthHelper::isDev();
 $currentUri  = Router::getCurrentUri();
@@ -105,27 +104,4 @@ $isActive = function (string $path) use ($currentUri): string {
             <span>Perfil</span>
         </a>
     </nav>
-
-    <!-- Rodapé da Sidebar: Usuário Autenticado -->
-    <div class="sidebar-footer">
-        <div class="sidebar-user">
-            <div class="sidebar-user-avatar">
-                <?= strtoupper(substr($currentUser['nome'] ?? 'U', 0, 1)) ?>
-            </div>
-            <div class="sidebar-user-info">
-                <p class="sidebar-user-name" title="<?= htmlspecialchars($currentUser['nome'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                    <?= htmlspecialchars($currentUser['nome'] ?? 'Usuário', ENT_QUOTES, 'UTF-8') ?>
-                </p>
-                <p class="sidebar-user-role">
-                    <?= htmlspecialchars($currentUser['perfil'] ?? 'Operador', ENT_QUOTES, 'UTF-8') ?>
-                </p>
-            </div>
-            <form method="post" action="<?= BASE_URL ?>/logout" class="sidebar-logout-form">
-                <?= CsrfHelper::inputField() ?>
-                <button type="submit" title="Sair do Sistema" class="sidebar-logout-button">
-                    <i class="bi bi-box-arrow-right"></i>
-                </button>
-            </form>
-        </div>
-    </div>
 </aside>

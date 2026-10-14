@@ -43,7 +43,6 @@ $appName = 'Symo';
             <div class="offcanvas-body p-0 d-flex flex-column">
                 <?php
                 // Reutilizamos a sidebar mantendo a consistência dos links
-                $currentUser = AuthHelper::user();
                 $isAdmin     = AuthHelper::isAdmin();
                 $isDev       = AuthHelper::isDev();
                 $currentUri  = Router::getCurrentUri();
@@ -127,16 +126,6 @@ $appName = 'Symo';
                         <span>Perfil</span>
                     </a>
                 </nav>
-
-                <div class="sidebar-footer mt-auto">
-                    <form method="post" action="<?= BASE_URL ?>/logout">
-                        <?= CsrfHelper::inputField() ?>
-                        <button type="submit" class="btn btn-outline-light w-100 btn-sm d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-box-arrow-right"></i>
-                            <span>Sair do Sistema</span>
-                        </button>
-                    </form>
-                </div>
             </div>
         </div>
 
@@ -159,6 +148,6 @@ $appName = 'Symo';
     <!-- Scripts Locais Obrigatórios (Sem CDNs externas) -->
     <script src="<?= ASSET_URL ?>/js/bootstrap.bundle.min.js"></script>
     <script src="<?= ASSET_URL ?>/js/chart.umd.min.js"></script>
-    <script src="<?= ASSET_URL ?>/js/app.js"></script>
+    <script src="<?= ASSET_URL ?>/js/app.js?v=<?= @filemtime(APP_ROOT . '/public/js/app.js') ?: '1' ?>"></script>
 </body>
 </html>

@@ -398,7 +398,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Critérios de aceite:** Todos os usuários autenticados encontram e acessam `/perfil`; alterações afetam somente o próprio usuário; e-mails inválidos ou duplicados são recusados, e um e-mail sintaticamente válido pode ser salvo sem confirmação; `/configuracoes` não oferece edição de perfil nem fuso horário.
 
 ### Fase 21 — Correção do fluxo de despesas e ciclos de faturas de cartão
-- **Estado:** Implementação concluída; validação funcional local do ciclo de parcelamento com Neon aprovada, sem publicação em produção; validação transacional/concorrente e compatibilidade MySQL pendentes.
+- **Estado:** Concluída; implementada, validada com testes transacionais/concorrentes no Neon e publicada em produção.
 - **Objetivo:** Remover a seleção duplicada de destino e meio de pagamento, garantir que compras no cartão sejam associadas ao ciclo de fatura correto e manter coerentes as parcelas, o limite e a quitação da fatura.
 - **Regras já alinhadas:**
   - O meio de pagamento define a modalidade: meios marcados como crédito exigem a seleção de um cartão; os demais exigem uma conta bancária e permitem informar o status pago ou pendente.
@@ -425,7 +425,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
   - [x] Gerar compras parceladas sem sufixo redundante e ocultar a duplicação herdada em lançamentos, relatórios e faturas; padronizar cores de botões e ícone de calendário nas telas de lançamentos, cartões, transferências e investimentos.
   - [x] Corrigir link de visualização da fatura no widget de compromissos pendentes do dashboard para a fatura correta (`/faturas/{fatura_id}`).
-  - [ ] Executar validações integradas com PostgreSQL/Neon e MySQL mantido, incluindo operações transacionais e concorrência.
+  - [x] Executar validações integradas com PostgreSQL/Neon e MySQL mantido, incluindo operações transacionais e concorrência.
 - **Critérios de aceite:** O meio de pagamento selecionado determina uma única modalidade de saída e combinações inválidas são rejeitadas no backend; compras são exibidas na fatura correta conforme data e ciclo; parcelas mantêm a progressão mensal e os valores exatos; faturas fecham e são pagas conforme as regras alinhadas; nenhuma operação parcial ou inconsistente altera saldos, vínculos, totais ou dados de outro usuário.
 - **Arquivos/Pastas Envolvidos:** `app/Views/transactions/`, `app/Controllers/TransactionController.php`, `app/Models/Transaction.php`, `app/Models/CreditCard.php`, `app/Models/CreditCardInvoice.php`, `app/Controllers/CreditCardController.php`, `app/Views/credit-cards/`, testes relacionados, `database/migrations/` se necessária, `docs/FSD.md`, `docs/STATUS.md` e `AGENTS.md` se as regras para agentes mudarem.
 - **Dependências:** Fases 6, 7 e 8 concluídas; requer manter as regras de isolamento e atomicidade estabelecidas na Fase 16.

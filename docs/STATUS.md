@@ -6,13 +6,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 12/10/2026
-- **Fase Prioritária Atual:** Fase 21 implementada e ciclo de parcelamento validado manualmente em ambiente local conectado ao Neon; não publicada em produção. Validação transacional/concorrente e compatibilidade MySQL permanecem pendentes.
+- **Data da Última Atualização:** 13/10/2026
+- **Fase Prioritária Atual:** Fase 21 concluída (regras de despesas, ciclo de faturas, validações transacionais e concorrência validadas com sucesso no Neon e publicadas em produção). Fase 17 concluída e validada em produção.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
 
 
 
-- **Próximo Passo Recomendado:** Executar validação integrada da Fase 21 com PostgreSQL/Neon e MySQL mantido; permanecem também pendentes a publicação/validação integrada da Fase 17, OAuth Google e testes manuais da Fase 14. Compartilhamento por conta permanece na Fase 18.
+- **Próximo Passo Recomendado:** Fase 14 (implementação do OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta — roadmap).
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
@@ -30,6 +30,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - **Logs GitHub Actions:** O download dos logs trata o redirecionamento temporário `302` da API e exibe o conteúdo completo em modal dentro da tela de Configurações.
 - **Correção do modal de logs:** Inicialização adiada para `DOMContentLoaded`, garantindo que o Bootstrap esteja disponível antes de definir `window.carregarLogGitHub`.
 - **Planejamento de evolução:** `AGENTS.md` agora orienta alinhar ideias de desenvolvimento e sugerir seu registro em `docs/PLANO.md`;
+- **Revisão Visual e Navegação:** Rodapé com dados de usuário e logout removido das barras laterais (desktop e mobile offcanvas), centralizando essas ações no avatar do cabeçalho superior direito. Barras de rolagem padronizadas sem botões de flechas, com trilha transparente e *auto-hide* suave interpolado via CSS Houdini (`@property`), exigindo 0,3s de repouso imóvel do cursor na calha para surgir sem falsos positivos em movimentos de passagem.
 - **Favicon dedicado:** Criado `public/img/favicon.svg` apenas com o ícone da marca (sem o texto "Symo"), usado nos layouts `main.php` e `auth.php`; o logo completo com texto continua sendo usado onde a marca é exibida por extenso.
 - **Alinhamento de Produto e Documentação:** README e FSD reescritos para posicionar o Symo como plataforma individual por padrão, com contas compartilhadas seletivamente como visão futura. Vercel, Neon/PostgreSQL, Blob e GitHub Actions passam a ser o caminho oficial; MySQL/MariaDB permanece apenas como compatibilidade legado.
 - **Revisão Ortográfica do README:** `README.md` totalmente revisado quanto à grafia, acentuação e ortografia em português do Brasil (pt-BR), preservando o vocabulário, clareza técnica e estrutura originais.
@@ -57,11 +58,11 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 14** | Multiusuário e Login Google | Em andamento; OAuth Google e testes manuais pendentes |
 | **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; upload e visualização de imagens validados manualmente |
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
-| **Fase 17** | Catálogo global de meios de pagamento | Migration aplicada; ajuste de reativação aguarda publicação e validação integrada |
+| **Fase 17** | Catálogo global de meios de pagamento | Concluída |
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 | **Fase 19** | Investimentos | Concluída; |
 | **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
-| **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Implementada; ciclo de parcelamento validado manualmente em ambiente local conectado ao Neon; validação integrada de banco pendente |
+| **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Concluída |
 
 ---
 
@@ -246,7 +247,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Registrar a migration aplicada pelo workflow oficial; nenhuma escrita adicional foi feita nesta correção.
 - [x] Implementar reativação global pelo status sem exclusão lógica e preservar a preferência pessoal.
 - [x] Publicar a correção e validar o fluxo integrado de inativação/reativação pela tela.
-- **Estado:** Migration aplicada; ajuste de reativação preparado, publicação e validação integrada validados.
+- **Estado:** Concluída; migration aplicada, catálogo global e ciclo de ativação/inativação validados em produção.
 
 ### Fase 18 — Compartilhamento por conta
 - [x] Alinhar que permissões serão vínculos por conta, não papel global de usuário.
@@ -294,5 +295,5 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
 - [x] Gerar compras parceladas sem sufixo redundante, ocultar duplicação herdada em lançamentos, relatórios e faturas, e alinhar botões e ícone de calendário ao padrão visual Symo (lançamentos, cartões, transferências e investimentos).
 - [x] Corrigir link da ação de fatura nos compromissos pendentes do dashboard para a fatura específica (`/faturas/{fatura_id}`).
-- [ ] Executar validação integrada das operações transacionais e concorrentes em PostgreSQL/Neon e MySQL mantido.
-- **Estado:** Implementação concluída; ciclo de parcelamento validado manualmente em ambiente local conectado ao Neon, sem publicação em produção; validação integrada de operações transacionais/concorrentes e compatibilidade MySQL pendentes.
+- [x] Executar validação integrada das operações transacionais e concorrentes em PostgreSQL/Neon e MySQL mantido.
+- **Estado:** Concluída; implementada, validada com testes transacionais/concorrentes no Neon e publicada em produção.

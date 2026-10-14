@@ -82,7 +82,7 @@
   /* Espaçamentos e Dimensões */
   --symo-container-max: 1440px;
   --symo-gutter: 1.5rem;
-  --symo-sidebar-width: 280px;
+  --symo-sidebar-width: 300px;
 
   /* Raio de Arredondamento */
   --symo-rounded-sm: 0.25rem; /* 4px */
@@ -127,6 +127,128 @@ body {
   color: var(--symo-outline);
 }
 
+/* ==========================================================================
+   Padrão Global de Barras de Rolagem (Scrollbars) do Symo
+   Auto-hide com transição suave via CSS Houdini (@property)
+   ========================================================================== */
+
+/* Registro de propriedade de cor animável para interpolação real no Chromium */
+@property --symo-scrollbar-thumb {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(0, 0, 0, 0);
+}
+
+/* 1. Chromium / WebKit (Chrome, Edge, Opera, Safari) */
+* {
+  --symo-scrollbar-thumb: rgba(0, 0, 0, 0);
+  transition: --symo-scrollbar-thumb 0.5s ease-in-out;
+}
+
+*.is-scrolling,
+html.is-scrolling,
+body.is-scrolling {
+  --symo-scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  transition: --symo-scrollbar-thumb 0.5s ease-in-out;
+}
+
+.sidebar-symo {
+  --symo-scrollbar-thumb: rgba(0, 0, 0, 0);
+  transition: --symo-scrollbar-thumb 0.5s ease-in-out;
+}
+
+.sidebar-symo.is-scrolling {
+  --symo-scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  transition: --symo-scrollbar-thumb 0.5s ease-in-out;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-track-piece {
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--symo-scrollbar-thumb);
+  border-radius: var(--symo-rounded-full, 9999px);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Sidebar Corporativa específica para WebKit */
+.sidebar-symo::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-symo::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.sidebar-symo::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.sidebar-symo::-webkit-scrollbar-track-piece {
+  background: transparent !important;
+}
+
+.sidebar-symo::-webkit-scrollbar-thumb {
+  background-color: var(--symo-scrollbar-thumb);
+  border-radius: var(--symo-rounded-full, 9999px);
+}
+
+.sidebar-symo::-webkit-scrollbar-thumb:active {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 2. Firefox (Gecko) */
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.5s ease-in-out;
+  }
+
+  *.is-scrolling,
+  html.is-scrolling,
+  body.is-scrolling {
+    scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+    transition: scrollbar-color 0.5s ease-in-out;
+  }
+
+  .sidebar-symo {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.5s ease-in-out;
+  }
+
+  .sidebar-symo.is-scrolling {
+    scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+    transition: scrollbar-color 0.5s ease-in-out;
+  }
+}
+
 /* Layout Estrutural Principal (Sidebar + Conteúdo) */
 .app-layout {
   display: flex;
@@ -134,7 +256,7 @@ body {
   background-color: var(--symo-background);
 }
 
-/* Sidebar Corporativa (280px fixa no desktop) */
+/* Sidebar Corporativa (320px fixa no desktop) */
 .sidebar-symo {
   width: var(--symo-sidebar-width);
   background: linear-gradient(180deg, #4a2ec2 0%, #260058 100%);
@@ -165,7 +287,7 @@ body {
 }
 
 .sidebar-menu {
-  padding: 1rem 0;
+  padding: 1rem 0 2rem 0;
   flex-grow: 1;
 }
 
