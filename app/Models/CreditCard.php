@@ -164,7 +164,7 @@ class CreditCard extends Model
             $card['limite_usado'] = $limits['limite_usado'];
             $card['limite_disponivel'] = $limits['limite_disponivel'];
             $card['porcentagem_usada'] = $limits['porcentagem_usada'];
-            $card['fatura_atual'] = $this->getCurrentOpenInvoice((int) $card['id']);
+            $card['fatura_atual'] = $this->getCurrentOpenInvoice((int) $card['id'], $card);
         }
 
         return $cards;
@@ -198,7 +198,7 @@ class CreditCard extends Model
         $card['limite_usado'] = $limits['limite_usado'];
         $card['limite_disponivel'] = $limits['limite_disponivel'];
         $card['porcentagem_usada'] = $limits['porcentagem_usada'];
-        $card['fatura_atual'] = $this->getCurrentOpenInvoice((int) $card['id']);
+        $card['fatura_atual'] = $this->getCurrentOpenInvoice((int) $card['id'], $card);
 
         return $card;
     }
@@ -241,25 +241,94 @@ class CreditCard extends Model
     }
 
     /**
-     * Retorna a fatura aberta atual do cartão ou null.
+     * Retorna a fatura do ciclo atual do cartão de crédito (ou a fatura pendente mais relevante até o ciclo atual).
+     * Nunca retorna faturas de ciclos futuros posteriores ao ciclo corrente.
      *
      * @param int $cardId
+     * @param array<string, mixed>|null $card
      * @return array<string, mixed>|null
      */
-    public function getCurrentOpenInvoice(int $cardId): ?array
+    public function getCurrentOpenInvoice(int $cardId, ?array $card = null): ?array
     {
-        (new CreditCardInvoice())->closeMaturedInvoicesForCard($cardId, (int) AuthHelper::id());
-        $sql = "SELECT * FROM `faturas_cartao`
-                WHERE cartao_credito_id = :card_id AND status = 'aberta'
-                ORDER BY ano_referencia DESC, mes_referencia DESC
-                LIMIT 1";
+        $userId = (int) AuthHelper::id();
 
-        $stmt = $this->db->prepare($sql);
+        if ($card === null) {
+            $card = $this->find($cardId);
+        }
+
+        if (!$card || ((int) ($card['usuario_id'] ?? 0) !== $userId && !AuthHelper::isAdmin() && !AuthHelper::isDev())) {
+            if (!$card || (int) ($card['usuario_id'] ?? 0) !== $userId) {
+                return null;
+            }
+        }
+
+        $diaFechamento = (int) ($card['dia_fechamento'] ?? 0);
+        if ($diaFechamento <= 0) {
+            return null;
+        }
+
+        $invoiceModel = new CreditCardInvoice();
+        $invoiceModel->closeMaturedInvoicesForCard($cardId, $userId);
+
+        $hoje = date('Y-m-d');
+        $currentRef = CreditCardCalendar::invoiceReferenceForPurchase($hoje, $diaFechamento);
+        $currentMonth = $currentRef['mes'];
+        $currentYear  = $currentRef['ano'];
+
+        // 1. Tenta obter a fatura do ciclo atual
+        $sqlCurrent = "SELECT f.*, cp.nome as conta_pagamento_nome
+                       FROM `faturas_cartao` f
+                       LEFT JOIN `contas` cp ON f.conta_pagamento_id = cp.id
+                       INNER JOIN `cartoes_credito` c ON c.id = f.cartao_credito_id
+                       WHERE f.cartao_credito_id = :card_id
+                         AND c.usuario_id = :usuario_id
+                         AND f.mes_referencia = :mes
+                         AND f.ano_referencia = :ano
+                       LIMIT 1";
+
+        $stmt = $this->db->prepare($sqlCurrent);
         $stmt->bindValue(':card_id', $cardId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':mes', $currentMonth, PDO::PARAM_INT);
+        $stmt->bindValue(':ano', $currentYear, PDO::PARAM_INT);
         $stmt->execute();
-        $invoice = $stmt->fetch();
+        $currentInvoice = $stmt->fetch();
 
-        return $invoice ?: null;
+        if ($currentInvoice && (float) $currentInvoice['valor_total'] > 0) {
+            return $currentInvoice;
+        }
+
+        // 2. Se a fatura do ciclo atual não existir ou estiver zerada, verifica se há fatura fechada pendente anterior
+        $sqlPending = "SELECT f.*, cp.nome as conta_pagamento_nome
+                       FROM `faturas_cartao` f
+                       LEFT JOIN `contas` cp ON f.conta_pagamento_id = cp.id
+                       INNER JOIN `cartoes_credito` c ON c.id = f.cartao_credito_id
+                       WHERE f.cartao_credito_id = :card_id
+                         AND c.usuario_id = :usuario_id
+                         AND f.status = 'fechada'
+                         AND (f.ano_referencia < :ano OR (f.ano_referencia = :ano AND f.mes_referencia <= :mes))
+                       ORDER BY f.ano_referencia ASC, f.mes_referencia ASC
+                       LIMIT 1";
+
+        $stmtPending = $this->db->prepare($sqlPending);
+        $stmtPending->bindValue(':card_id', $cardId, PDO::PARAM_INT);
+        $stmtPending->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmtPending->bindValue(':mes', $currentMonth, PDO::PARAM_INT);
+        $stmtPending->bindValue(':ano', $currentYear, PDO::PARAM_INT);
+        $stmtPending->execute();
+        $pendingInvoice = $stmtPending->fetch();
+
+        if ($pendingInvoice) {
+            return $pendingInvoice;
+        }
+
+        // 3. Se a fatura do ciclo atual já existe (mesmo zerada), retorna ela
+        if ($currentInvoice) {
+            return $currentInvoice;
+        }
+
+        // 4. Fallback: cria a fatura do ciclo atual sob demanda
+        return $invoiceModel->getOrCreateInvoice($cardId, $currentMonth, $currentYear);
     }
 
     /**

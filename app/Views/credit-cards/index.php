@@ -122,7 +122,13 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                     </div>
                                 </div>
                                 <div>
-                                    <span class="badge text-bg-warning-subtle text-warning border border-warning-subtle">Aberta</span>
+                                    <?php if (($c['fatura_atual']['status'] ?? '') === 'fechada'): ?>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle">Fechada</span>
+                                    <?php elseif (($c['fatura_atual']['status'] ?? '') === 'paga'): ?>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Paga</span>
+                                    <?php else: ?>
+                                        <span class="badge text-bg-warning-subtle text-warning border border-warning-subtle">Aberta</span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endif; ?>

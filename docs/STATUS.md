@@ -295,5 +295,6 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
 - [x] Gerar compras parceladas sem sufixo redundante, ocultar duplicação herdada em lançamentos, relatórios e faturas, e alinhar botões e ícone de calendário ao padrão visual Symo (lançamentos, cartões, transferências e investimentos).
 - [x] Corrigir link da ação de fatura nos compromissos pendentes do dashboard para a fatura específica (`/faturas/{fatura_id}`).
+- [x] Corrigir a seleção da fatura atual nos cards de resumo de cartão de crédito para refletir o ciclo corrente de compras baseado no dia de fechamento, sem exibir faturas de parcelas futuras distantes.
 - [x] Executar validação integrada das operações transacionais e concorrentes em PostgreSQL/Neon e MySQL mantido.
 - **Estado:** Concluída; implementada, validada com testes transacionais/concorrentes no Neon e publicada em produção.
