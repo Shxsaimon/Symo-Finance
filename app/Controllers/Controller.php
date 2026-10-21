@@ -63,19 +63,37 @@ abstract class Controller
     }
 
     /**
-     * Redireciona para uma URL interna ou externa de forma segura.
+     * Redireciona para uma URL interna de forma segura.
      *
-     * @param string $path Caminho relativo (ex: '/login' ou '/dashboard') ou URL completa
+     * @param string $path Caminho relativo (ex: '/login' ou '/dashboard') ou URL interna completa
+     * @param string $fallbackPath Caminho relativo padrão caso $path aponte para domínio externo
      * @return void
      */
-    protected function redirect(string $path): void
+    protected function redirect(string $path, string $fallbackPath = '/dashboard'): void
     {
-        if (preg_match('#^https?://#i', $path)) {
-            header('Location: ' . $path);
+        $candidate = trim($path);
+        $baseUrl = rtrim(BASE_URL, '/');
+
+        if ($candidate !== '' && !str_contains($candidate, "\r") && !str_contains($candidate, "\n")) {
+            if (preg_match('#^https?://#i', $candidate)) {
+                if (
+                    $baseUrl !== ''
+                    && str_starts_with($candidate, $baseUrl)
+                    && (strlen($candidate) === strlen($baseUrl) || in_array($candidate[strlen($baseUrl)], ['/', '?'], true))
+                ) {
+                    header('Location: ' . $candidate);
+                    exit;
+                }
+                $candidate = $fallbackPath;
+            } elseif (str_starts_with($candidate, '//') || str_starts_with($candidate, '/\\')) {
+                $candidate = $fallbackPath;
+            }
         } else {
-            $targetUrl = BASE_URL . '/' . ltrim($path, '/');
-            header('Location: ' . $targetUrl);
+            $candidate = $fallbackPath;
         }
+
+        $targetUrl = $baseUrl . '/' . ltrim($candidate, '/');
+        header('Location: ' . $targetUrl);
         exit;
     }
 

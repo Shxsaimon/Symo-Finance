@@ -26,7 +26,7 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
                     <img src="<?= $avatarUrl ?>" alt="<?= htmlspecialchars($user['nome'], ENT_QUOTES, 'UTF-8') ?>" class="rounded-circle shadow-sm" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid var(--symo-primary-brand);">
                 <?php else: ?>
                     <div style="width: 110px; height: 110px; border-radius: 50%; background: linear-gradient(135deg, var(--symo-primary-brand), var(--symo-secondary-brand)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 2.5rem; margin: 0 auto; box-shadow: 0 4px 12px rgba(111,2,255,0.25);">
-                        <?= strtoupper(substr($user['nome'] ?? 'U', 0, 1)) ?>
+                        <?= htmlspecialchars(mb_strtoupper(mb_substr($user['nome'] ?? 'U', 0, 1, 'UTF-8'), 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>
                     </div>
                 <?php endif; ?>
             </div>

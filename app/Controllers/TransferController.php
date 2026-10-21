@@ -107,8 +107,11 @@ class TransferController extends Controller
             ], $userId);
 
             FlashHelper::set('success', 'Transferência de ' . FormatHelper::currency($valor) . ' realizada com sucesso!');
-        } catch (Throwable $e) {
+        } catch (InvalidArgumentException|DomainException $e) {
             FlashHelper::set('error', 'Erro ao realizar transferência: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            LoggerHelper::error($e, ['context' => 'TransferController::store']);
+            FlashHelper::set('error', 'Não foi possível realizar a transferência. Tente novamente.');
         }
 
         $dt = new DateTimeImmutable($dataTransferencia);
@@ -146,9 +149,8 @@ class TransferController extends Controller
             FlashHelper::set('error', $result['message']);
         }
 
-        $redirect = $_POST['redirect_to'] ?? BASE_URL . '/transferencias';
-        header('Location: ' . $redirect);
-        exit;
+        $redirect = (string) ($_POST['redirect_to'] ?? '/transferencias');
+        $this->redirect($redirect, '/transferencias');
     }
 }
 

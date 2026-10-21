@@ -165,8 +165,11 @@ class TransactionController extends Controller
                 $nomeTipo = ($tipo === 'receita') ? 'Receita' : 'Despesa';
                 FlashHelper::set('success', "{$nomeTipo} '{$descricao}' lançada com sucesso!");
             }
-        } catch (Throwable $e) {
+        } catch (InvalidArgumentException|DomainException $e) {
             FlashHelper::set('error', 'Erro ao salvar lançamento: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            LoggerHelper::error($e, ['context' => 'TransactionController::store']);
+            FlashHelper::set('error', 'Não foi possível salvar o lançamento. Tente novamente.');
         }
 
         $dt = new DateTimeImmutable($tipo === 'despesa' ? $dataTransacao : $dataVencimento);
@@ -311,8 +314,11 @@ class TransactionController extends Controller
             } else {
                 FlashHelper::set('error', 'Não foi possível atualizar o lançamento.');
             }
-        } catch (Throwable $e) {
+        } catch (InvalidArgumentException|DomainException $e) {
             FlashHelper::set('error', $e->getMessage());
+        } catch (Throwable $e) {
+            LoggerHelper::error($e, ['context' => 'TransactionController::update', 'id' => $id]);
+            FlashHelper::set('error', 'Não foi possível atualizar o lançamento. Tente novamente.');
         }
 
         if ($dataVencimento !== null) {
@@ -353,9 +359,8 @@ class TransactionController extends Controller
             FlashHelper::set('error', $result['message']);
         }
 
-        $redirect = $_POST['redirect_to'] ?? BASE_URL . '/transacoes';
-        header('Location: ' . $redirect);
-        exit;
+        $redirect = (string) ($_POST['redirect_to'] ?? '/transacoes');
+        $this->redirect($redirect, '/transacoes');
     }
 
     /**
@@ -385,8 +390,7 @@ class TransactionController extends Controller
             FlashHelper::set('error', $result['message']);
         }
 
-        $redirect = $_POST['redirect_to'] ?? BASE_URL . '/transacoes';
-        header('Location: ' . $redirect);
-        exit;
+        $redirect = (string) ($_POST['redirect_to'] ?? '/transacoes');
+        $this->redirect($redirect, '/transacoes');
     }
 }

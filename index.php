@@ -51,11 +51,16 @@ if ($isDebug) {
 }
 
 // 4. Configuração Segura de Sessão
+$forwardedProto = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+$isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
+    || $forwardedProto === 'https';
+
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_only_cookies', '1');
-    ini_set('session.cookie_secure', ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '1' : '0'));
+    ini_set('session.cookie_secure', $isHttps ? '1' : '0');
 
     require_once APP_ROOT . '/config/database.php';
     require_once APP_ROOT . '/app/Helpers/DatabaseSessionHandler.php';
@@ -70,7 +75,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // 5. Cálculo Dinâmico da BASE_URL
 if (empty($config['app']['base_url'])) {
-    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+    $scheme = $isHttps ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
     $baseUrl = rtrim($scheme . '://' . $host . $scriptDir, '/');

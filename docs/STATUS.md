@@ -298,3 +298,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Corrigir a seleção da fatura atual nos cards de resumo de cartão de crédito para refletir o ciclo corrente de compras baseado no dia de fechamento, sem exibir faturas de parcelas futuras distantes.
 - [x] Executar validação integrada das operações transacionais e concorrentes em PostgreSQL/Neon e MySQL mantido.
 - **Estado:** Concluída; implementada, validada com testes transacionais/concorrentes no Neon e publicada em produção.
+
+### Revisão Geral de Segurança e Boas Práticas
+- [x] Revisar autenticação, complexidade de senhas, proteção contra força bruta, sessão com expiração de 60 minutos e cookies seguros (`HttpOnly`, `SameSite=Lax`, `Secure` com suporte a proxy HTTPS).
+- [x] Revisar controle de acesso (RBAC `dev`/`admin`), isolamento por `usuario_id` em todos os módulos e proteção contra acesso indevido a recursos privados (IDOR), restringindo a entrega de avatares ao próprio titular ou ao perfil `dev`.
+- [x] Revisar e blindar redirecionamentos pós-ação (`redirect_to`) para aceitar exclusivamente rotas internas da aplicação.
+- [x] Padronizar o tratamento de exceções em fluxos financeiros para exibir apenas validações de domínio ao usuário e registrar falhas técnicas nos logs internos, mantendo o diagnóstico detalhado da página 500 disponível para o perfil `dev` mesmo com `APP_DEBUG=false`.
+- [x] Reforçar cabeçalhos de segurança na entrega de arquivos privados (`Content-Security-Policy` e `X-Content-Type-Options`), validação em tempo constante e restrição de domínio no proxy do Blob (`api/blob.js`), e proteção contra injeção de fórmulas na exportação CSV.
+- [x] Completar as diretivas de bloqueio em arquivos `.htaccess` das pastas internas para compatibilidade com ambientes Apache legados.
+- [ ] Revisar especificamente OAuth Google (Fase 14) e Compartilhamento por conta (Fase 18) quando esses itens de roadmap forem implementados.
+- **Estado:** Concluída para todos os módulos ativos; pendências restritas às fases futuras de roadmap (Fases 14 e 18).

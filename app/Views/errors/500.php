@@ -11,7 +11,8 @@ $appName = 'Symo';
 if (isset($config['app']['name'])) {
     $appName = $config['app']['name'];
 }
-$isDebug = ($config['app']['debug'] ?? false) === true;
+$isDebug = (($config['app']['debug'] ?? false) === true)
+    || (class_exists('AuthHelper', false) && AuthHelper::isDev());
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">

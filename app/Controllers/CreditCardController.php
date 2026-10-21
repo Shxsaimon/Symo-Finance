@@ -300,8 +300,7 @@ class CreditCardController extends Controller
             FlashHelper::set('error', $result['message']);
         }
 
-        $redirect = $_POST['redirect_to'] ?? BASE_URL . '/cartoes';
-        header('Location: ' . $redirect);
-        exit;
+        $redirect = (string) ($_POST['redirect_to'] ?? '/cartoes');
+        $this->redirect($redirect, '/cartoes');
     }
 }

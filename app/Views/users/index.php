@@ -58,7 +58,7 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                                     <img src="<?= $avatarUrl ?>" alt="<?= htmlspecialchars($u['nome'], ENT_QUOTES, 'UTF-8') ?>" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid var(--symo-neutral-200);">
                                 <?php else: ?>
                                     <div style="width: 40px; height: 40px; border-radius: 50%; background: <?= $u['perfil'] === 'admin' ? 'linear-gradient(135deg, var(--symo-primary-brand), var(--symo-secondary-brand))' : 'linear-gradient(135deg, #3BD7D7, #0284C7)' ?>; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem;">
-                                        <?= strtoupper(substr($u['nome'] ?? 'U', 0, 1)) ?>
+                                        <?= htmlspecialchars(mb_strtoupper(mb_substr($u['nome'] ?? 'U', 0, 1, 'UTF-8'), 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>
                                     </div>
                                 <?php endif; ?>
                             </td>
@@ -112,7 +112,7 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
 
                                     <!-- Botão Redefinir Senha -->
                                     <button type="button" class="btn btn-outline-secondary" title="Redefinir Senha"
-                                            onclick="abrirModalSenha(<?= (int)$u['id'] ?>, '<?= htmlspecialchars($u['nome'], ENT_QUOTES, 'UTF-8') ?>')">
+                                            onclick="abrirModalSenha(<?= (int)$u['id'] ?>, <?= htmlspecialchars((string) json_encode($u['nome']), ENT_QUOTES, 'UTF-8') ?>)">
                                         <i class="bi bi-key"></i>
                                     </button>
 
@@ -166,7 +166,7 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                     </div>
                     <div class="mb-3">
                         <label for="novo_senha" class="form-label fw-semibold">Senha Inicial <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="novo_senha" name="senha" required minlength="6" placeholder="Mínimo de 6 caracteres">
+                        <input type="password" class="form-control" id="novo_senha" name="senha" required minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="Mínimo de 8 caracteres, incluindo letras e números" placeholder="Mínimo 8 caracteres, com letras e números">
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
@@ -267,7 +267,7 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                     <p class="small text-muted mb-3" id="senha_usuario_info"></p>
                     <div class="mb-2">
                         <label for="nova_senha" class="form-label fw-semibold">Nova Senha <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="nova_senha" name="nova_senha" required minlength="6" placeholder="Mínimo 6 caracteres">
+                        <input type="password" class="form-control" id="nova_senha" name="nova_senha" required minlength="8" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="Mínimo de 8 caracteres, incluindo letras e números" placeholder="Mínimo 8 caracteres, com letras e números">
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light">

@@ -572,10 +572,13 @@ class Transaction extends Model
 
             $this->db->commit();
             return ['success' => true, 'message' => 'Lançamento excluído com sucesso.'];
+        } catch (InvalidArgumentException|DomainException $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
         } catch (Throwable $e) {
             $this->db->rollBack();
             LoggerHelper::error($e);
-            return ['success' => false, 'message' => 'Erro ao excluir lançamento: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Não foi possível excluir o lançamento. Tente novamente.'];
         }
     }
 

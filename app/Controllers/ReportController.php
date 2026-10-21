@@ -144,21 +144,29 @@ class ReportController extends Controller
                 $valorFormatado = '+' . $valorFormatado;
             }
 
+            $sanitizeCsvCell = static function (mixed $value): string {
+                $text = (string) ($value ?? '');
+                if ($text !== '' && in_array($text[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+                    return "'" . $text;
+                }
+                return $text;
+            };
+
             $linha = [
                 $item['id'],
                 FormatHelper::date($item['data_transacao']),
                 FormatHelper::date($item['data_vencimento']),
                 !empty($item['data_pagamento']) ? FormatHelper::date($item['data_pagamento']) : '—',
                 ucfirst((string)$item['tipo']),
-                $item['descricao'],
-                $item['categoria_nome'] ?? 'Sem Categoria',
-                $origemDestino,
-                $item['meio_pagamento_nome'] ?? '—',
+                $sanitizeCsvCell($item['descricao']),
+                $sanitizeCsvCell($item['categoria_nome'] ?? 'Sem Categoria'),
+                $sanitizeCsvCell($origemDestino),
+                $sanitizeCsvCell($item['meio_pagamento_nome'] ?? '—'),
                 ucfirst((string)$item['status']),
                 $parcelaInfo,
                 $valorFormatado,
-                $item['usuario_nome'] ?? 'Sistema',
-                $item['observacoes'] ?? ''
+                $sanitizeCsvCell($item['usuario_nome'] ?? 'Sistema'),
+                $sanitizeCsvCell($item['observacoes'] ?? '')
             ];
 
             fputcsv($output, $linha, $delimiter);

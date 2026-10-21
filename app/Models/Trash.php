@@ -239,10 +239,13 @@ class Trash extends Model
 
             $this->commit();
             return ['success' => true, 'message' => 'Transação restaurada com sucesso e saldo reprocessado.'];
+        } catch (InvalidArgumentException|DomainException $e) {
+            $this->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
         } catch (Throwable $e) {
             $this->rollBack();
             LoggerHelper::error($e, ['context' => 'Trash::restoreTransaction', 'id' => $id]);
-            return ['success' => false, 'message' => 'Erro ao restaurar transação: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Não foi possível restaurar a transação. Tente novamente.'];
         }
     }
 

@@ -74,8 +74,8 @@ class ProfileController extends Controller
                 $this->redirect('/perfil');
             }
 
-            if (mb_strlen($novaSenha) < 8) {
-                FlashHelper::set('error', 'A nova senha deve conter no mínimo 8 caracteres.');
+            if (mb_strlen($novaSenha) < 8 || !preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $novaSenha)) {
+                FlashHelper::set('error', 'A nova senha deve conter no mínimo 8 caracteres, incluindo letras e números.');
                 $this->redirect('/perfil');
             }
 

@@ -148,9 +148,9 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
                                         data-limite="<?= htmlspecialchars(FormatHelper::currency((float) $c['limite_credito']), ENT_QUOTES, 'UTF-8') ?>"
                                         data-fechamento="<?= $c['dia_fechamento'] ?>"
                                         data-vencimento="<?= $c['dia_vencimento'] ?>"
-                                        data-conta="<?= $c['conta_padrao_id'] ?? '' ?>"
-                                        data-cor="<?= $c['cor'] ?>"
-                                        data-status="<?= $c['status'] ?>"
+                                        data-conta="<?= htmlspecialchars((string) ($c['conta_padrao_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-cor="<?= htmlspecialchars((string) ($c['cor'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-status="<?= htmlspecialchars((string) ($c['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                         title="Editar Cartão">
                                     <i class="bi bi-pencil"></i>
                                 </button>

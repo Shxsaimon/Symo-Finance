@@ -203,10 +203,13 @@ class Transfer extends Model
             $this->db->commit();
 
             return ['success' => true, 'message' => 'Transferência estornada e excluída com sucesso! Os saldos das contas foram restabelecidos.'];
+        } catch (InvalidArgumentException|DomainException $e) {
+            $this->db->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
         } catch (Throwable $e) {
             $this->db->rollBack();
             LoggerHelper::error($e);
-            return ['success' => false, 'message' => 'Erro ao estornar transferência: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Não foi possível estornar a transferência. Tente novamente.'];
         }
     }
 

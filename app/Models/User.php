@@ -270,8 +270,8 @@ class User extends Model
             return ['success' => false, 'message' => 'Este e-mail já está cadastrado para outro usuário.'];
         }
 
-        if (mb_strlen($senha) < 6) {
-            return ['success' => false, 'message' => 'A senha deve conter no mínimo 6 caracteres.'];
+        if (mb_strlen($senha) < 8 || !preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $senha)) {
+            return ['success' => false, 'message' => 'A senha deve conter no mínimo 8 caracteres, incluindo letras e números.'];
         }
 
         $hash = password_hash($senha, PASSWORD_BCRYPT, ['cost' => 12]);
@@ -485,8 +485,8 @@ class User extends Model
      */
     public function resetPassword(int $id, string $newPassword, int $currentUserId): array
     {
-        if (mb_strlen($newPassword) < 6) {
-            return ['success' => false, 'message' => 'A nova senha deve conter no mínimo 6 caracteres.'];
+        if (mb_strlen($newPassword) < 8 || !preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $newPassword)) {
+            return ['success' => false, 'message' => 'A nova senha deve conter no mínimo 8 caracteres, incluindo letras e números.'];
         }
 
         $user = $this->find($id);

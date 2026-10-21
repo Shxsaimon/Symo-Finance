@@ -8,8 +8,17 @@ class BlobController extends Controller
     public function avatar(int|string $id): void
     {
         AuthHelper::requireLogin();
+        $targetUserId = (int) $id;
 
-        $user = (new User())->find((int) $id);
+        if ($targetUserId !== AuthHelper::id() && !AuthHelper::isDev()) {
+            LoggerHelper::security('ACCESS_DENIED_AVATAR_IDOR', [
+                'target_user_id' => $targetUserId,
+            ]);
+            http_response_code(403);
+            exit;
+        }
+
+        $user = (new User())->find($targetUserId);
         $this->serve($user['avatar'] ?? null, 'avatar');
     }
 
@@ -44,6 +53,8 @@ class BlobController extends Controller
         }
 
         header('Content-Type: ' . $blob['contentType']);
+        header('X-Content-Type-Options: nosniff');
+        header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox");
         header('Content-Length: ' . strlen($blob['data']));
         header('Cache-Control: private, no-store');
         echo $blob['data'];

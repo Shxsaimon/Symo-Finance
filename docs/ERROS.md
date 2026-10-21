@@ -192,3 +192,14 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
 - **Como evitar no futuro:** Iniciar o MySQL antes de executar migrations e repetir a validação de status antes de concluir a homologação.
 
 ---
+
+## 2026-10-20 - Ajustes preventivos identificados na revisão de segurança
+
+- **Sintoma:** Na auditoria preventiva de segurança, identificaram-se pontos de endurecimento em redirecionamentos pós-ação (`redirect_to`), verificação de propriedade na rota de avatar, tratamento de exceções inesperadas em alertas, proteção de fórmulas em exportação CSV, detecção de HTTPS atrás de proxy reverso e arquivos `.htaccess` internos vazios.
+- **Causa:** Algumas rotas e tratadores assumiam entradas ou exceções já filtradas na camada anterior, e arquivos `.htaccess` de subpastas haviam sido criados sem diretivas de bloqueio.
+- **Solução aplicada:**
+  1. Validação centralizada em `Controller::redirect()` para permitir apenas caminhos internos da aplicação.
+  2. Restrição de acesso em `BlobController::avatar()` ao próprio usuário autenticado ou ao perfil `dev`, somada aos cabeçalhos `Content-Security-Policy` e `X-Content-Type-Options` na entrega de mídias.
+  3. Separação entre exceções de validação de negócio (`InvalidArgumentException` e `DomainException`) e falhas técnicas inesperadas (`Throwable`), registrando detalhes apenas no log interno e exibindo o diagnóstico técnico da tela 500 para o perfil `dev` mesmo quando `APP_DEBUG=false`.
+  4. Neutralização de caracteres iniciais de fórmula na exportação CSV, comparação em tempo constante e validação de host no proxy `api/blob.js`, detecção de `HTTP_X_FORWARDED_PROTO` em `index.php`, padronização da regra de senha mínima de 8 caracteres com letras e números e preenchimento dos `.htaccess` internos.
+- **Como evitar no futuro:** Manter validação de destino em redirecionamentos dinâmicos, restringir mensagens de exceção exibidas na interface às classes de domínio e revisar controles de autorização em rotas de mídia privada.

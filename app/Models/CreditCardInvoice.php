@@ -390,6 +390,14 @@ class CreditCardInvoice extends Model
                 'message' => 'Fatura paga com sucesso! O valor foi debitado da conta bancária e o limite do cartão foi restabelecido.',
                 'novo_saldo' => $novoSaldo,
             ];
+        } catch (InvalidArgumentException|DomainException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
         } catch (Throwable $e) {
             if ($this->db->inTransaction()) {
                 $this->db->rollBack();
@@ -397,7 +405,7 @@ class CreditCardInvoice extends Model
             LoggerHelper::error($e);
             return [
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Não foi possível processar o pagamento da fatura. Tente novamente.',
             ];
         }
     }
