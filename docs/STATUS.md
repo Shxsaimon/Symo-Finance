@@ -6,13 +6,11 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 13/10/2026
-- **Fase Prioritária Atual:** Fase 21 concluída (regras de despesas, ciclo de faturas, validações transacionais e concorrência validadas com sucesso no Neon e publicadas em produção). Fase 17 concluída e validada em produção.
+- **Data da Última Atualização:** 21/10/2026
+- **Fase Prioritária Atual:** Documentação Final de Manutenção concluída (`docs/MANUTENCAO.md`, `docs/COMO-PEDIR-MUDANCAS.md` e `AGENTS.md` atualizados em modo manutenção). Fase 21 concluída e publicada em produção.
+- **Documentação de Manutenção:** Criados `docs/MANUTENCAO.md` (guia técnico para devs e IA) e `docs/COMO-PEDIR-MUDANCAS.md` (guia para usuários leigos interagirem com IAs com 8 modelos de prompts). Arquivo `AGENTS.md` atualizado para Modo Manutenção com protocolo estrito de trabalho antes e depois de alterações.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
-
-
-
-- **Próximo Passo Recomendado:** Fase 14 (implementação do OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta — roadmap).
+- **Próximo Passo Recomendado:** Itens de roadmap: Fase 14 (implementação do OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta — roadmap).
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
@@ -63,6 +61,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 19** | Investimentos | Concluída; |
 | **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
 | **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Concluída |
+| **Documentação Final** | Criação do Guia de Manutenção, Guia de Mudanças e Contexto para Agentes em Modo Manutenção | Concluída |
 
 ---
 
@@ -308,3 +307,10 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Completar as diretivas de bloqueio em arquivos `.htaccess` das pastas internas para compatibilidade com ambientes Apache legados.
 - [ ] Revisar especificamente OAuth Google (Fase 14) e Compartilhamento por conta (Fase 18) quando esses itens de roadmap forem implementados.
 - **Estado:** Concluída para todos os módulos ativos; pendências restritas às fases futuras de roadmap (Fases 14 e 18).
+
+### Documentação Final de Manutenção e Modo Manutenção
+- [x] Criação de `docs/MANUTENCAO.md` com guia técnico completo (visão geral, stack e ambientes, como rodar localmente com `load-env.ps1`, mapa de pastas, banco de dados e migrations, autenticação/RBAC, guias passo a passo para novas telas, novos campos e novas regras, comandos de teste, cuidados de segurança, progressos e o que não fazer).
+- [x] Criação de `docs/COMO-PEDIR-MUDANCAS.md` com instruções para usuários leigos, regra de ouro dos documentos obrigatórios, checklist de aceitação e 8 modelos práticos de prompts prontos para interação com IA.
+- [x] Atualização de `AGENTS.md` para o Modo Manutenção com o protocolo de 7 etapas prévias e 5 etapas posteriores, regras de segurança, stack oficial e diretrizes para evitar regressões.
+- [x] Registro das pendências residuais de roadmap: Fase 14 (OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta).
+- **Estado:** Concluída; documentação final de manutenção estabelecida e contexto de agentes atualizado para modo manutenção.
