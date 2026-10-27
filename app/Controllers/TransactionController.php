@@ -272,7 +272,9 @@ class TransactionController extends Controller
 
         $descricao = trim((string) ($_POST['descricao'] ?? ''));
         $valorRaw = trim((string) ($_POST['valor'] ?? '0,00'));
-        $dataVencimento = !empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : null;
+        $dataInformada = !empty($_POST['data_transacao'])
+            ? trim((string) $_POST['data_transacao'])
+            : (!empty($_POST['data_vencimento']) ? trim((string) $_POST['data_vencimento']) : null);
         $categoriaId = (int) ($_POST['categoria_id'] ?? 1);
         $meioPagamentoId = isset($_POST['meio_pagamento_id']) ? (int) $_POST['meio_pagamento_id'] : null;
         $contaId = !empty($_POST['conta_id']) ? (int) $_POST['conta_id'] : null;
@@ -300,11 +302,16 @@ class TransactionController extends Controller
                 'status'            => $status,
                 'observacoes'       => $observacoes,
             ];
+            $categoria = (new Category())->find($categoriaId);
+            if (!empty($categoria['tipo']) && in_array($categoria['tipo'], ['receita', 'despesa'], true)) {
+                $dataAtualizacao['tipo'] = $categoria['tipo'];
+            }
             if ($faturaReferencia !== null) {
                 $dataAtualizacao['fatura_referencia'] = $faturaReferencia;
             }
-            if ($dataVencimento !== null) {
-                $dataAtualizacao['data_vencimento'] = $dataVencimento;
+            if ($dataInformada !== null) {
+                $dataAtualizacao['data_transacao'] = $dataInformada;
+                $dataAtualizacao['data_vencimento'] = $dataInformada;
             }
 
             $updated = $this->transactionModel->updateTransaction($id, $dataAtualizacao, $userId);
@@ -321,8 +328,10 @@ class TransactionController extends Controller
             FlashHelper::set('error', 'Não foi possível atualizar o lançamento. Tente novamente.');
         }
 
-        if ($dataVencimento !== null) {
-            $dt = new DateTimeImmutable($dataVencimento);
+        $transacaoAtualizada = $this->transactionModel->find($id);
+        $dataRedirecionamento = $transacaoAtualizada['data_vencimento'] ?? $dataInformada;
+        if ($dataRedirecionamento !== null) {
+            $dt = new DateTimeImmutable((string) $dataRedirecionamento);
             $mes = $dt->format('n');
             $ano = $dt->format('Y');
             header('Location: ' . BASE_URL . "/transacoes?mes={$mes}&ano={$ano}");

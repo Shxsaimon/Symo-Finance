@@ -318,7 +318,18 @@ class Transaction extends Model
         $tipo = $isCreditCharge ? 'despesa' : ($data['tipo'] ?? $old['tipo']);
         $descricao = isset($data['descricao']) ? trim((string) $data['descricao']) : $old['descricao'];
         $valor = isset($data['valor']) ? (float) $data['valor'] : (float) $old['valor'];
-        $dataVencimento = $data['data_vencimento'] ?? $old['data_vencimento'];
+        $dataInformada = $data['data_transacao'] ?? $data['data_vencimento'] ?? $old['data_transacao'] ?? $old['data_vencimento'];
+
+        if (!$isCreditCharge) {
+            // Compras e entradas fora do cartão: data_transacao e data_vencimento são sempre iguais
+            $dataTransacao = $dataInformada;
+            $dataVencimento = $dataInformada;
+        } else {
+            // Compras no cartão de crédito: atualiza a data da compra e o vencimento acompanha a fatura do ciclo
+            $dataTransacao = $dataInformada;
+            $dataVencimento = $old['data_vencimento'];
+        }
+
         $status = $isCreditCharge ? $old['status'] : ($data['status'] ?? $old['status']);
         $categoriaId = isset($data['categoria_id']) ? (int) $data['categoria_id'] : (int) $old['categoria_id'];
         $meioPagamentoId = $isCreditCharge
@@ -334,7 +345,9 @@ class Transaction extends Model
             ? (!empty($old['conta_id']) ? (int) $old['conta_id'] : null)
             : (array_key_exists('conta_id', $data) ? (!empty($data['conta_id']) ? (int) $data['conta_id'] : null) : (!empty($old['conta_id']) ? (int) $old['conta_id'] : null));
         $observacoes = isset($data['observacoes']) ? trim((string) $data['observacoes']) : $old['observacoes'];
-        $dataPagamento = ($status === 'pago' || $status === 'recebido') ? ($data['data_pagamento'] ?? $old['data_pagamento'] ?? date('Y-m-d')) : null;
+        $dataPagamento = ($status === 'pago' || $status === 'recebido')
+            ? (!$isCreditCharge ? $dataTransacao : ($data['data_pagamento'] ?? $old['data_pagamento'] ?? date('Y-m-d')))
+            : null;
 
         $historicalPaymentMethodId = $meioPagamentoId === (int) $old['meio_pagamento_id']
             ? $meioPagamentoId
@@ -371,23 +384,30 @@ class Transaction extends Model
                 if ($oldInvoice['status'] === 'paga' && abs($valor - (float) $old['valor']) >= 0.005) {
                     throw new InvalidArgumentException('Não é possível alterar o valor de uma compra vinculada a uma fatura paga.');
                 }
+                if ($oldInvoice['status'] === 'paga' && $dataTransacao !== $old['data_transacao']) {
+                    throw new InvalidArgumentException('Não é possível alterar a data de uma compra vinculada a uma fatura paga.');
+                }
             }
 
-            if ($isCreditCharge && !empty($data['fatura_referencia'])) {
-                if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $data['fatura_referencia'])) {
-                    throw new InvalidArgumentException('A referência da fatura informada é inválida.');
+            if ($isCreditCharge && $oldInvoice && $oldInvoice['status'] !== 'paga') {
+                if ($dataTransacao !== $old['data_transacao'] || empty($data['fatura_referencia'])) {
+                    $targetInvoice = $invoiceModel->getOrCreateInvoiceForPurchase(
+                        (int) $old['cartao_credito_id'],
+                        $dataTransacao
+                    );
+                } else {
+                    if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $data['fatura_referencia'])) {
+                        throw new InvalidArgumentException('A referência da fatura informada é inválida.');
+                    }
+
+                    [$anoRef, $mesRef] = array_map('intval', explode('-', (string) $data['fatura_referencia']));
+                    $targetInvoice = $invoiceModel->getOrCreateInvoice(
+                        (int) $old['cartao_credito_id'],
+                        $mesRef,
+                        $anoRef
+                    );
                 }
 
-                if (!$oldInvoice || $oldInvoice['status'] === 'paga') {
-                    throw new InvalidArgumentException('Não é possível alterar uma compra vinculada a uma fatura paga.');
-                }
-
-                [$anoRef, $mesRef] = array_map('intval', explode('-', (string) $data['fatura_referencia']));
-                $targetInvoice = $invoiceModel->getOrCreateInvoice(
-                    (int) $old['cartao_credito_id'],
-                    $mesRef,
-                    $anoRef
-                );
                 $targetInvoice = $invoiceModel->findForUpdate((int) $targetInvoice['id'], $userId)
                     ?? throw new InvalidArgumentException('A fatura de destino não está disponível.');
                 if ($targetInvoice['status'] === 'paga') {
@@ -396,6 +416,8 @@ class Transaction extends Model
 
                 $faturaId = (int) $targetInvoice['id'];
                 $dataVencimento = (string) $targetInvoice['data_vencimento'];
+            } elseif ($isCreditCharge && !empty($data['fatura_referencia'])) {
+                throw new InvalidArgumentException('Não é possível alterar uma compra vinculada a uma fatura paga.');
             }
 
             // 1. Reverte o saldo antigo da conta anterior (se estava liquidado)
@@ -421,6 +443,7 @@ class Transaction extends Model
             // 3. Executa a atualização
             $sql = "UPDATE `transacoes` SET
                         tipo = :tipo, descricao = :descricao, valor = :valor,
+                        data_transacao = :data_transacao,
                         data_vencimento = :data_vencimento,
                         data_pagamento = :data_pagamento, status = :status, conta_id = :conta_id,
                         categoria_id = :categoria_id, meio_pagamento_id = :meio_pagamento_id,
@@ -432,6 +455,7 @@ class Transaction extends Model
             $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
             $stmt->bindValue(':descricao', $descricao, PDO::PARAM_STR);
             $stmt->bindValue(':valor', $valor);
+            $stmt->bindValue(':data_transacao', $dataTransacao, PDO::PARAM_STR);
             $stmt->bindValue(':data_vencimento', $dataVencimento, PDO::PARAM_STR);
             $stmt->bindValue(':data_pagamento', $dataPagamento, $dataPagamento !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $stmt->bindValue(':status', $status, PDO::PARAM_STR);
@@ -444,21 +468,109 @@ class Transaction extends Model
             $stmt->bindValue(':usuario_escopo', $userId, PDO::PARAM_INT);
             $success = $stmt->execute();
 
-            // 4. Se tiver fatura vinculada, recalcula o total
-            if (!empty($old['fatura_id']) && $oldInvoice['status'] !== 'paga') {
-                $invoiceModel->recalculateTotal((int) $old['fatura_id']);
-                if ($faturaId !== (int) $old['fatura_id']) {
-                    $invoiceModel->recalculateTotal((int) $faturaId);
+            // 4. Se for compra parcelada e a data foi alterada, propaga para as próximas parcelas do grupo
+            $faturasAfetadas = [];
+            if (!empty($old['fatura_id']) && $oldInvoice && $oldInvoice['status'] !== 'paga') {
+                $faturasAfetadas[(int) $old['fatura_id']] = true;
+                if ($faturaId !== null) {
+                    $faturasAfetadas[(int) $faturaId] = true;
+                }
+            }
+
+            if (
+                !empty($old['grupo_parcelamento_id'])
+                && (int) ($old['total_parcelas'] ?? 1) > 1
+                && $dataTransacao !== $old['data_transacao']
+            ) {
+                $numeroParcelaAtual = (int) ($old['numero_parcela'] ?? 1);
+                $stmtNext = $this->db->prepare("SELECT * FROM `transacoes`
+                    WHERE grupo_parcelamento_id = :grupo_id
+                      AND usuario_id = :usuario_id
+                      AND numero_parcela > :numero_parcela
+                      AND excluido_em IS NULL
+                    ORDER BY numero_parcela ASC");
+                $stmtNext->bindValue(':grupo_id', (string) $old['grupo_parcelamento_id'], PDO::PARAM_STR);
+                $stmtNext->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+                $stmtNext->bindValue(':numero_parcela', $numeroParcelaAtual, PDO::PARAM_INT);
+                $stmtNext->execute();
+                $proximasParcelas = $stmtNext->fetchAll();
+
+                foreach ($proximasParcelas as $parcela) {
+                    $offset = (int) $parcela['numero_parcela'] - $numeroParcelaAtual;
+                    $novaDataParcela = CreditCardCalendar::installmentDate($dataTransacao, $offset);
+
+                    if (!empty($parcela['fatura_id']) && !empty($parcela['cartao_credito_id'])) {
+                        $invoiceModel = $invoiceModel ?? new CreditCardInvoice();
+                        $oldParcelaInvoice = $invoiceModel->findForUpdate((int) $parcela['fatura_id'], $userId);
+                        if (!$oldParcelaInvoice || $oldParcelaInvoice['status'] === 'paga') {
+                            continue;
+                        }
+
+                        $novaFaturaParcela = $invoiceModel->getOrCreateInvoiceForPurchase(
+                            (int) $parcela['cartao_credito_id'],
+                            $novaDataParcela
+                        );
+                        $novaFaturaParcela = $invoiceModel->findForUpdate((int) $novaFaturaParcela['id'], $userId)
+                            ?? throw new InvalidArgumentException('A fatura de destino de uma das parcelas não está disponível.');
+                        if ($novaFaturaParcela['status'] === 'paga') {
+                            throw new InvalidArgumentException('Não é possível mover uma parcela para uma fatura já paga.');
+                        }
+
+                        $novoFaturaIdParcela = (int) $novaFaturaParcela['id'];
+                        $novoVencimentoParcela = (string) $novaFaturaParcela['data_vencimento'];
+
+                        $stmtUpdateParcela = $this->db->prepare("UPDATE `transacoes` SET
+                                data_transacao = :data_transacao,
+                                data_vencimento = :data_vencimento,
+                                fatura_id = :fatura_id,
+                                atualizado_em = NOW()
+                            WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL");
+                        $stmtUpdateParcela->bindValue(':data_transacao', $novaDataParcela, PDO::PARAM_STR);
+                        $stmtUpdateParcela->bindValue(':data_vencimento', $novoVencimentoParcela, PDO::PARAM_STR);
+                        $stmtUpdateParcela->bindValue(':fatura_id', $novoFaturaIdParcela, PDO::PARAM_INT);
+                        $stmtUpdateParcela->bindValue(':id', (int) $parcela['id'], PDO::PARAM_INT);
+                        $stmtUpdateParcela->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+                        $stmtUpdateParcela->execute();
+
+                        $faturasAfetadas[(int) $parcela['fatura_id']] = true;
+                        $faturasAfetadas[$novoFaturaIdParcela] = true;
+                    } else {
+                        $novaDataPagamentoParcela = ($parcela['status'] === 'pago' || $parcela['status'] === 'recebido')
+                            ? $novaDataParcela
+                            : null;
+
+                        $stmtUpdateParcela = $this->db->prepare("UPDATE `transacoes` SET
+                                data_transacao = :data_transacao,
+                                data_vencimento = :data_vencimento,
+                                data_pagamento = :data_pagamento,
+                                atualizado_em = NOW()
+                            WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL");
+                        $stmtUpdateParcela->bindValue(':data_transacao', $novaDataParcela, PDO::PARAM_STR);
+                        $stmtUpdateParcela->bindValue(':data_vencimento', $novaDataParcela, PDO::PARAM_STR);
+                        $stmtUpdateParcela->bindValue(':data_pagamento', $novaDataPagamentoParcela, $novaDataPagamentoParcela !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+                        $stmtUpdateParcela->bindValue(':id', (int) $parcela['id'], PDO::PARAM_INT);
+                        $stmtUpdateParcela->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+                        $stmtUpdateParcela->execute();
+                    }
+                }
+            }
+
+            // 5. Se tiver faturas vinculadas afetadas, recalcula o total de todas
+            if ($invoiceModel !== null && !empty($faturasAfetadas)) {
+                foreach (array_keys($faturasAfetadas) as $fatId) {
+                    $invoiceModel->recalculateTotal((int) $fatId);
                 }
             }
 
             $this->logAudit('UPDATE', $id, $old, [
-                'tipo'      => $tipo,
-                'descricao' => $descricao,
-                'valor'     => $valor,
-                'status'    => $status,
-                'conta_id'  => $contaId,
-                'fatura_id' => $faturaId,
+                'tipo'           => $tipo,
+                'descricao'      => $descricao,
+                'valor'          => $valor,
+                'data_transacao' => $dataTransacao,
+                'data_vencimento'=> $dataVencimento,
+                'status'         => $status,
+                'conta_id'       => $contaId,
+                'fatura_id'      => $faturaId,
             ], $userId);
 
             $this->db->commit();

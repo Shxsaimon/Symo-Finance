@@ -282,7 +282,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 * Registo de Compras Parceladas (geração automática de $N$ lançamentos vinculados, com a descrição original sem sufixo de parcela; o número da parcela é exibido separadamente e sufixos legados correspondentes são omitidos na exibição, com datas mensais ancoradas na data da compra e ajuste ao último dia de meses sem o dia original; valores mantêm tratamento de resíduo de centavos na primeira parcela);
 * Filtros por período, tipo, conta, categoria, meio de pagamento, cartão, status, texto e autor quando permitido;
 * Alteração e exclusão lógica de transações.
-* A edição preserva a data de lançamento (`data_transacao`). Para compras no crédito, é possível corrigir a fatura associada enquanto ela não estiver paga; o total das faturas afetadas é recalculado.
+* A edição de lançamentos fora do cartão atualiza simultaneamente a data da transação (`data_transacao`) e o vencimento (`data_vencimento`) com base no campo informado ("Data da Compra" para despesas e "Data de Recebimento" para receitas). Na tabela de extrato e relatórios, lançamentos fora do cartão exibem apenas uma data (`data_transacao`); a indicação secundária de vencimento (`Venc: DD/MM/AAAA`) é exclusiva para compras no cartão de crédito vinculadas a uma fatura. Para compras no crédito (enquanto a fatura não estiver paga), a edição da "Data da Compra" atualiza `data_transacao` e recalcula automaticamente a fatura do ciclo conforme o dia de fechamento do cartão, movendo a compra entre faturas quando necessário e recalculando o total das faturas afetadas; em compras parceladas, a alteração da data de uma parcela propaga o novo dia mensal para as parcelas subsequentes do mesmo grupo, reenquadrando suas faturas e vencimentos.
 
 
 * **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa individual, preservando a autoria necessária à futura colaboração por conta.
@@ -511,7 +511,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 * **Finalidade:** Registos de movimentações financeiras de receitas e despesas.
 * **Informações:** Tipo (`receita` ou `despesa`), descrição, valor monetário, data de competência/lançamento, data de vencimento, data de liquidação/pagamento, status (`pendente` ou `pago/recebido`), conta bancária vinculada, cartão de crédito vinculado (opcional), fatura vinculada (opcional), categoria, meio de pagamento, ID da compra parcelada agrupada (`installment_group_id`), número da parcela (`installment_number`), total de parcelas (`installment_total`), usuário autor do lançamento, observações, timestamps e soft delete.
-* **Regras:** Transações pendentes não afetam o saldo real da conta; transações efetivadas debitam/creditam o saldo da conta imediatamente; compras parceladas geram registros individuais linkados por grupo. A edição mantém a data de lançamento original e altera o vencimento somente quando informado.
+* **Regras:** Transações pendentes não afetam o saldo real da conta; transações efetivadas debitam/creditam o saldo da conta imediatamente; compras parceladas geram registros individuais linkados por grupo. A edição de movimentações fora do cartão sincroniza a data da transação e seu vencimento; em compras no cartão (não pagas), a edição da data da compra atualiza `data_transacao` e reavalia automaticamente a fatura do ciclo e seu vencimento conforme o fechamento do cartão.
 
 ### 10.8. Transferência (`Transfer`)
 

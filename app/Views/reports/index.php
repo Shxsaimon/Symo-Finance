@@ -426,7 +426,7 @@ $exportUrl = BASE_URL . '/relatorios/exportar-csv?' . $queryParams;
                                 <!-- Meio de Pagamento e Vencimento -->
                                 <td class="small text-muted">
                                     <div><?= htmlspecialchars($t['meio_pagamento_nome'] ?? '—', ENT_QUOTES, 'UTF-8') ?></div>
-                                    <?php if (!empty($t['data_vencimento']) && $t['data_vencimento'] !== $t['data_transacao']): ?>
+                                    <?php if (!empty($t['cartao_credito_id']) && !empty($t['fatura_id']) && !empty($t['data_vencimento']) && $t['data_vencimento'] !== $t['data_transacao']): ?>
                                         <div class="tabular-nums" style="font-size: 0.72rem;">Venc: <?= FormatHelper::date($t['data_vencimento']) ?></div>
                                     <?php endif; ?>
                                 </td>

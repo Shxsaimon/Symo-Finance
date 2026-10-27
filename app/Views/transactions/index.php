@@ -186,7 +186,7 @@ $anoAtual = (int) date('Y');
                             <!-- Data da Transação / Compra -->
                             <td style="padding-left: 1.5rem;" class="tabular-nums text-muted small">
                                 <span class="fw-semibold text-dark"><?= FormatHelper::date($t['data_transacao']) ?></span>
-                                <?php if (!empty($t['data_vencimento']) && $t['data_vencimento'] !== $t['data_transacao']): ?>
+                                <?php if (!empty($t['cartao_credito_id']) && !empty($t['fatura_id']) && !empty($t['data_vencimento']) && $t['data_vencimento'] !== $t['data_transacao']): ?>
                                     <div class="text-muted" style="font-size: 0.72rem;">Venc: <?= FormatHelper::date($t['data_vencimento']) ?></div>
                                 <?php endif; ?>
                             </td>
@@ -518,8 +518,8 @@ $anoAtual = (int) date('Y');
                             <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold" id="edit_valor" name="valor" required>
                         </div>
                         <div class="col-6" id="edit_wrapper_data">
-                            <label for="edit_data_vencimento" class="form-label fw-semibold">Data</label>
-                            <input type="date" class="form-control" id="edit_data_vencimento" name="data_vencimento" required>
+                            <label for="edit_data_vencimento" class="form-label fw-semibold" id="edit_label_data">Data da Compra</label>
+                            <input type="date" class="form-control" id="edit_data_vencimento" name="data_transacao" required>
                         </div>
                         <div class="col-6 d-none" id="edit_wrapper_fatura">
                             <label for="edit_fatura_referencia" class="form-label fw-semibold">Fatura correta</label>
@@ -533,12 +533,12 @@ $anoAtual = (int) date('Y');
                             <select class="form-select" id="edit_categoria_id" name="categoria_id" required>
                                 <optgroup label="Despesas">
                                     <?php foreach ($categoriasDespesa as $cat): ?>
-                                        <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <option value="<?= $cat['id'] ?>" data-tipo="despesa"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
                                     <?php endforeach; ?>
                                 </optgroup>
                                 <optgroup label="Receitas">
                                     <?php foreach ($categoriasReceita as $cat): ?>
-                                        <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <option value="<?= $cat['id'] ?>" data-tipo="receita"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
                                     <?php endforeach; ?>
                                 </optgroup>
                             </select>
@@ -662,8 +662,28 @@ $anoAtual = (int) date('Y');
                     formEdit.action = '<?= BASE_URL ?>/transacoes/atualizar/' + data.id;
                     document.getElementById('edit_descricao').value = data.descricao;
                     document.getElementById('edit_valor').value = data.valor;
-                    document.getElementById('edit_data_vencimento').value = data.data_vencimento;
-                    document.getElementById('edit_categoria_id').value = data.categoria_id;
+                    document.getElementById('edit_data_vencimento').value = data.data_transacao || data.data_vencimento;
+
+                    const selectCategoria = document.getElementById('edit_categoria_id');
+                    selectCategoria.value = data.categoria_id;
+                    const labelData = document.getElementById('edit_label_data');
+                    function updateEditDateLabel(tipo) {
+                        if (labelData) {
+                            labelData.textContent = tipo === 'receita' ? 'Data de Recebimento' : 'Data da Compra';
+                        }
+                    }
+                    let currentTipo = data.tipo;
+                    const selectedCatOption = selectCategoria.querySelector(`option[value="${data.categoria_id}"]`);
+                    if (selectedCatOption && selectedCatOption.dataset.tipo) {
+                        currentTipo = selectedCatOption.dataset.tipo;
+                    }
+                    updateEditDateLabel(currentTipo);
+                    selectCategoria.onchange = () => {
+                        const opt = selectCategoria.selectedOptions[0];
+                        if (opt && opt.dataset.tipo) {
+                            updateEditDateLabel(opt.dataset.tipo);
+                        }
+                    };
                     const selectMeioPagamento = document.getElementById('edit_meio_pagamento_id');
                     selectMeioPagamento.querySelectorAll('option[data-historico="true"]').forEach(option => option.remove());
                     const meioAtualDisponivel = Array.from(selectMeioPagamento.options)
@@ -679,17 +699,24 @@ $anoAtual = (int) date('Y');
                     document.getElementById('edit_status').value = data.status;
                     document.getElementById('edit_observacoes').value = data.observacoes || '';
                     const isCreditCharge = Boolean(data.fatura_id);
+                    const isPaidCreditInvoice = isCreditCharge && data.fatura_paga === true;
+                    selectCategoria.querySelectorAll('option[data-tipo="receita"]').forEach(option => {
+                        option.disabled = isCreditCharge;
+                    });
                     selectMeioPagamento.querySelectorAll('option[data-eh-credito="1"]').forEach(option => {
                         option.disabled = !isCreditCharge && option.value !== String(data.meio_pagamento_id);
                     });
                     const referenceWrapper = document.getElementById('edit_wrapper_fatura');
-                    const canCorrectInvoice = isCreditCharge && data.fatura_paga !== true;
-                    referenceWrapper.classList.toggle('d-none', !canCorrectInvoice);
+                    if (referenceWrapper) {
+                        referenceWrapper.classList.add('d-none');
+                    }
                     const referenceInput = document.getElementById('edit_fatura_referencia');
-                    referenceInput.value = data.fatura_referencia || '';
-                    referenceInput.disabled = !canCorrectInvoice;
-                    document.getElementById('edit_wrapper_data').classList.toggle('d-none', isCreditCharge);
-                    document.getElementById('edit_data_vencimento').disabled = isCreditCharge;
+                    if (referenceInput) {
+                        referenceInput.value = '';
+                        referenceInput.disabled = true;
+                    }
+                    document.getElementById('edit_wrapper_data').classList.remove('d-none');
+                    document.getElementById('edit_data_vencimento').disabled = isPaidCreditInvoice;
                     document.getElementById('edit_wrapper_meio').classList.toggle('d-none', isCreditCharge);
                     document.getElementById('edit_wrapper_conta').classList.toggle('d-none', isCreditCharge);
                     document.getElementById('edit_wrapper_status').classList.toggle('d-none', isCreditCharge);
