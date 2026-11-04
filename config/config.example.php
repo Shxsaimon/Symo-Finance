@@ -2,11 +2,13 @@
 defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 /**
- * Symo — Arquivo de Exemplo de Configurações Gerais
+ * Symo — Arquivo de Referência de Configurações Gerais
  *
- * Copie este arquivo para 'config.php' no mesmo diretório e preencha
- * com as credenciais reais do seu ambiente (desenvolvimento ou produção).
- * NUNCA comite o arquivo 'config.php' com credenciais reais no repositório.
+ * O arquivo 'config/config.php' lê variáveis de ambiente via getenv() e é
+ * versionado sem segredos para execução na Vercel e no ambiente local.
+ * Para desenvolvimento local, copie 'load-env.example.ps1' para 'load-env.ps1'
+ * (ignorado pelo Git) e defina nele suas credenciais de teste.
+ * Nunca insira credenciais reais diretamente em arquivos versionados.
  */
 
 return [

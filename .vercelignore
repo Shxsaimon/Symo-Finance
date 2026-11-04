@@ -1,0 +1,16 @@
+# ==============================================================================
+# Symo — .vercelignore
+# Arquivos e pastas que permanecem no GitHub, mas não precisam ser enviados
+# para o pacote de deploy das Serverless Functions na Vercel
+# ==============================================================================
+
+docs/
+.github/
+.vscode/
+.agents/
+.agent/
+AGENTS.md
+README.md
+LICENSE
+load-env.ps1
+load-env.example.ps1

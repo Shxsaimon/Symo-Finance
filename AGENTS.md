@@ -119,14 +119,18 @@ git diff --check
 │   ├── COMO-PEDIR-MUDANCAS.md   # Guia de interação e modelos de prompts para usuários
 │   ├── PLANO.md                 # Histórico de planejamento de fases
 │   ├── STATUS.md                # Acompanhamento do progresso das fases
-│   └── ERROS.md                 # Registro histórico de erros e soluções
+│   ├── ERROS.md                 # Registro histórico de erros e soluções
+│   ├── code.html                # Protótipo estático fiel ao Dashboard atual
+│   └── screenshots/             # Capturas de tela oficiais do sistema (dados demo)
 ├── public/                      # CSS, JS, fontes e imagens públicas locais
 ├── storage/                     # Fallback legado de logs e uploads locais
 ├── .github/workflows/           # Migrations remotas via GitHub Actions
 ├── index.php                    # Front Controller
 ├── migrate.php                  # CLI de migrations e seeds
 ├── vercel.json                  # Runtime, rewrites e headers da Vercel
+├── .vercelignore                # Exclusão de documentação e scripts locais no deploy Vercel
 ├── package.json                 # Dependência @vercel/blob
+├── LICENSE                      # Licença GNU General Public License v3.0 (GPL-3.0)
 ├── README.md                    # Apresentação do repositório
 └── AGENTS.md                    # Este arquivo de contexto (modo manutenção)
 ```

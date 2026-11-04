@@ -6,8 +6,8 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 21/10/2026
-- **Fase Prioritária Atual:** Documentação Final de Manutenção concluída (`docs/MANUTENCAO.md`, `docs/COMO-PEDIR-MUDANCAS.md` e `AGENTS.md` atualizados em modo manutenção). Fase 21 concluída e publicada em produção.
+- **Data da Última Atualização:** 03/11/2026
+- **Fase Prioritária Atual:** Preparação do repositório para abertura pública no GitHub (revisão de `.gitignore`, criação de `.vercelignore`, adição de `LICENSE` sob GPL-3.0, atualização do `README.md` com badges e destaques de engenharia, reescrita do protótipo estático `docs/code.html` fiel ao layout real, estruturação de `docs/screenshots/` e higienização de `.gitkeep` e fontes duplicadas). Documentação Final de Manutenção e Fase 21 concluídas.
 - **Documentação de Manutenção:** Criados `docs/MANUTENCAO.md` (guia técnico para devs e IA) e `docs/COMO-PEDIR-MUDANCAS.md` (guia para usuários leigos interagirem com IAs com 8 modelos de prompts). Arquivo `AGENTS.md` atualizado para Modo Manutenção com protocolo estrito de trabalho antes e depois de alterações.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
 - **Próximo Passo Recomendado:** Itens de roadmap: Fase 14 (implementação do OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta — roadmap).

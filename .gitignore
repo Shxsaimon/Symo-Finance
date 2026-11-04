@@ -4,17 +4,26 @@
 # ==============================================================================
 
 # --- Configurações Locais e Credenciais Sensíveis ---
-# O arquivo config/config.php contém senhas e parâmetros de conexão reais
-# config/config.php
+# O arquivo config/config.php lê variáveis de ambiente via getenv() e é versionado por design.
+# Credenciais locais devem ficar apenas em load-env.ps1 (ou .env local), nunca no repositório.
 .env
 .env.*
 !.env.example
 load-env.ps1
 
+# --- Dependências e Artefatos de Build / Deploy ---
+node_modules/
+vendor/
+.vercel/
+.phpunit.result.cache
+.php-cs-fixer.cache
 
 # --- Logs e Arquivos de Contingência ---
 storage/logs/*.log
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # --- Uploads e Arquivos Gerados por Usuários ---
 storage/uploads/avatars/*
@@ -48,9 +57,16 @@ $RECYCLE.BIN/
 .fuse_hidden*
 .directory
 
-# --- Configurações Pessoais de Editores / IDEs ---
+# --- Configurações Pessoais de Editores, IDEs e Agentes de IA Locais ---
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 nbproject/
+.agents/
+.agent/
+.claude/
+.cursor/
+.gemini/
+.windsurf/
+.aider*

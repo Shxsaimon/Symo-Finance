@@ -1,465 +1,634 @@
 <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Dashboard Financeiro — Symo (Protótipo Estático Oficial)</title>
 
-<html class="light" lang="pt-BR"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Symo - Gestão Financeira</title>
-<!-- Bootstrap CSS -->
-<link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" rel="stylesheet"/>
-<!-- Google Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<style>
-        :root {
-            /* Symo Theme Colors */
-            --primary: #5300c4;
-            --secondary: #600de6;
-            --secondary-container: #793cfe;
-            --on-secondary-fixed: #22005d;
-            --on-secondary-fixed-variant: #5300cc;
-            --on-secondary: #ffffff;
-            --surface: #faf9f9;
-            --surface-container-lowest: #ffffff;
-            --surface-container-low: #f4f3f3;
-            --surface-container-high: #e9e8e8;
-            --surface-variant: #e3e2e2;
-            --on-surface: #1a1c1c;
-            --on-surface-variant: #4a4457;
-            --outline-variant: #ccc3da;
-            --error: #ba1a1a;
-            
-            --font-family: 'Inter', sans-serif;
-        }
+    <!-- Assets Locais Obrigatórios (Sem CDNs externas) -->
+    <link rel="stylesheet" href="../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../public/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../public/css/custom.css">
 
-        body {
-            background-color: #F8FAFC;
-            font-family: var(--font-family);
-            color: var(--on-surface);
-            overflow: hidden; /* Since we manage scrolling inside */
-        }
-        
-        .sidebar-bg {
-            background: linear-gradient(to bottom, #4a2ec2, #260058);
-            color: #ffffff;
-        }
-        
-        .sidebar-nav-link {
-            color: rgba(255,255,255,0.7);
-            border-radius: 0;
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        
-        .sidebar-nav-link:hover {
-            color: #ffffff;
-            background-color: rgba(255,255,255,0.05);
-        }
-        
-        .sidebar-nav-link.active {
-            color: #e9ddff; /* secondary-fixed */
-            background-color: rgba(121, 60, 254, 0.1); /* secondary-container/10 */
-            border-left: 4px solid var(--secondary);
-            font-weight: bold;
-        }
-
-        .card-shadow {
-            box-shadow: 0px 1px 3px rgba(0,0,0,0.05), 0px 4px 6px rgba(15, 23, 42, 0.05);
-            border: 1px solid #e2e8f0; /* slate-200 */
-        }
-        
-        .badge-trend-up {
-            background-color: #d1fae5;
-            color: #047857;
-            font-weight: 500;
-        }
-        
-        .badge-trend-down {
-            background-color: #ffe4e6;
-            color: #be123c;
-            font-weight: 500;
-        }
-
-        .icon-box {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        .search-bar {
-            background-color: var(--surface-container-high);
-            border: 1px solid var(--outline-variant);
-            border-radius: 50rem;
-        }
-        
-        .search-bar:focus-within {
-            box-shadow: 0 0 0 2px var(--secondary);
-            border-color: transparent;
-        }
-        
-        .search-input {
-            background: transparent;
-            border: none;
-            outline: none;
-            box-shadow: none !important;
-        }
-        
-        .btn-custom-secondary {
-            background-color: var(--secondary);
-            color: var(--on-secondary);
-        }
-        .btn-custom-secondary:hover {
-            background-color: var(--on-secondary-fixed-variant);
-            color: white;
-        }
-
-        .table-custom th {
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            color: var(--on-surface-variant);
-            background-color: #f8fafc;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .table-custom td {
-            vertical-align: middle;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .table-custom tr:hover td {
-            background-color: #f8fafc;
-        }
-        
-        /* Chart utility classes per guidance */
-        .chart-primary { stroke: #0058be; fill: rgba(0,88,190,0.1); }
-        .chart-success { stroke: #059669; }
-        .chart-warning { stroke: #d97706; }
-        .chart-secondary { stroke: #7c3aed; }
-        
-        .fs-7 { font-size: 0.875rem; }
-        .fs-8 { font-size: 0.75rem; }
-    </style>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="../public/img/favicon.svg">
 </head>
-<body class="d-flex vh-100">
-<!-- SideNavBar -->
-<aside class="sidebar-bg d-none d-md-flex flex-column py-4" style="width: 288px;">
-<!-- Brand -->
-<div class="px-4 mb-4 d-flex align-items-center gap-3">
-<div class="icon-box" style="background-color: var(--secondary); color: var(--on-primary); border-radius: 4px;">
-<span class="material-symbols-outlined">account_balance</span>
-</div>
-<div>
-<h1 class="h6 mb-0 fw-semibold text-white">Symo</h1>
-<p class="mb-0 fs-8 text-white-50 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Gestão Financeira</p>
-</div>
-</div>
-<!-- Nav Links -->
-<nav class="nav flex-column mt-3 flex-grow-1">
-<a class="sidebar-nav-link active" href="#">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span>Dashboard</span>
-</a>
-<a class="sidebar-nav-link" href="#">
-<span class="material-symbols-outlined">payments</span>
-<span>Transactions</span>
-</a>
-<a class="sidebar-nav-link" href="#">
-<span class="material-symbols-outlined">assessment</span>
-<span>Reports</span>
-</a>
-<a class="sidebar-nav-link" href="#">
-<span class="material-symbols-outlined">category</span>
-<span>Categories</span>
-</a>
-<a class="sidebar-nav-link" href="#">
-<span class="material-symbols-outlined">settings</span>
-<span>Settings</span>
-</a>
-</nav>
-<!-- User Profile Minimal -->
-<div class="px-4 mt-auto">
-<div class="d-flex align-items-center gap-3 p-2 rounded" onmouseout="this.style.backgroundColor='transparent'" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.05)'" style="border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
-<img alt="A small, professional headshot of an executive in a modern office setting. Sharp focus, well-lit with soft natural light, conveying trust and competence. High contrast, clean aesthetic." class="rounded-circle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMOuda035UTnScY0q-vzwTOo0n1wA2joHFFbtBQsvC1Juobr137TblqS27OOfIv_ziEOkPj7-chGhjWspXiqxFvc6NOfqNc0GvlmZpTOE0VJghcvASvuoP9VWneeKfkNbyPJWc-8giQTu7ORldsuF0C-05mrkpnDlkgiBYUlVUaieeCOioCIb_CWHyX4tTzE0hXVvZpiHhjAh4Q2hUMOgtmMHNXh6TnWIJR5zxrenabd335pdOgm9w" style="width: 40px; height: 40px; object-fit: cover;"/>
-<div class="text-truncate">
-<p class="mb-0 fs-7 fw-medium text-white text-truncate">Admin User</p>
-<p class="mb-0 fs-8 text-white-50 text-truncate text-uppercase fw-semibold" style="letter-spacing: 0.05em;">admin@symo.local</p>
-</div>
-</div>
-</div>
-</aside>
-<!-- Main Content Area -->
-<div class="d-flex flex-column flex-grow-1 h-100 overflow-hidden">
-<!-- TopNavBar -->
-<header class="navbar navbar-expand-lg border-bottom sticky-top" style="background-color: var(--surface); border-color: var(--outline-variant) !important; height: 64px;">
-<div class="container-fluid px-4" style="max-width: 1440px;">
-<div class="d-flex align-items-center gap-3">
-<!-- Mobile Menu Trigger -->
-<button class="btn btn-link d-md-none text-dark p-1 text-decoration-none">
-<span class="material-symbols-outlined">menu</span>
-</button>
-<h2 class="h4 mb-0 fw-semibold" style="color: var(--primary);">Dashboard</h2>
-</div>
-<div class="d-flex align-items-center gap-4">
-<!-- Search Bar -->
-<div class="d-none d-lg-flex align-items-center search-bar px-3 py-1" style="width: 256px;">
-<span class="material-symbols-outlined text-muted fs-6 me-2">search</span>
-<input class="form-control search-input fs-7 p-0" placeholder="Search transactions..." type="text"/>
-</div>
-<!-- Actions -->
-<div class="d-flex align-items-center gap-2">
-<button class="btn btn-link text-dark rounded-circle p-2 position-relative text-decoration-none" onmouseout="this.style.backgroundColor='transparent'" onmouseover="this.style.backgroundColor='var(--surface-container-high)'" style="color: var(--on-surface-variant) !important;">
-<span class="material-symbols-outlined">notifications</span>
-<span class="position-absolute rounded-circle" style="width: 8px; height: 8px; background-color: var(--error); top: 6px; right: 6px;"></span>
-</button>
-<button class="btn btn-link text-dark rounded-circle p-2 d-none d-sm-block text-decoration-none" onmouseout="this.style.backgroundColor='transparent'" onmouseover="this.style.backgroundColor='var(--surface-container-high)'" style="color: var(--on-surface-variant) !important;">
-<span class="material-symbols-outlined">help_outline</span>
-</button>
-</div>
-</div>
-</div>
-</header>
-<!-- Canvas -->
-<main class="flex-grow-1 overflow-auto p-3 p-md-4">
-<div class="container-fluid p-0 mx-auto" style="max-width: 1440px;">
-<!-- Indicators Grid -->
-<section class="row g-4 mb-4">
-<!-- Card 1: Saldo Total -->
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card h-100 border-0 card-shadow rounded-3 p-4">
-<div class="d-flex justify-content-between align-items-start mb-3">
-<div>
-<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Saldo Total</p>
-<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">R$ 142.500,00</h3>
-</div>
-<div class="icon-box" style="background-color: rgba(121, 60, 254, 0.2); color: var(--secondary);">
-<span class="material-symbols-outlined">account_balance_wallet</span>
-</div>
-</div>
-<div class="d-flex align-items-center gap-2 mt-auto fs-7">
-<span class="badge badge-trend-up rounded-pill d-flex align-items-center gap-1 py-1 px-2">
-<span class="material-symbols-outlined" style="font-size: 14px;">trending_up</span> +12.5%
-                                </span>
-<span class="text-muted" style="color: var(--on-surface-variant) !important;">vs último mês</span>
-</div>
-</div>
-</div>
-<!-- Card 2: Receitas -->
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card h-100 border-0 card-shadow rounded-3 p-4">
-<div class="d-flex justify-content-between align-items-start mb-3">
-<div>
-<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Receitas</p>
-<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">R$ 45.200,00</h3>
-</div>
-<div class="icon-box bg-success bg-opacity-10 text-success">
-<span class="material-symbols-outlined">arrow_upward</span>
-</div>
-</div>
-<div class="d-flex align-items-center gap-2 mt-auto fs-7">
-<span class="badge badge-trend-up rounded-pill d-flex align-items-center gap-1 py-1 px-2">
-<span class="material-symbols-outlined" style="font-size: 14px;">trending_up</span> +5.2%
-                                </span>
-<span class="text-muted" style="color: var(--on-surface-variant) !important;">vs último mês</span>
-</div>
-</div>
-</div>
-<!-- Card 3: Despesas -->
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card h-100 border-0 card-shadow rounded-3 p-4">
-<div class="d-flex justify-content-between align-items-start mb-3">
-<div>
-<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Despesas</p>
-<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">R$ 28.900,00</h3>
-</div>
-<div class="icon-box bg-danger bg-opacity-10 text-danger">
-<span class="material-symbols-outlined">arrow_downward</span>
-</div>
-</div>
-<div class="d-flex align-items-center gap-2 mt-auto fs-7">
-<span class="badge badge-trend-down rounded-pill d-flex align-items-center gap-1 py-1 px-2">
-<span class="material-symbols-outlined" style="font-size: 14px;">trending_down</span> -2.1%
-                                </span>
-<span class="text-muted" style="color: var(--on-surface-variant) !important;">vs último mês</span>
-</div>
-</div>
-</div>
-<!-- Card 4: Meta de Economia -->
-<div class="col-12 col-md-6 col-lg-3">
-<div class="card h-100 border-0 card-shadow rounded-3 p-4">
-<div class="d-flex justify-content-between align-items-start mb-3">
-<div>
-<p class="text-uppercase text-muted fs-8 fw-semibold mb-1" style="letter-spacing: 0.05em; color: var(--on-surface-variant) !important;">Meta de Economia</p>
-<h3 class="fw-bold mb-0" style="font-size: 2.25rem; color: var(--on-surface);">65%</h3>
-</div>
-<div class="icon-box bg-warning bg-opacity-10 text-warning text-dark">
-<span class="material-symbols-outlined">savings</span>
-</div>
-</div>
-<div class="mt-auto">
-<div class="progress mt-2" style="height: 10px; background-color: var(--surface-variant);">
-<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="65" class="progress-bar rounded-pill" role="progressbar" style="width: 65%; background-color: var(--secondary);"></div>
-</div>
-<p class="fs-7 text-muted mt-2 mb-0" style="color: var(--on-surface-variant) !important;">Faltam R$ 17.500 para atingir a meta anual.</p>
-</div>
-</div>
-</div>
-</section>
-<!-- Charts Section -->
-<section class="row g-4 mb-4">
-<!-- Line Chart (Receitas vs Despesas) - Spans 8 cols -->
-<div class="col-12 col-lg-8">
-<div class="card h-100 border-0 card-shadow rounded-3 p-4">
-<div class="d-flex justify-content-between align-items-center mb-4">
-<h3 class="h6 fw-semibold mb-0" style="color: var(--on-surface);">Receitas vs Despesas (Últimos 6 meses)</h3>
-<button class="btn btn-link p-0 fs-7 fw-medium text-decoration-none" style="color: var(--secondary);">Ver Relatório Completo</button>
-</div>
-<div class="position-relative w-100" style="height: 256px;">
-<!-- SVG Chart Visualization -->
-<svg class="w-100 h-100" preserveaspectratio="none" viewbox="0 0 800 240">
-<!-- Grid Lines -->
-<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="200" y2="200"></line>
-<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="150" y2="150"></line>
-<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="100" y2="100"></line>
-<line stroke="#f0edef" stroke-width="1" x1="0" x2="800" y1="50" y2="50"></line>
-<!-- Area Gradient Primary -->
-<lineargradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
-<stop offset="0%" stop-color="#059669" stop-opacity="0.2"></stop>
-<stop offset="100%" stop-color="#059669" stop-opacity="0"></stop>
-</lineargradient>
-<!-- Receitas Line (Emerald) -->
-<path d="M0,180 C100,160 200,190 300,120 C400,50 500,80 600,40 C700,0 800,20 800,20 L800,200 L0,200 Z" fill="url(#areaGradient)"></path>
-<path class="chart-success" d="M0,180 C100,160 200,190 300,120 C400,50 500,80 600,40 C700,0 800,20 800,20" fill="none" stroke-width="2"></path>
-<!-- Despesas Line (Rose/Red) -->
-<path d="M0,190 C100,180 200,170 300,150 C400,160 500,140 600,130 C700,150 800,140 800,140" fill="none" stroke="#e11d48" stroke-dasharray="4" stroke-width="2"></path>
-</svg>
-<!-- X Axis Labels -->
-<div class="d-flex justify-content-between mt-2 px-2 text-uppercase fs-8 fw-semibold" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">
-<span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Donut Chart (Gastos por Categoria) - Spans 4 cols -->
-<div class="col-12 col-lg-4">
-<div class="card h-100 border-0 card-shadow rounded-3 p-4">
-<h3 class="h6 fw-semibold mb-4" style="color: var(--on-surface);">Gastos por Categoria</h3>
-<div class="d-flex flex-column align-items-center justify-content-center h-100 pb-4">
-<div class="position-relative" style="width: 192px; height: 192px;">
-<svg class="w-100 h-100" style="transform: rotate(-90deg);" viewbox="0 0 36 36">
-<!-- Background Circle -->
-<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#f0edef" stroke-width="4"></circle>
-<!-- Segments -->
-<!-- Infraestrutura 40% (Primary Blue) -->
-<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#0058be" stroke-dasharray="40 60" stroke-dashoffset="0" stroke-width="4"></circle>
-<!-- Pessoal 30% (Violet) -->
-<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#7c3aed" stroke-dasharray="30 70" stroke-dashoffset="-40" stroke-width="4"></circle>
-<!-- Marketing 20% (Amber) -->
-<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#d97706" stroke-dasharray="20 80" stroke-dashoffset="-70" stroke-width="4"></circle>
-<!-- Outros 10% (Emerald) -->
-<circle cx="18" cy="18" fill="transparent" r="15.91549430918954" stroke="#059669" stroke-dasharray="10 90" stroke-dashoffset="-90" stroke-width="4"></circle>
-</svg>
-<!-- Center Text -->
-<div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center">
-<span class="h6 fw-semibold mb-0" style="color: var(--on-surface);">R$ 28.9k</span>
-<span class="fs-8 fw-semibold text-uppercase" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Total</span>
-</div>
-</div>
-<!-- Legend -->
-<div class="w-100 mt-4 row g-2 fs-7">
-<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: var(--secondary);"></div><span style="color: var(--on-surface-variant);">Infra (40%)</span></div>
-<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: #7c3aed;"></div><span style="color: var(--on-surface-variant);">Pessoal (30%)</span></div>
-<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: #d97706;"></div><span style="color: var(--on-surface-variant);">Mkt (20%)</span></div>
-<div class="col-6 d-flex align-items-center gap-2"><div class="rounded-circle" style="width:12px; height:12px; background-color: #059669;"></div><span style="color: var(--on-surface-variant);">Outros (10%)</span></div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Data Table Section -->
-<section class="card border-0 card-shadow rounded-3 overflow-hidden">
-<div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-<h3 class="h6 fw-semibold mb-0" style="color: var(--on-surface);">Últimas Transações</h3>
-<div class="d-flex gap-2">
-<button class="btn btn-outline-secondary fs-7 fw-medium px-3" style="border-color: #cbd5e1; color: var(--on-secondary-fixed);">
-                                Filtrar
-                            </button>
-<button class="btn btn-custom-secondary fs-7 fw-medium px-3 d-flex align-items-center gap-2">
-<span class="material-symbols-outlined" style="font-size: 18px;">add</span> Nova Transação
-                            </button>
-</div>
-</div>
-<div class="table-responsive">
-<table class="table table-custom mb-0 align-middle">
-<thead>
-<tr>
-<th class="ps-4 py-3">Data</th>
-<th class="py-3">Descrição</th>
-<th class="py-3">Categoria</th>
-<th class="py-3">Valor</th>
-<th class="pe-4 py-3">Status</th>
-</tr>
-</thead>
-<tbody class="fw-medium fs-7" style="color: var(--on-surface);">
-<tr>
-<td class="ps-4 py-3 text-muted fw-normal">24 Out, 2023</td>
-<td class="py-3">
-<div class="fw-semibold">Pagamento Fornecedor AWS</div>
-<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Serviços Cloud</div>
-</td>
-<td class="py-3 fw-normal">Infraestrutura</td>
-<td class="py-3 text-danger fw-semibold">- R$ 4.500,00</td>
-<td class="pe-4 py-3">
-<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Concluído</span>
-</td>
-</tr>
-<tr>
-<td class="ps-4 py-3 text-muted fw-normal">23 Out, 2023</td>
-<td class="py-3">
-<div class="fw-semibold">Recebimento Cliente XYZ</div>
-<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Fatura #4092</div>
-</td>
-<td class="py-3 fw-normal">Vendas</td>
-<td class="py-3 text-success fw-semibold">+ R$ 12.800,00</td>
-<td class="pe-4 py-3">
-<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Concluído</span>
-</td>
-</tr>
-<tr>
-<td class="ps-4 py-3 text-muted fw-normal">22 Out, 2023</td>
-<td class="py-3">
-<div class="fw-semibold">Folha de Pagamento</div>
-<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Salários Outubro</div>
-</td>
-<td class="py-3 fw-normal">Pessoal</td>
-<td class="py-3 text-danger fw-semibold">- R$ 18.200,00</td>
-<td class="pe-4 py-3">
-<span class="badge bg-warning bg-opacity-10 text-warning text-dark rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Processando</span>
-</td>
-</tr>
-<tr>
-<td class="ps-4 py-3 text-muted fw-normal">20 Out, 2023</td>
-<td class="py-3">
-<div class="fw-semibold">Campanha Ads Google</div>
-<div class="fs-8 text-uppercase mt-1" style="color: var(--on-surface-variant); letter-spacing: 0.05em;">Marketing Q4</div>
-</td>
-<td class="py-3 fw-normal">Marketing</td>
-<td class="py-3 text-danger fw-semibold">- R$ 3.100,00</td>
-<td class="pe-4 py-3">
-<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1 fs-8 text-uppercase" style="letter-spacing: 0.05em;">Concluído</span>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-</div>
-</main>
-</div>
-<!-- Bootstrap JS Bundle -->
-<script crossorigin="anonymous" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body></html>
+<body>
+    <div class="app-layout">
+        <!-- 1. Sidebar Fixa para Desktop (>= 992px) -->
+        <aside class="sidebar-symo">
+            <a href="#dashboard" class="sidebar-brand">
+                <img src="../public/img/logo.svg" alt="Symo Financeiro">
+            </a>
+
+            <nav class="sidebar-menu">
+                <a href="#dashboard" class="sidebar-nav-link active">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- 2. Movimentações Financeiras -->
+                <div class="sidebar-section-title">Movimentações</div>
+                <a href="#transacoes" class="sidebar-nav-link">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Lançamentos</span>
+                </a>
+                <a href="#transferencias" class="sidebar-nav-link">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>Transferências</span>
+                </a>
+                <a href="#cartoes" class="sidebar-nav-link">
+                    <i class="bi bi-credit-card-2-front-fill"></i>
+                    <span>Cartões de Crédito</span>
+                </a>
+                <a href="#investimentos" class="sidebar-nav-link">
+                    <i class="bi bi-piggy-bank-fill"></i>
+                    <span>Investimentos</span>
+                </a>
+
+                <!-- 3. Cadastros Básicos -->
+                <div class="sidebar-section-title">Cadastros</div>
+                <a href="#contas" class="sidebar-nav-link">
+                    <i class="bi bi-bank"></i>
+                    <span>Contas Bancárias</span>
+                </a>
+                <a href="#categorias" class="sidebar-nav-link">
+                    <i class="bi bi-tags-fill"></i>
+                    <span>Categorias</span>
+                </a>
+                <a href="#meios-pagamento" class="sidebar-nav-link">
+                    <i class="bi bi-wallet2"></i>
+                    <span>Meios de Pagamento</span>
+                </a>
+
+                <!-- 4. Relatórios -->
+                <div class="sidebar-section-title">Relatórios</div>
+                <a href="#relatorios" class="sidebar-nav-link">
+                    <i class="bi bi-bar-chart-line-fill"></i>
+                    <span>Relatórios Analíticos</span>
+                </a>
+
+                <!-- 5. Administração -->
+                <div class="sidebar-section-title">Administração</div>
+                <a href="#usuarios" class="sidebar-nav-link">
+                    <i class="bi bi-people-fill"></i>
+                    <span>Gestão de Usuários</span>
+                </a>
+                <a href="#lixeira" class="sidebar-nav-link">
+                    <i class="bi bi-trash3-fill"></i>
+                    <span>Lixeira do Sistema</span>
+                </a>
+                <a href="#auditoria" class="sidebar-nav-link">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Trilha de Auditoria</span>
+                </a>
+                <a href="#feedbacks" class="sidebar-nav-link">
+                    <i class="bi bi-chat-left-text-fill"></i>
+                    <span>Feedbacks Recebidos</span>
+                </a>
+                <a href="#configuracoes" class="sidebar-nav-link">
+                    <i class="bi bi-gear-fill"></i>
+                    <span>Configurações</span>
+                </a>
+                <a href="#perfil" class="sidebar-nav-link">
+                    <i class="bi bi-person-circle"></i>
+                    <span>Perfil</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- 2. Sidebar Offcanvas para Mobile (< 992px) -->
+        <div class="offcanvas offcanvas-start p-0 d-lg-none" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel" style="width: 280px; background: linear-gradient(180deg, #4a2ec2 0%, #260058 100%);">
+            <div class="offcanvas-header p-3 border-bottom border-white-subtle">
+                <img src="../public/img/logo.svg" alt="Symo" height="32">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column">
+                <nav class="sidebar-menu">
+                    <div class="sidebar-section-title">Visão Geral</div>
+                    <a href="#dashboard" class="sidebar-nav-link active">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <div class="sidebar-section-title">Movimentações</div>
+                    <a href="#transacoes" class="sidebar-nav-link">
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Lançamentos</span>
+                    </a>
+                    <a href="#transferencias" class="sidebar-nav-link">
+                        <i class="bi bi-arrow-repeat"></i>
+                        <span>Transferências</span>
+                    </a>
+                    <a href="#cartoes" class="sidebar-nav-link">
+                        <i class="bi bi-credit-card-2-front-fill"></i>
+                        <span>Cartões de Crédito</span>
+                    </a>
+                    <a href="#investimentos" class="sidebar-nav-link">
+                        <i class="bi bi-piggy-bank-fill"></i>
+                        <span>Investimentos</span>
+                    </a>
+                    <div class="sidebar-section-title">Cadastros</div>
+                    <a href="#contas" class="sidebar-nav-link">
+                        <i class="bi bi-bank"></i>
+                        <span>Contas Bancárias</span>
+                    </a>
+                    <a href="#categorias" class="sidebar-nav-link">
+                        <i class="bi bi-tags-fill"></i>
+                        <span>Categorias</span>
+                    </a>
+                    <a href="#meios-pagamento" class="sidebar-nav-link">
+                        <i class="bi bi-wallet2"></i>
+                        <span>Meios de Pagamento</span>
+                    </a>
+                    <div class="sidebar-section-title">Relatórios</div>
+                    <a href="#relatorios" class="sidebar-nav-link">
+                        <i class="bi bi-bar-chart-line-fill"></i>
+                        <span>Relatórios Analíticos</span>
+                    </a>
+                    <div class="sidebar-section-title">Administração</div>
+                    <a href="#lixeira" class="sidebar-nav-link">
+                        <i class="bi bi-trash3-fill"></i>
+                        <span>Lixeira do Sistema</span>
+                    </a>
+                    <a href="#configuracoes" class="sidebar-nav-link">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Configurações</span>
+                    </a>
+                    <a href="#perfil" class="sidebar-nav-link">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Perfil</span>
+                    </a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 3. Wrapper de Conteúdo Principal -->
+        <div class="main-wrapper">
+            <!-- Navbar Superior -->
+            <header class="navbar-symo">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-link text-dark p-0 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas" aria-label="Abrir Menu Lateral">
+                        <i class="bi bi-list fs-2" style="color: var(--symo-primary-brand);"></i>
+                    </button>
+                    <h2 class="navbar-title d-none d-sm-block">Dashboard Financeiro</h2>
+                </div>
+
+                <div class="navbar-actions">
+                    <span class="fw-semibold" style="font-size: 0.75rem; color: var(--symo-primary-brand);">
+                        Versão BETA
+                    </span>
+
+                    <span class="badge-role-admin d-none d-md-inline-block">DEV</span>
+
+                    <div class="dropdown">
+                        <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--symo-primary-brand), var(--symo-secondary-brand)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(111,2,255,0.2);">
+                                D
+                            </div>
+                            <div class="text-start d-none d-xl-block">
+                                <div style="font-size: 0.875rem; font-weight: 600; color: var(--symo-on-surface); line-height: 1.2;">
+                                    Desenvolvedor Demo
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--symo-outline);">
+                                    dev@symo.local
+                                </div>
+                            </div>
+                            <i class="bi bi-chevron-down ms-1" style="font-size: 0.75rem; color: var(--symo-outline);"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end symo-modal-content border-0 shadow-sm mt-2" aria-labelledby="userDropdown" style="min-width: 200px; padding: 0.5rem;">
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="#dashboard">
+                                    <i class="bi bi-grid-1x2"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="#perfil">
+                                    <i class="bi bi-person-circle"></i>
+                                    <span>Perfil</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="#configuracoes">
+                                    <i class="bi bi-gear"></i>
+                                    <span>Configurações</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <button type="button" class="dropdown-item py-2 text-danger d-flex align-items-center gap-2 border-0 bg-transparent w-100">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span>Sair do Sistema</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Área de Conteúdo da View -->
+            <main class="content-area">
+                <!-- Cabeçalho e Seletor de Período -->
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                    <div>
+                        <h1 class="h3 fw-bold mb-1" style="color: var(--symo-on-surface);">
+                            Olá, Desenvolvedor
+                        </h1>
+                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                            Visão panorâmica em tempo real da saúde financeira do ambiente <strong>Symo</strong>.
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select form-select-sm bg-white shadow-sm fw-semibold" aria-label="Selecionar mês">
+                            <option value="8">Ago</option>
+                            <option value="9" selected>Set</option>
+                            <option value="10">Out</option>
+                        </select>
+
+                        <select class="form-select form-select-sm bg-white shadow-sm fw-semibold" aria-label="Selecionar ano">
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                        </select>
+
+                        <a href="#novo-lancamento" class="btn-symo-primary d-flex align-items-center gap-2 text-nowrap text-decoration-none shadow-sm">
+                            <i class="bi bi-plus-lg"></i>
+                            <span>Novo Lançamento</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 1. CARDS DE INDICADORES FINANCEIROS (KPIS) -->
+                <div class="row g-3 mb-4">
+                    <!-- Card 1: Saldo Atual -->
+                    <div class="col-12 col-sm-6 col-xl">
+                        <div class="symo-card h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="label-caps">Saldo Atual</span>
+                                <div class="icon-box" style="background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-wallet2 fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="kpi-value fs-3 fw-bold mb-1 tabular-nums" style="color: var(--symo-primary-brand);">
+                                R$ 14.820,45
+                            </div>
+                            <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.8rem;">
+                                <i class="bi bi-bank"></i>
+                                <span>3 conta(s) ativa(s) incluída(s)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Investimentos -->
+                    <div class="col-12 col-sm-6 col-xl">
+                        <div class="symo-card h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="label-caps">Investimentos</span>
+                                <div class="icon-box" style="background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-graph-up-arrow fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="kpi-value fs-3 fw-bold mb-1 tabular-nums" style="color: var(--symo-primary-brand);">
+                                R$ 6.450,00
+                            </div>
+                            <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.8rem;">
+                                <i class="bi bi-piggy-bank"></i>
+                                <span>Valor investido</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Receitas do Mês -->
+                    <div class="col-12 col-sm-6 col-xl">
+                        <div class="symo-card h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="label-caps">Receitas de Set</span>
+                                <div class="icon-box" style="background-color: #d1fae5; color: #047857; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-arrow-down-left fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="kpi-value fs-3 fw-bold mb-1 text-success tabular-nums">
+                                R$ 4.272,80
+                            </div>
+                            <div class="d-flex flex-wrap column-gap-3 row-gap-1 text-muted" style="font-size: 0.8rem;">
+                                <span class="text-nowrap text-success"><i class="bi bi-check2"></i> Realizadas: R$ 4.272,80</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Despesas do Mês -->
+                    <div class="col-12 col-sm-6 col-xl">
+                        <div class="symo-card h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="label-caps">Despesas de Set</span>
+                                <div class="icon-box" style="background-color: #ffdad6; color: #ba1a1a; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-arrow-up-right fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="kpi-value fs-3 fw-bold mb-1 text-danger tabular-nums">
+                                R$ 2.803,10
+                            </div>
+                            <div class="d-flex flex-wrap column-gap-3 row-gap-1 text-muted" style="font-size: 0.8rem;">
+                                <span class="text-nowrap text-danger"><i class="bi bi-check2"></i> Pagas: R$ 2.390,20</span>
+                                <span class="text-nowrap text-secondary"><i class="bi bi-clock"></i> Pendente: R$ 412,90</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: Balanço Líquido -->
+                    <div class="col-12 col-sm-6 col-xl">
+                        <div class="symo-card h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="label-caps">Balanço Líquido</span>
+                                <div class="icon-box" style="background-color: #e0f2fe; color: #0284c7; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-pie-chart fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="kpi-value fs-3 fw-bold mb-1 tabular-nums text-success">
+                                R$ 1.469,70
+                            </div>
+                            <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.8rem;">
+                                <i class="bi bi-activity"></i>
+                                <span>Superávit financeiro</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. GRÁFICOS INTERATIVOS COM CHART.JS LOCAL -->
+                <div class="row g-4 mb-4">
+                    <!-- Gráfico 1: Evolução Financeira (Últimos 6 Meses) -->
+                    <div class="col-12 col-lg-8">
+                        <div class="symo-card h-100">
+                            <div class="symo-card-header d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="symo-card-title fs-6 mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-graph-up-arrow" style="color: var(--symo-primary-brand);"></i>
+                                    <span>Evolução Financeira (Últimos 6 Meses)</span>
+                                </h3>
+                                <div class="d-flex align-items-center gap-3 small text-muted">
+                                    <span class="d-flex align-items-center gap-1"><span style="width: 12px; height: 12px; background: #10B981; border-radius: 3px; display: inline-block;"></span> Receitas</span>
+                                    <span class="d-flex align-items-center gap-1"><span style="width: 12px; height: 12px; background: #EF4444; border-radius: 3px; display: inline-block;"></span> Despesas</span>
+                                </div>
+                            </div>
+                            <div style="position: relative; height: 280px;">
+                                <canvas id="chartEvolucaoMensal"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico 2: Despesas por Categoria (Donut) -->
+                    <div class="col-12 col-lg-4">
+                        <div class="symo-card h-100">
+                            <div class="symo-card-header mb-3">
+                                <h3 class="symo-card-title fs-6 mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-pie-chart-fill" style="color: var(--symo-secondary-brand);"></i>
+                                    <span>Despesas por Categoria (Set)</span>
+                                </h3>
+                            </div>
+                            <div style="position: relative; height: 210px;" class="mb-3">
+                                <canvas id="chartCategorias"></canvas>
+                            </div>
+                            <div class="small" style="max-height: 120px; overflow-y: auto;">
+                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span style="width: 10px; height: 10px; background-color: #6F02FF; border-radius: 50%; display: inline-block;"></span>
+                                        <span class="fw-semibold text-truncate">Moradia e Contas</span>
+                                    </div>
+                                    <span class="tabular-nums fw-bold ms-2">R$ 1.675,40 (59,8%)</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span style="width: 10px; height: 10px; background-color: #3BD7D7; border-radius: 50%; display: inline-block;"></span>
+                                        <span class="fw-semibold text-truncate">Mercado</span>
+                                    </div>
+                                    <span class="tabular-nums fw-bold ms-2">R$ 500,30 (17,8%)</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span style="width: 10px; height: 10px; background-color: #793CFE; border-radius: 50%; display: inline-block;"></span>
+                                        <span class="fw-semibold text-truncate">Equipamentos e Tecnologia</span>
+                                    </div>
+                                    <span class="tabular-nums fw-bold ms-2">R$ 276,00 (9,8%)</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        <span style="width: 10px; height: 10px; background-color: #10B981; border-radius: 50%; display: inline-block;"></span>
+                                        <span class="fw-semibold text-truncate">Saúde e Farmácia</span>
+                                    </div>
+                                    <span class="tabular-nums fw-bold ms-2">R$ 185,00 (6,6%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. WIDGETS INFERIORES: PRÓXIMOS COMPROMISSOS E CARTÕES DE CRÉDITO -->
+                <div class="row g-4">
+                    <!-- Widget 1: Compromissos a Vencer / Vencidos -->
+                    <div class="col-12 col-lg-7">
+                        <div class="symo-card h-100">
+                            <div class="symo-card-header d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="symo-card-title fs-6 mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-alarm-fill text-warning"></i>
+                                    <span>Compromissos Pendentes (Próximos 7 Dias & Vencidos)</span>
+                                </h3>
+                                <a href="#transacoes-pendentes" class="btn btn-sm btn-outline-secondary py-0" style="font-size: 0.8rem;">
+                                    Ver Todos
+                                </a>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 table-sm" style="font-size: 0.88rem;">
+                                    <thead class="table-light">
+                                        <tr class="label-caps">
+                                            <th>Vencimento</th>
+                                            <th>Descrição / Categoria</th>
+                                            <th>Conta / Cartão</th>
+                                            <th class="text-end">Valor</th>
+                                            <th class="text-center">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="tabular-nums">
+                                                05/10/2026
+                                                <span class="badge text-bg-warning text-dark d-block mt-1" style="font-size: 0.7rem;">Em 2d</span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold text-truncate" style="max-width: 180px;">
+                                                    Monitor Secundário Dell 24"
+                                                    <span class="badge text-bg-light border text-muted ms-1" style="font-size: 0.7rem;">2/3</span>
+                                                </div>
+                                                <div class="small text-muted d-flex align-items-center gap-1">
+                                                    <i class="bi bi-laptop" style="color: #793CFE;"></i>
+                                                    <span>Equipamentos e Tecnologia</span>
+                                                </div>
+                                            </td>
+                                            <td class="small text-muted">
+                                                <i class="bi bi-credit-card me-1"></i>Nubank Roxinho
+                                            </td>
+                                            <td class="text-end tabular-nums fw-bold text-danger">
+                                                - R$ 220,00
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="#fatura" class="btn btn-sm btn-outline-primary py-0 px-2 text-nowrap" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-receipt"></i> Fatura
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="tabular-nums">
+                                                05/10/2026
+                                                <span class="badge text-bg-warning text-dark d-block mt-1" style="font-size: 0.7rem;">Em 2d</span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold text-truncate" style="max-width: 180px;">
+                                                    Salário Dev - TechCorp Solutions
+                                                </div>
+                                                <div class="small text-muted d-flex align-items-center gap-1">
+                                                    <i class="bi bi-cash-stack" style="color: #10B981;"></i>
+                                                    <span>Salário</span>
+                                                </div>
+                                            </td>
+                                            <td class="small text-muted">
+                                                <i class="bi bi-bank me-1"></i>Nubank Principal
+                                            </td>
+                                            <td class="text-end tabular-nums fw-bold text-success">
+                                                + R$ 4.250,00
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-check-lg"></i> Receber
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget 2: Cartões de Crédito e Faturas -->
+                    <div class="col-12 col-lg-5">
+                        <div class="symo-card h-100">
+                            <div class="symo-card-header d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="symo-card-title fs-6 mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-credit-card-2-front-fill" style="color: var(--symo-primary-brand);"></i>
+                                    <span>Cartões de Crédito & Limites</span>
+                                </h3>
+                                <a href="#cartoes" class="btn btn-sm btn-outline-secondary py-0" style="font-size: 0.8rem;">
+                                    Gerenciar
+                                </a>
+                            </div>
+
+                            <div class="d-flex flex-column gap-3">
+                                <div class="p-3 border rounded-3 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #820AD1;"></div>
+                                            <span class="fw-bold" style="color: var(--symo-on-surface);">Nubank Roxinho</span>
+                                        </div>
+                                        <span class="badge text-bg-light border small">
+                                            Fecha dia 25 / Vence dia 5
+                                        </span>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between small text-muted mb-1">
+                                        <span>Usado: <strong class="tabular-nums text-dark">R$ 632,90</strong></span>
+                                        <span>Limite: <strong class="tabular-nums text-dark">R$ 3.500,00</strong></span>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 6px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: 18%;" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center small">
+                                        <span class="text-success fw-semibold tabular-nums">Disponível: R$ 2.867,10</span>
+                                        <a href="#fatura-cartao" class="text-decoration-none fw-semibold" style="color: var(--symo-primary-brand); font-size: 0.8rem;">
+                                            Ver Fatura <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts Locais Obrigatórios (Sem CDNs externas) -->
+    <script src="../public/js/bootstrap.bundle.min.js"></script>
+    <script src="../public/js/chart.umd.min.js"></script>
+    <script src="../public/js/app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctxEvolucao = document.getElementById('chartEvolucaoMensal');
+        if (ctxEvolucao && typeof Chart !== 'undefined') {
+            new Chart(ctxEvolucao, {
+                type: 'bar',
+                data: {
+                    labels: ['Abr/26', 'Mai/26', 'Jun/26', 'Jul/26', 'Ago/26', 'Set/26'],
+                    datasets: [
+                        {
+                            label: 'Receitas',
+                            data: [4271.20, 5223.40, 4270.10, 4272.50, 5374.10, 4272.80],
+                            backgroundColor: '#10B981',
+                            borderRadius: 6,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.7
+                        },
+                        {
+                            label: 'Despesas',
+                            data: [2464.20, 2566.60, 2635.00, 2600.90, 2798.70, 2803.10],
+                            backgroundColor: '#EF4444',
+                            borderRadius: 6,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 12 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#F3F4F6' },
+                            ticks: {
+                                font: { family: 'Inter', size: 11 },
+                                callback: function(value) { return 'R$ ' + value.toLocaleString('pt-BR'); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const ctxCategorias = document.getElementById('chartCategorias');
+        if (ctxCategorias && typeof Chart !== 'undefined') {
+            new Chart(ctxCategorias, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Moradia e Contas', 'Mercado', 'Equipamentos e Tecnologia', 'Saúde e Farmácia', 'Lazer e Transporte'],
+                    datasets: [{
+                        data: [1675.40, 500.30, 276.00, 185.00, 166.40],
+                        backgroundColor: ['#6F02FF', '#3BD7D7', '#FF007F', '#10B981', '#FF2400'],
+                        borderWidth: 2,
+                        borderColor: '#FFFFFF'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>

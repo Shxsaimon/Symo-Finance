@@ -161,11 +161,12 @@ Symo_Finance/
 │   ├── COMO-PEDIR-MUDANCAS.md   # Guia de interação e prompts para usuários
 │   ├── PLANO.md                 # Histórico e planejamento de fases
 │   ├── STATUS.md                # Arquivo vivo de acompanhamento do progresso
-│   └── ERROS.md                 # Registro histórico de erros e soluções adotadas
+│   ├── ERROS.md                 # Registro histórico de erros e soluções adotadas
+│   ├── code.html                # Protótipo estático fiel ao Dashboard do Symo
+│   └── screenshots/             # Capturas de tela dos módulos do sistema
 ├── public/                      # Assets estáticos servidos diretamente ao navegador
-│   ├── css/                     # Bootstrap 5 local, ícones e custom.css (Design Tokens)
+│   ├── css/                     # Bootstrap 5 local, ícones, fontes (css/fonts/) e custom.css (Design Tokens)
 │   ├── js/                      # Bootstrap bundle, Chart.js local e app.js
-│   ├── fonts/                   # Fontes locais Inter e Bootstrap Icons (WOFF2/WOFF)
 │   └── img/                     # Favicons e logotipos SVG
 ├── storage/                     # Diretórios locais legados de contingência
 │   ├── logs/                    # Arquivos error.log e security.log (fallback)
@@ -175,7 +176,9 @@ Symo_Finance/
 ├── index.php                    # Front Controller central da aplicação
 ├── migrate.php                  # Executável CLI de migrações e seeds
 ├── vercel.json                  # Configuração do deploy na Vercel (rewrites e headers)
+├── .vercelignore                # Exclusão de docs e scripts locais no pacote Vercel
 ├── package.json                 # Dependência @vercel/blob para api/blob.js
+├── LICENSE                      # Licença GNU General Public License v3.0 (GPL-3.0)
 └── AGENTS.md                    # Diretrizes técnicas e regras de trabalho para IAs
 ```
 

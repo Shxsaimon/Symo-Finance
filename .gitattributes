@@ -16,10 +16,12 @@
 # Documentação e Markdown
 *.md text eol=lf
 *.txt text eol=lf
+LICENSE text eol=lf
 
 # Configurações do servidor e do Git
 .htaccess text eol=lf
 .gitignore text eol=lf
+.vercelignore text eol=lf
 .gitattributes text eol=lf
 .gitkeep text eol=lf
 
