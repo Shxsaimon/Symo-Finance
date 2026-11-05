@@ -13,6 +13,38 @@ O projeto foi construído em **PHP 8.2+ nativo com arquitetura MVC própria** (`
 
 ---
 
+## Demonstração Visual da Plataforma
+
+<div align="center">
+  <img src="docs/screenshots/03-dashboard.png" alt="Dashboard Principal do Symo Finance" width="100%">
+  <p><em>Dashboard financeiro em tempo real: KPIs consolidados, gráficos interativos locais com Chart.js, compromissos pendentes e cartões de crédito.</em></p>
+</div>
+
+### Experiência Desktop & Mobile (Totalmente Responsiva)
+
+O Symo Finance foi concebido com design fluído para funcionar perfeitamente em telas ultrawide, notebooks, tablets e smartphones:
+
+| Desktop (Alta Densidade de Informação) | Mobile (Uso na Palma da Mão) |
+| :--- | :--- |
+| ![Lançamentos Desktop](docs/screenshots/04-lancamentos.png)<br><em>Listagem financeira com filtros avançados e tabela zebrada</em> | <img src="docs/screenshots/mobile-04-dashboard1.png" width="300" alt="Dashboard Mobile"><br><em>Dashboard mobile com menu offcanvas em gradiente</em> |
+| ![Módulo de Investimentos](docs/screenshots/09-investimentos.png)<br><em>Investimentos e reservas patrimoniais separados do saldo operacional</em> | <img src="docs/screenshots/mobile-06-modal-despesa-cartao.png" width="300" alt="Modal Despesa Mobile"><br><em>Lançamento de despesas no cartão com parcelamento</em> |
+| ![Auditoria com JSON Diff](docs/screenshots/16-auditoria-diff.png)<br><em>Trilha de auditoria completa com comparativo visual Antes vs. Depois</em> | <img src="docs/screenshots/mobile-08-cartoes-credito.png" width="300" alt="Cartões Mobile"><br><em>Acompanhamento de limites de cartões e faturas</em> |
+
+<div align="center">
+  <a href="docs/screenshots/README.md">
+    <img src="https://img.shields.io/badge/📸_Ver_Galeria_Completa-45_Capturas_Desktop_%26_Mobile-6F02FF?style=for-the-badge" alt="Galeria de Screenshots">
+  </a>
+  <a href="docs/code.html">
+    <img src="https://img.shields.io/badge/🌐_Testar_Protótipo_Offline-docs%2Fcode.html-793CFE?style=for-the-badge" alt="Protótipo Offline">
+  </a>
+</div>
+
+> [!NOTE]
+> **Projeto em Construção e Evolução Contínua (Versão Beta):**<br>
+> O **Symo Finance** possui um núcleo financeiro operacional (contas, cartões, despesas, transferências e investimentos), mas segue em desenvolvimento ativo. Tanto na interface (detalhes visuais e espaçamentos a lapidar) quanto no backend (regras de negócio e fluxos a aprimorar), o sistema passa por testes e melhorias frequentes. Justamente por isso, a aplicação conta com um canal nativo de **Feedback com envio de imagens** — acessível ao clicar no botão **"Versão BETA"** na barra superior —, permitindo que inconsistências sejam identificadas e refinadas a cada ciclo de evolução.
+
+---
+
 ## Destaques de Engenharia e Segurança
 
 - **MVC Nativo Desacoplado (`strict_types=1`):** Front Controller único ([`index.php`](index.php)), roteador HTTP dedicado ([`Router.php`](app/Helpers/Router.php)) com conversão segura de parâmetros, camada de persistência PDO e separação estrita de responsabilidades sem dependência de bibliotecas externas de terceiros no backend.
@@ -65,13 +97,6 @@ GitHub Actions (Manual ou disparado pelo painel /configuracoes)
 - [`api/index.php`](api/index.php): adaptador para o runtime PHP da Vercel e entrega segura de assets públicos.
 - [`api/blob.js`](api/blob.js): proxy privado em Node.js para operações autenticadas no Vercel Blob.
 - [`.github/workflows/database-migrations.yml`](.github/workflows/database-migrations.yml): workflow de status, migrations, seeds e reset controlado.
-
----
-
-## Demonstração Visual e Protótipo
-
-- **Protótipo Estático Local:** O arquivo [`docs/code.html`](docs/code.html) pode ser aberto diretamente no navegador para visualizar a estrutura da interface do Dashboard utilizando os assets locais de `public/` sem necessidade de subir o servidor PHP.
-- **Capturas de Tela:** As imagens de cada módulo do sistema ficam organizadas em [`docs/screenshots/`](docs/screenshots/README.md), geradas a partir da massa de dados fictícia do seed de demonstração ([`database/seeds/dev_demo_seeder.php`](database/seeds/dev_demo_seeder.php)).
 
 ---
 
