@@ -27,6 +27,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 19:** Investimentos
 - **Fase 20:** Perfil do usuário e acesso pela navegação
 - **Fase 21:** Correção do fluxo de despesas e ciclos de faturas de cartão
+- **Fase 22:** Modal de lançamento unificado no Dashboard e padronização visual de receitas
 
 ---
 
@@ -430,3 +431,19 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Critérios de aceite:** O meio de pagamento selecionado determina uma única modalidade de saída e combinações inválidas são rejeitadas no backend; compras são exibidas na fatura correta conforme data e ciclo; parcelas mantêm a progressão mensal e os valores exatos; faturas fecham e são pagas conforme as regras alinhadas; nenhuma operação parcial ou inconsistente altera saldos, vínculos, totais ou dados de outro usuário.
 - **Arquivos/Pastas Envolvidos:** `app/Views/transactions/`, `app/Controllers/TransactionController.php`, `app/Models/Transaction.php`, `app/Models/CreditCard.php`, `app/Models/CreditCardInvoice.php`, `app/Controllers/CreditCardController.php`, `app/Views/credit-cards/`, testes relacionados, `database/migrations/` se necessária, `docs/FSD.md`, `docs/STATUS.md` e `AGENTS.md` se as regras para agentes mudarem.
 - **Dependências:** Fases 6, 7 e 8 concluídas; requer manter as regras de isolamento e atomicidade estabelecidas na Fase 16.
+
+### Fase 22 — Modal de lançamento unificado no Dashboard e padronização visual de receitas
+- **Estado:** Concluída; implementada e validada em desenvolvimento.
+- **Objetivo:** Permitir o lançamento de receitas e despesas diretamente a partir do Dashboard por meio de modal interativo com abas no topo, eliminando a navegação intermediária para a tela de lançamentos e padronizando os botões de receita na paleta do design system.
+- **Checklist de implementação:**
+  - [x] Criar estilo `.btn-symo-revenue` baseado no roxo secundário (`#600de6`, hover `#5300c4`) e estilos de abas `.nav-pills-symo` em `public/css/custom.css`.
+  - [x] Disponibilizar categorias ativas de receita e despesa e meios de pagamento no `DashboardController` para alimentar os formulários do modal.
+  - [x] Converter o botão "+ Novo Lançamento" no Dashboard em trigger para o modal `#modalNovoLancamento`.
+  - [x] Implementar abas no topo do modal para alternância instantânea entre Despesa e Receita com seus respectivos formulários e regras.
+  - [x] Garantir comportamento dinâmico de despesa (alternância entre conta bancária e cartão de crédito, alerta de limite de crédito e toggle de parcelamento de 2x a 72x).
+  - [x] Configurar `redirect_to` para manter a navegação no próprio Dashboard com o período de mês/ano selecionado preservado após o salvamento.
+  - [x] Atualizar o botão de "Nova Receita" na tela de lançamentos para utilizar o padrão visual `.btn-symo-revenue`.
+  - [x] Executar validação estática de sintaxe (`php -l`) e verificação de integridade (`git diff --check`).
+- **Critérios de aceite:** O botão "+ Novo Lançamento" do Dashboard abre o modal com abas de Despesa e Receita; salvar um registro pelo modal atualiza a base e retorna ao Dashboard com os KPIs e gráficos recalculados; botões de receita seguem o tom roxo secundário sem o uso de verde Bootstrap.
+- **Arquivos/Pastas Envolvidos:** `public/css/custom.css`, `app/Controllers/DashboardController.php`, `app/Views/dashboard/index.php`, `app/Views/transactions/index.php`, `docs/PLANO.md`, `docs/STATUS.md`.
+- **Dependências:** Fases 5, 8 e 10 concluídas.

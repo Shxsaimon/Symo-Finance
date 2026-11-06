@@ -172,12 +172,16 @@ class TransactionController extends Controller
             FlashHelper::set('error', 'Não foi possível salvar o lançamento. Tente novamente.');
         }
 
+        $redirect = (string) ($_POST['redirect_to'] ?? '');
+        if ($redirect !== '') {
+            $this->redirect($redirect, '/transacoes');
+        }
+
         $dt = new DateTimeImmutable($tipo === 'despesa' ? $dataTransacao : $dataVencimento);
         $mes = $dt->format('n');
         $ano = $dt->format('Y');
 
-        header('Location: ' . BASE_URL . "/transacoes?mes={$mes}&ano={$ano}");
-        exit;
+        $this->redirect("/transacoes?mes={$mes}&ano={$ano}");
     }
 
     /**

@@ -62,6 +62,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
 | **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Concluída |
 | **Documentação Final** | Criação do Guia de Manutenção, Guia de Mudanças e Contexto para Agentes em Modo Manutenção | Concluída |
+| **Fase 22** | Modal de lançamento unificado no Dashboard e padronização visual de receitas | Concluída |
 
 ---
 
@@ -314,3 +315,15 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Atualização de `AGENTS.md` para o Modo Manutenção com o protocolo de 7 etapas prévias e 5 etapas posteriores, regras de segurança, stack oficial e diretrizes para evitar regressões.
 - [x] Registro das pendências residuais de roadmap: Fase 14 (OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta).
 - **Estado:** Concluída; documentação final de manutenção estabelecida e contexto de agentes atualizado para modo manutenção.
+
+### Fase 22 — Modal de lançamento unificado no Dashboard e padronização visual de receitas
+- [x] Criar classe `.btn-symo-revenue` com a cor roxa secundária (`#600de6` / hover `#5300c4`) e estilos de abas `.nav-pills-symo` no design system (`public/css/custom.css`).
+- [x] Injetar categorias ativas (receita e despesa) e meios de pagamento no `DashboardController` para alimentar o modal no Dashboard.
+- [x] Transformar o botão "+ Novo Lançamento" do Dashboard em trigger do modal `#modalNovoLancamento`.
+- [x] Estruturar o modal com abas de seleção rápida entre Despesa e Receita no topo e cabeçalho na cor principal do Symo.
+- [x] Manter os campos validados de despesa (alternância dinâmica conta/cartão, alerta de limite de crédito e switch de parcelamento de 2x a 72x).
+- [x] Preservar campos validados de receita (categoria, conta de destino, meio de pagamento e status inicial).
+- [x] Adicionar `redirect_to` nos formulários e no método `TransactionController::store` para permanecer no Dashboard com o período de mês/ano selecionado preservado após o lançamento.
+- [x] Atualizar o botão de "Nova Receita" na view de lançamentos (`app/Views/transactions/index.php`) para o estilo `.btn-symo-revenue`.
+- [x] Validar ausência de conflitos e espaços residuais com `git diff --check` e sintaxe estática com `php -l`.
+- **Estado:** Concluída; implementada e validada em desenvolvimento.

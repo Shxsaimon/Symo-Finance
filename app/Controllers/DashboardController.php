@@ -14,12 +14,16 @@ class DashboardController extends Controller
     private Account $accountModel;
     private Transaction $transactionModel;
     private CreditCard $creditCardModel;
+    private Category $categoryModel;
+    private PaymentMethod $paymentMethodModel;
 
     public function __construct()
     {
         $this->accountModel = new Account();
         $this->transactionModel = new Transaction();
         $this->creditCardModel = new CreditCard();
+        $this->categoryModel = new Category();
+        $this->paymentMethodModel = new PaymentMethod();
     }
 
     /**
@@ -73,6 +77,9 @@ class DashboardController extends Controller
             'contas'              => $contas,
             'contasNoSaldoAtual'  => $contasNoSaldoAtual,
             'totalInvestido'      => (new Investment())->getTotalInvested(),
+            'categoriasReceita'   => $this->categoryModel->getByType('receita'),
+            'categoriasDespesa'   => $this->categoryModel->getByType('despesa'),
+            'meiosPagamento'      => $this->paymentMethodModel->getActive(),
         ], 'layouts/main');
     }
 }

@@ -22,13 +22,13 @@ $anoAtual = (int) date('Y');
         </p>
     </div>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-success fw-semibold d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaReceita">
-            <i class="bi bi-arrow-down-circle"></i>
-            <span>Nova Receita</span>
-        </button>
         <button type="button" class="btn-symo-primary d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaDespesa">
             <i class="bi bi-arrow-up-circle"></i>
             <span>Nova Despesa</span>
+        </button>
+        <button type="button" class="btn-symo-revenue d-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaReceita">
+            <i class="bi bi-arrow-down-circle"></i>
+            <span>Nova Receita</span>
         </button>
     </div>
 </div>
@@ -300,7 +300,7 @@ $anoAtual = (int) date('Y');
             <form action="<?= BASE_URL ?>/transacoes/salvar" method="POST">
                 <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
                 <input type="hidden" name="tipo" value="receita">
-                <div class="modal-header border-bottom bg-success text-white">
+                <div class="modal-header border-bottom" style="background-color: var(--symo-secondary, #600de6); color: white;">
                     <h5 class="modal-title fw-bold" id="modalNovaReceitaLabel">
                         <i class="bi bi-arrow-down-circle me-1"></i> Nova Receita
                     </h5>
@@ -367,7 +367,7 @@ $anoAtual = (int) date('Y');
                 </div>
                 <div class="modal-footer border-top bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-semibold">Salvar Receita</button>
+                    <button type="submit" class="btn-symo-revenue">Salvar Receita</button>
                 </div>
             </form>
         </div>

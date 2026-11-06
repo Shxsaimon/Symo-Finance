@@ -554,6 +554,72 @@ body.is-scrolling {
   text-decoration: none;
 }
 
+.btn-symo-revenue {
+  background-color: var(--symo-on-primary-fixed-variant);
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: var(--symo-rounded-default);
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+  min-height: 46px;
+  box-sizing: border-box;
+}
+
+.btn-symo-revenue:hover,
+.btn-symo-revenue:focus {
+  background-color: #6f02ff;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.btn-symo-revenue.btn-sm {
+  padding: 0.25rem 0.5rem;
+  min-height: auto;
+}
+
+/* Nav Pills para Modal de Lançamentos */
+.nav-pills-symo {
+  background-color: #f0edf5;
+  padding: 0.35rem;
+  border-radius: var(--symo-rounded-default, 8px);
+  gap: 0.35rem;
+}
+
+.nav-pills-symo .nav-link {
+  color: var(--symo-primary-brand, #6f02ff);
+  font-weight: 600;
+  border-radius: calc(var(--symo-rounded-default, 8px) - 2px);
+  padding: 0.55rem 1rem;
+  border: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-pills-symo .nav-link:hover {
+  color: var(--symo-primary, #5300c4);
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.nav-pills-symo .nav-link.active {
+  background-color: var(--symo-primary-brand, #6f02ff);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(111, 2, 255, 0.25);
+}
+
+.nav-pills-symo .nav-link.active.tab-despesa-active {
+  background-color: var(--symo-primary-brand, #6f02ff);
+  color: #ffffff;
+}
+
+.nav-pills-symo .nav-link.active.tab-receita-active {
+  background-color: var(--symo-primary-brand, #6f02ff);
+  color: #ffffff;
+}
+
 .btn-symo-status {
   width: 2rem;
   height: 2rem;

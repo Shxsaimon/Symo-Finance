@@ -44,10 +44,10 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
             <?php endfor; ?>
         </select>
 
-        <a href="<?= BASE_URL ?>/transacoes" class="btn-symo-primary d-flex align-items-center gap-2 text-nowrap text-decoration-none shadow-sm">
+        <button type="button" class="btn-symo-primary d-flex align-items-center gap-2 text-nowrap shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoLancamento">
             <i class="bi bi-plus-lg"></i>
             <span>Novo Lançamento</span>
-        </a>
+        </button>
     </form>
 </div>
 
@@ -513,5 +513,284 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
+
+    // -------------------------------------------------------------------------
+    // MODAL DE LANÇAMENTOS NO DASHBOARD: COMPORTAMENTO DE DESPESA
+    // -------------------------------------------------------------------------
+    const selectMeioDash = document.getElementById('dash_desp_meio');
+    const wrapContaDash = document.getElementById('dash_wrapper_select_conta');
+    const wrapCartaoDash = document.getElementById('dash_wrapper_select_cartao');
+    const wrapStatusDash = document.getElementById('dash_wrapper_status_despesa');
+    const selectContaDash = document.getElementById('dash_desp_conta');
+    const selectCartaoDash = document.getElementById('dash_desp_cartao');
+    const statusDespDash = document.getElementById('dash_desp_status');
+    const alertaLimiteDash = document.getElementById('dash_desp_alerta_limite');
+    const valorDespDash = document.getElementById('dash_desp_valor');
+    const checkParceladoDash = document.getElementById('dash_check_parcelado');
+    const wrapParcelasDash = document.getElementById('dash_wrapper_parcelas');
+
+    function toggleDashExpensePayment() {
+        if (!selectMeioDash) return;
+        const selectedMethod = selectMeioDash.selectedOptions[0];
+        const isCredit = selectedMethod?.dataset.ehCredito === '1';
+
+        if (wrapContaDash) wrapContaDash.classList.toggle('d-none', isCredit);
+        if (wrapCartaoDash) wrapCartaoDash.classList.toggle('d-none', !isCredit);
+        if (wrapStatusDash) wrapStatusDash.classList.toggle('d-none', isCredit);
+
+        if (selectContaDash) {
+            selectContaDash.disabled = isCredit;
+            selectContaDash.required = !isCredit;
+        }
+        if (selectCartaoDash) {
+            selectCartaoDash.disabled = !isCredit;
+            selectCartaoDash.required = isCredit;
+        }
+        if (statusDespDash) {
+            statusDespDash.disabled = isCredit;
+        }
+        if (alertaLimiteDash) {
+            alertaLimiteDash.classList.add('d-none');
+            if (isCredit && selectCartaoDash?.selectedOptions[0]?.value) {
+                const disponivel = Number(selectCartaoDash.selectedOptions[0].dataset.limiteDisponivel || 0);
+                const valor = Number(valorDespDash?.value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+                if (valor > disponivel) {
+                    alertaLimiteDash.classList.remove('d-none');
+                }
+            }
+        }
+    }
+
+    selectMeioDash?.addEventListener('change', toggleDashExpensePayment);
+    selectCartaoDash?.addEventListener('change', toggleDashExpensePayment);
+    valorDespDash?.addEventListener('input', toggleDashExpensePayment);
+    toggleDashExpensePayment();
+
+    if (checkParceladoDash && wrapParcelasDash) {
+        checkParceladoDash.addEventListener('change', () => {
+            if (checkParceladoDash.checked) {
+                wrapParcelasDash.classList.remove('d-none');
+            } else {
+                wrapParcelasDash.classList.add('d-none');
+            }
+        });
+    }
 });
 </script>
+
+<!-- Modal Único de Lançamento no Dashboard (Abas Despesa e Receita) -->
+<div class="modal fade" id="modalNovoLancamento" tabindex="-1" aria-labelledby="modalNovoLancamentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content symo-modal-content">
+            <div class="modal-header border-bottom" style="background-color: var(--symo-primary-brand); color: white;">
+                <h5 class="modal-title fw-bold mb-0" id="modalNovoLancamentoLabel">
+                    <i class="bi bi-plus-circle me-1"></i> Novo Lançamento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Seletor de Abas: Despesa / Receita -->
+                <ul class="nav nav-pills nav-pills-symo nav-fill mb-4" id="tabNovoLancamento" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active tab-despesa-active d-flex align-items-center justify-content-center gap-2" id="pill-despesa-tab" data-bs-toggle="pill" data-bs-target="#pane-modal-despesa" type="button" role="tab" aria-controls="pane-modal-despesa" aria-selected="true">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            <span>Despesa</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link tab-receita-active d-flex align-items-center justify-content-center gap-2" id="pill-receita-tab" data-bs-toggle="pill" data-bs-target="#pane-modal-receita" type="button" role="tab" aria-controls="pane-modal-receita" aria-selected="false">
+                            <i class="bi bi-arrow-down-circle"></i>
+                            <span>Receita</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="tabNovoLancamentoContent">
+                    <!-- ABA 1: NOVA DESPESA -->
+                    <div class="tab-pane fade show active" id="pane-modal-despesa" role="tabpanel" aria-labelledby="pill-despesa-tab">
+                        <form action="<?= BASE_URL ?>/transacoes/salvar" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
+                            <input type="hidden" name="tipo" value="despesa">
+                            <input type="hidden" name="redirect_to" value="/dashboard?mes=<?= $mes ?>&ano=<?= $ano ?>">
+
+                            <div class="mb-3">
+                                <label for="dash_desp_descricao" class="form-label fw-semibold">Descrição</label>
+                                <input type="text" class="form-control" id="dash_desp_descricao" name="descricao" placeholder="Ex: Supermercado, Aluguel, Farmácia" required>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label for="dash_desp_valor" class="form-label fw-semibold">Valor (R$)</label>
+                                    <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-danger" id="dash_desp_valor" name="valor" placeholder="R$ 0,00" required>
+                                </div>
+                                <div class="col-6">
+                                    <label for="dash_desp_data" class="form-label fw-semibold">Data da Compra</label>
+                                    <input type="date" class="form-control" id="dash_desp_data" name="data_transacao" value="<?= date('Y-m-d') ?>" required>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label for="dash_desp_categoria" class="form-label fw-semibold">Categoria</label>
+                                    <select class="form-select" id="dash_desp_categoria" name="categoria_id" required>
+                                        <?php foreach ($categoriasDespesa as $cat): ?>
+                                            <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="dash_desp_meio" class="form-label fw-semibold">Forma de Pagamento</label>
+                                    <select class="form-select" id="dash_desp_meio" name="meio_pagamento_id" required>
+                                        <option value="" selected disabled>Selecione</option>
+                                        <?php foreach ($meiosPagamento as $mp): ?>
+                                            <option value="<?= $mp['id'] ?>" data-eh-credito="<?= in_array($mp['eh_credito'], [true, 1, '1', 't', 'true'], true) ? '1' : '0' ?>">
+                                                <?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="dash_wrapper_select_conta">
+                                <label for="dash_desp_conta" class="form-label fw-semibold">Conta Bancária</label>
+                                <select class="form-select" id="dash_desp_conta" name="conta_id">
+                                    <option value="" selected disabled>Selecione uma conta</option>
+                                    <?php foreach ($contas as $acc): ?>
+                                        <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Select Condicional: Cartão de Crédito -->
+                            <div class="mb-3 d-none" id="dash_wrapper_select_cartao">
+                                <label for="dash_desp_cartao" class="form-label fw-semibold">Cartão de Crédito</label>
+                                <select class="form-select" id="dash_desp_cartao" name="cartao_credito_id" disabled>
+                                    <option value="" selected disabled>Selecione um cartão</option>
+                                    <?php foreach ($cartoes as $c): ?>
+                                        <?php if ($c['status'] === 'ativo'): ?>
+                                            <option value="<?= $c['id'] ?>" data-limite-disponivel="<?= htmlspecialchars((string) $c['limite_disponivel'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <?= htmlspecialchars($c['nome'], ENT_QUOTES, 'UTF-8') ?> (Disp.: <?= FormatHelper::currency((float) $c['limite_disponivel']) ?>)
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="alert alert-warning py-2 d-none" id="dash_desp_alerta_limite" role="status">
+                                A compra ultrapassa o limite disponível do cartão. O lançamento será permitido, mas confira o limite com a instituição.
+                            </div>
+
+                            <!-- Opção de Parcelamento -->
+                            <div class="p-3 bg-light border rounded mb-3">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="dash_check_parcelado" name="parcelado" value="1">
+                                    <label class="form-check-label fw-semibold" for="dash_check_parcelado">Compra Parcelada</label>
+                                </div>
+                                <div class="d-none" id="dash_wrapper_parcelas">
+                                    <label for="dash_desp_total_parcelas" class="form-label small fw-semibold">Quantidade de Parcelas (2 a 72x)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control text-center tabular-nums" id="dash_desp_total_parcelas" name="total_parcelas" min="2" max="72" value="2">
+                                        <span class="input-group-text">parcelas mensais</span>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">O sistema gerará um lançamento por parcela e exibirá a numeração separadamente ao lado da descrição.</small>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3" id="dash_wrapper_status_despesa">
+                                <div class="col-12">
+                                    <label for="dash_desp_status" class="form-label fw-semibold">Status Inicial</label>
+                                    <select class="form-select" id="dash_desp_status" name="status">
+                                        <option value="pago" selected>Pago (Já liquidado)</option>
+                                        <option value="pendente">Pendente (A Pagar)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="dash_desp_obs" class="form-label small text-muted">Observações</label>
+                                <textarea class="form-control" id="dash_desp_obs" name="observacoes" rows="2" placeholder="Notas adicionais (opcional)"></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn-symo-primary">Salvar Despesa</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ABA 2: NOVA RECEITA -->
+                    <div class="tab-pane fade" id="pane-modal-receita" role="tabpanel" aria-labelledby="pill-receita-tab">
+                        <form action="<?= BASE_URL ?>/transacoes/salvar" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
+                            <input type="hidden" name="tipo" value="receita">
+                            <input type="hidden" name="redirect_to" value="/dashboard?mes=<?= $mes ?>&ano=<?= $ano ?>">
+
+                            <div class="mb-3">
+                                <label for="dash_rec_descricao" class="form-label fw-semibold">Descrição</label>
+                                <input type="text" class="form-control" id="dash_rec_descricao" name="descricao" placeholder="Ex: Salário Mensal, Freelance, Rendimentos" required>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label for="dash_rec_valor" class="form-label fw-semibold">Valor (R$)</label>
+                                    <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-success" id="dash_rec_valor" name="valor" placeholder="R$ 0,00" required>
+                                </div>
+                                <div class="col-6">
+                                    <label for="dash_rec_data" class="form-label fw-semibold">Data de Recebimento</label>
+                                    <input type="date" class="form-control" id="dash_rec_data" name="data_transacao" value="<?= date('Y-m-d') ?>" required>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label for="dash_rec_categoria" class="form-label fw-semibold">Categoria</label>
+                                    <select class="form-select" id="dash_rec_categoria" name="categoria_id" required>
+                                        <?php foreach ($categoriasReceita as $cat): ?>
+                                            <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="dash_rec_conta" class="form-label fw-semibold">Conta de Destino</label>
+                                    <select class="form-select" id="dash_rec_conta" name="conta_id" required>
+                                        <?php foreach ($contas as $acc): ?>
+                                            <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label for="dash_rec_meio" class="form-label fw-semibold">Meio de Pagamento</label>
+                                    <select class="form-select" id="dash_rec_meio" name="meio_pagamento_id" required>
+                                        <?php foreach ($meiosPagamento as $mp): ?>
+                                            <option value="<?= $mp['id'] ?>"><?= htmlspecialchars($mp['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="dash_rec_status" class="form-label fw-semibold">Status Inicial</label>
+                                    <select class="form-select" id="dash_rec_status" name="status">
+                                        <option value="recebido" selected>Recebido (Efetivado)</option>
+                                        <option value="pendente">Pendente (A Receber)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="dash_rec_obs" class="form-label small text-muted">Observações</label>
+                                <textarea class="form-control" id="dash_rec_obs" name="observacoes" rows="2" placeholder="Notas adicionais (opcional)"></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn-symo-revenue">Salvar Receita</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
