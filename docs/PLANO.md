@@ -28,6 +28,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 20:** Perfil do usuário e acesso pela navegação
 - **Fase 21:** Correção do fluxo de despesas e ciclos de faturas de cartão
 - **Fase 22:** Modal de lançamento unificado no Dashboard e padronização visual de receitas
+- **Fase 23:** Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
 
 ---
 
@@ -447,3 +448,22 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Critérios de aceite:** O botão "+ Novo Lançamento" do Dashboard abre o modal com abas de Despesa e Receita; salvar um registro pelo modal atualiza a base e retorna ao Dashboard com os KPIs e gráficos recalculados; botões de receita seguem o tom roxo secundário sem o uso de verde Bootstrap.
 - **Arquivos/Pastas Envolvidos:** `public/css/custom.css`, `app/Controllers/DashboardController.php`, `app/Views/dashboard/index.php`, `app/Views/transactions/index.php`, `docs/PLANO.md`, `docs/STATUS.md`.
 - **Dependências:** Fases 5, 8 e 10 concluídas.
+
+### Fase 23 — Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
+- **Estado:** Concluída; implementada e validada em desenvolvimento.
+- **Objetivo:** Garantir que o card de cartão de crédito priorize faturas com status `fechada` pendentes de pagamento antes de exibir o ciclo aberto, e alinhar a geração de parcelas futuras de cartão de crédito para serem lançadas no dia de abertura da sua respectiva fatura (dia do fechamento anterior).
+- **Regras já alinhadas:**
+  - No card de resumo de cartões (`CreditCard::getCurrentOpenInvoice`), verificar primeiro a existência de fatura `fechada` não quitada; se houver, exibi-la imediatamente com a badge Fechada. Somente na ausência de fatura fechada pendente, exibir a fatura do ciclo aberto atual.
+  - A 1ª parcela de compras no cartão preserva a data real da transação para determinação do ciclo de início.
+  - As parcelas 2 a $N$ são vinculadas aos ciclos mensais consecutivos seguintes e registradas contabilmente no dia de abertura da respectiva fatura (dia do fechamento anterior do cartão).
+  - O fechamento e a abertura de fatura permanecem fixos no dia nominal (mesmo em fins de semana e feriados); apenas a data de vencimento é ajustada para dia útil.
+- **Checklist de implementação:**
+  - [x] Ajustar `CreditCard::getCurrentOpenInvoice` para consultar prioritariamente faturas fechadas pendentes (`status = 'fechada'`) antes da fatura do ciclo aberto.
+  - [x] Adicionar métodos `CreditCardCalendar::invoiceOpeningDate` e `CreditCardCalendar::nextInvoiceReference` para cálculo de abertura de ciclo e progressão de referências de fatura.
+  - [x] Atualizar `Transaction::createInstallmentTransactions` para registrar parcelas 2 a $N$ no cartão na data de abertura da fatura correspondente.
+  - [x] Atualizar a sincronização de parcelas subsequentes em `Transaction::update` para manter a coerência de datas na edição.
+  - [x] Atualizar o `docs/FSD.md` com as regras aprovadas.
+  - [x] Validar cenários com testes unitários de cálculo de datas e ausência de regressões com `php -l` e `git diff --check`.
+- **Critérios de aceite:** Cards de cartões exibem faturas fechadas não pagas com prioridade máxima; compras parceladas no cartão registram parcelas 2 em diante na data de abertura da fatura; compras parceladas fora do cartão mantêm o dia da compra.
+- **Arquivos/Pastas Envolvidos:** `app/Models/CreditCard.php`, `app/Helpers/CreditCardCalendar.php`, `app/Models/Transaction.php`, `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md`.
+- **Dependências:** Fases 7, 8, 21 e 22 concluídas.

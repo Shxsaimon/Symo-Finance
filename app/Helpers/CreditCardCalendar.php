@@ -29,6 +29,48 @@ final class CreditCardCalendar
     }
 
     /**
+     * Retorna o mês e ano de referência para um ciclo de fatura deslocado em N meses.
+     *
+     * @param int $startMonth
+     * @param int $startYear
+     * @param int $monthOffset
+     * @return array{mes: int, ano: int}
+     */
+    public static function nextInvoiceReference(int $startMonth, int $startYear, int $monthOffset): array
+    {
+        if ($monthOffset < 0) {
+            throw new InvalidArgumentException('O deslocamento da fatura não pode ser negativo.');
+        }
+        $start = new DateTimeImmutable(sprintf('%04d-%02d-01', $startYear, $startMonth));
+        $target = $start->modify("+{$monthOffset} months");
+        return [
+            'mes' => (int) $target->format('n'),
+            'ano' => (int) $target->format('Y'),
+        ];
+    }
+
+    /**
+     * Retorna a data de abertura do ciclo de uma fatura de cartão de crédito.
+     * O ciclo abre no dia de fechamento do mês anterior ao fechamento da fatura.
+     *
+     * @param int $closingDay
+     * @param int $invoiceMonth Mês de referência (fechamento) da fatura
+     * @param int $invoiceYear  Ano de referência (fechamento) da fatura
+     * @return string Data no formato Y-m-d
+     */
+    public static function invoiceOpeningDate(int $closingDay, int $invoiceMonth, int $invoiceYear): string
+    {
+        $closing = self::dateForMonth($invoiceYear, $invoiceMonth, $closingDay);
+        $prevMonth = $closing->modify('first day of previous month');
+        $opening = self::dateForMonth(
+            (int) $prevMonth->format('Y'),
+            (int) $prevMonth->format('n'),
+            $closingDay
+        );
+        return $opening->format('Y-m-d');
+    }
+
+    /**
      * Mantém o dia original das parcelas e limita a data ao último dia do mês de destino.
      */
     public static function installmentDate(string $firstDate, int $monthOffset): string

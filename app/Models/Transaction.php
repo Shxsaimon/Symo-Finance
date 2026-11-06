@@ -211,20 +211,42 @@ class Transaction extends Model
         try {
             $invoiceModel = new CreditCardInvoice();
 
+            $closingDay = 0;
+            $baseInvoiceRef = null;
+            if ($cartaoCreditoId !== null) {
+                $card = (new CreditCard())->find($cartaoCreditoId);
+                $closingDay = (int) ($card['dia_fechamento'] ?? 0);
+                $baseInvoiceRef = CreditCardCalendar::invoiceReferenceForPurchase($dataPrimeiraParcela, $closingDay);
+            }
+
             for ($i = 1; $i <= $totalParcelas; $i++) {
                 // Primeira parcela absorve o resíduo para fechar o valor exato
                 $valorParcela = ($i === 1) ? round($valorBase + $residuo, 2) : $valorBase;
                 
-                // Data da parcela atual (mês a mês)
-                $dataTransacao = CreditCardCalendar::installmentDate($dataPrimeiraParcela, $i - 1);
-                $dataVencimento = $dataTransacao;
                 $faturaId = null;
                 $status = 'pendente';
                 $contaParcelaId = $contaId;
 
-                // Se for cartão, vincula à fatura do mês correspondente
-                if ($cartaoCreditoId !== null) {
-                    $fatura = $invoiceModel->getOrCreateInvoiceForPurchase($cartaoCreditoId, $dataTransacao);
+                // Se for cartão, vincula à fatura do ciclo consecutivo correspondente
+                if ($cartaoCreditoId !== null && $baseInvoiceRef !== null) {
+                    $offset = $i - 1;
+                    $targetInvoiceRef = CreditCardCalendar::nextInvoiceReference(
+                        $baseInvoiceRef['mes'],
+                        $baseInvoiceRef['ano'],
+                        $offset
+                    );
+                    $targetMonth = $targetInvoiceRef['mes'];
+                    $targetYear  = $targetInvoiceRef['ano'];
+
+                    // Parcela 1 mantém a data real da compra.
+                    // Parcelas futuras (2..N) caem na data de abertura da respectiva fatura (dia do fechamento anterior).
+                    if ($i === 1) {
+                        $dataTransacao = $dataPrimeiraParcela;
+                    } else {
+                        $dataTransacao = CreditCardCalendar::invoiceOpeningDate($closingDay, $targetMonth, $targetYear);
+                    }
+
+                    $fatura = $invoiceModel->getOrCreateInvoice($cartaoCreditoId, $targetMonth, $targetYear);
                     $fatura = $invoiceModel->findForUpdate((int) $fatura['id'], $userId)
                         ?? throw new InvalidArgumentException('A fatura da parcela não está disponível.');
                     if ($fatura['status'] === 'paga') {
@@ -233,9 +255,10 @@ class Transaction extends Model
                     $faturaId = (int) $fatura['id'];
                     $faturasAfetadas[$faturaId] = true;
                     $contaParcelaId = null;
-                    if (!empty($fatura['data_vencimento'])) {
-                        $dataVencimento = $fatura['data_vencimento'];
-                    }
+                    $dataVencimento = !empty($fatura['data_vencimento']) ? $fatura['data_vencimento'] : $dataTransacao;
+                } else {
+                    $dataTransacao = CreditCardCalendar::installmentDate($dataPrimeiraParcela, $i - 1);
+                    $dataVencimento = $dataTransacao;
                 }
 
                 $sql = "INSERT INTO `transacoes` (
@@ -495,20 +518,40 @@ class Transaction extends Model
                 $stmtNext->execute();
                 $proximasParcelas = $stmtNext->fetchAll();
 
+                $cardEdit = null;
+                $closingDayEdit = 0;
+                $currentInvoiceRef = null;
+                if (!empty($old['cartao_credito_id'])) {
+                    $cardEdit = (new CreditCard())->find((int) $old['cartao_credito_id']);
+                    $closingDayEdit = (int) ($cardEdit['dia_fechamento'] ?? 0);
+                    $currentInvoiceRef = CreditCardCalendar::invoiceReferenceForPurchase($dataTransacao, $closingDayEdit);
+                }
+
                 foreach ($proximasParcelas as $parcela) {
                     $offset = (int) $parcela['numero_parcela'] - $numeroParcelaAtual;
-                    $novaDataParcela = CreditCardCalendar::installmentDate($dataTransacao, $offset);
 
-                    if (!empty($parcela['fatura_id']) && !empty($parcela['cartao_credito_id'])) {
+                    if (!empty($parcela['fatura_id']) && !empty($parcela['cartao_credito_id']) && $currentInvoiceRef !== null) {
+                        $targetInvoiceRef = CreditCardCalendar::nextInvoiceReference(
+                            $currentInvoiceRef['mes'],
+                            $currentInvoiceRef['ano'],
+                            $offset
+                        );
+                        $novaDataParcela = CreditCardCalendar::invoiceOpeningDate(
+                            $closingDayEdit,
+                            $targetInvoiceRef['mes'],
+                            $targetInvoiceRef['ano']
+                        );
+
                         $invoiceModel = $invoiceModel ?? new CreditCardInvoice();
                         $oldParcelaInvoice = $invoiceModel->findForUpdate((int) $parcela['fatura_id'], $userId);
                         if (!$oldParcelaInvoice || $oldParcelaInvoice['status'] === 'paga') {
                             continue;
                         }
 
-                        $novaFaturaParcela = $invoiceModel->getOrCreateInvoiceForPurchase(
+                        $novaFaturaParcela = $invoiceModel->getOrCreateInvoice(
                             (int) $parcela['cartao_credito_id'],
-                            $novaDataParcela
+                            $targetInvoiceRef['mes'],
+                            $targetInvoiceRef['ano']
                         );
                         $novaFaturaParcela = $invoiceModel->findForUpdate((int) $novaFaturaParcela['id'], $userId)
                             ?? throw new InvalidArgumentException('A fatura de destino de uma das parcelas não está disponível.');

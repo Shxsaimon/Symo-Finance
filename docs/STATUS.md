@@ -63,6 +63,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Concluída |
 | **Documentação Final** | Criação do Guia de Manutenção, Guia de Mudanças e Contexto para Agentes em Modo Manutenção | Concluída |
 | **Fase 22** | Modal de lançamento unificado no Dashboard e padronização visual de receitas | Concluída |
+| **Fase 23** | Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura | Concluída |
 
 ---
 
@@ -326,4 +327,13 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Adicionar `redirect_to` nos formulários e no método `TransactionController::store` para permanecer no Dashboard com o período de mês/ano selecionado preservado após o lançamento.
 - [x] Atualizar o botão de "Nova Receita" na view de lançamentos (`app/Views/transactions/index.php`) para o estilo `.btn-symo-revenue`.
 - [x] Validar ausência de conflitos e espaços residuais com `git diff --check` e sintaxe estática com `php -l`.
+- **Estado:** Concluída; implementada e validada em desenvolvimento.
+
+### Fase 23 — Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
+- [x] Ajustar consulta em `CreditCard::getCurrentOpenInvoice` para dar prioridade máxima a faturas fechadas pendentes de pagamento (`status = 'fechada'`), exibindo a fatura aberta do ciclo corrente somente na ausência de faturas fechadas não pagas.
+- [x] Criar métodos `invoiceOpeningDate` e `nextInvoiceReference` em `CreditCardCalendar` para cálculo determinístico do primeiro dia do ciclo e transição de faturas consecutivas.
+- [x] Atualizar rotina de criação de compras parceladas (`Transaction::createInstallmentTransactions`): primeira parcela na data da compra e parcelas 2 em diante registradas na data de abertura da respectiva fatura mensal.
+- [x] Atualizar sincronização de parcelas subsequentes na edição de transações (`Transaction::update`) para manter consistência das datas no cartão.
+- [x] Alinhar especificações no documento funcional `docs/FSD.md`.
+- [x] Validar cenários de datas e faturas através de testes focados e checagens estáticas com `php -l` e `git diff --check`.
 - **Estado:** Concluída; implementada e validada em desenvolvimento.
