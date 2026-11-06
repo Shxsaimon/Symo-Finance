@@ -29,6 +29,7 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 21:** Correção do fluxo de despesas e ciclos de faturas de cartão
 - **Fase 22:** Modal de lançamento unificado no Dashboard e padronização visual de receitas
 - **Fase 23:** Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
+- **Fase 24:** Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas
 
 ---
 
@@ -467,3 +468,24 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Critérios de aceite:** Cards de cartões exibem faturas fechadas não pagas com prioridade máxima; compras parceladas no cartão registram parcelas 2 em diante na data de abertura da fatura; compras parceladas fora do cartão mantêm o dia da compra.
 - **Arquivos/Pastas Envolvidos:** `app/Models/CreditCard.php`, `app/Helpers/CreditCardCalendar.php`, `app/Models/Transaction.php`, `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md`.
 - **Dependências:** Fases 7, 8, 21 e 22 concluídas.
+
+### Fase 24 — Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas
+- **Estado:** Concluída; implementada e validada em desenvolvimento.
+- **Objetivo:** Permitir transparência e controle na alocação de compras em cartão de crédito, calculando e exibindo automaticamente a fatura sugerida com seu saldo acumulado e status, oferecendo flexibilidade para o usuário selecionar outra fatura aberta e aplicando fallback inteligente quando a data informada recair em um ciclo já pago.
+- **Regras já alinhadas:**
+  - Em compras no crédito, um campo "Fatura de Destino" exibe a fatura calculada pela data informada com referência, status e total acumulado.
+  - O usuário pode alterar a fatura de destino no modal, selecionando qualquer fatura aberta ou fechada não paga do mesmo cartão.
+  - Faturas com status `paga` são blindadas e desabilitadas para seleção.
+  - Caso o usuário não altere e a data da compra recaia em uma fatura já paga, o sistema aplica fallback automático alocando a compra na próxima fatura aberta e exibindo alerta contextual.
+  - Em compras parceladas, a fatura selecionada recebe a 1ª parcela e as subsequentes seguem a progressão mensal de abertura.
+  - O documento funcional `docs/FSD.md` foi revisado para remover qualquer menção obsoleta a mover faturas pós-lançamento.
+- **Checklist de implementação:**
+  - [x] Criar método `CreditCardInvoice::getInvoicesForPurchaseSelector` para resolver faturas elegíveis, fatura sugerida e mensagem de fallback.
+  - [x] Criar endpoint `GET /cartoes/faturas-disponiveis/{id}` em `CreditCardController` e registrar rota em `index.php`.
+  - [x] Atualizar `Transaction::create` e `Transaction::createInstallmentTransactions` para aceitar `fatura_id` e acionar fallback automático para a próxima fatura aberta se a calculada estiver paga.
+  - [x] Adicionar campo dinâmico de fatura de destino e alerta de fallback nos modais de despesa do Dashboard (`app/Views/dashboard/index.php`) e da tela de lançamentos (`app/Views/transactions/index.php`).
+  - [x] Atualizar regras e blindagem de faturas pagas em `docs/FSD.md`.
+  - [x] Executar verificações de sintaxe (`php -l`) e ausência de conflitos (`git diff --check`).
+- **Critérios de aceite:** O modal de despesa exibe a fatura calculada com total e status ao selecionar crédito; o usuário pode alterar para outra fatura aberta; datas em faturas já pagas são automaticamente alocadas na próxima fatura aberta com aviso claro; faturas pagas permanecem blindadas.
+- **Arquivos/Pastas Envolvidos:** `app/Models/CreditCardInvoice.php`, `app/Controllers/CreditCardController.php`, `index.php`, `app/Models/Transaction.php`, `app/Views/dashboard/index.php`, `app/Views/transactions/index.php`, `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md`.
+- **Dependências:** Fases 7, 8, 21, 22 e 23 concluídas.

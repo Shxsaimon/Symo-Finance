@@ -64,6 +64,7 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Documentação Final** | Criação do Guia de Manutenção, Guia de Mudanças e Contexto para Agentes em Modo Manutenção | Concluída |
 | **Fase 22** | Modal de lançamento unificado no Dashboard e padronização visual de receitas | Concluída |
 | **Fase 23** | Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura | Concluída |
+| **Fase 24** | Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas | Concluída |
 
 ---
 
@@ -336,4 +337,14 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Atualizar sincronização de parcelas subsequentes na edição de transações (`Transaction::update`) para manter consistência das datas no cartão.
 - [x] Alinhar especificações no documento funcional `docs/FSD.md`.
 - [x] Validar cenários de datas e faturas através de testes focados e checagens estáticas com `php -l` e `git diff --check`.
+- **Estado:** Concluída; implementada e validada em desenvolvimento.
+
+### Fase 24 — Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas
+- [x] Criar método `CreditCardInvoice::getInvoicesForPurchaseSelector` para resolver faturas elegíveis, fatura sugerida e mensagem de fallback.
+- [x] Criar endpoint `GET /cartoes/faturas-disponiveis/{id}` em `CreditCardController` e registrar rota em `index.php`.
+- [x] Atualizar `Transaction::create` e `Transaction::createInstallmentTransactions` para aceitar `fatura_id` e acionar fallback automático para a próxima fatura aberta se a calculada estiver paga.
+- [x] Adicionar campo dinâmico de fatura de destino e alerta de fallback nos modais de despesa do Dashboard (`app/Views/dashboard/index.php`) e da tela de lançamentos (`app/Views/transactions/index.php`).
+- [x] Padronizar visualmente campos de entrada monetária e seletores (altura padrão de 38px e remoção do `fs-5` dos inputs de valor nos modais de Despesa, Receita, Edição e Transferência).
+- [x] Atualizar regras e blindagem de faturas pagas em `docs/FSD.md`.
+- [x] Validar integridade e ausência de regressões com `php -l` e `git diff --check`.
 - **Estado:** Concluída; implementada e validada em desenvolvimento.

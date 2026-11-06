@@ -303,4 +303,30 @@ class CreditCardController extends Controller
         $redirect = (string) ($_POST['redirect_to'] ?? '/cartoes');
         $this->redirect($redirect, '/cartoes');
     }
+
+    /**
+     * Retorna em JSON as faturas disponíveis de um cartão para o seletor de lançamento.
+     *
+     * @param int|string $id ID do cartão
+     * @return void
+     */
+    public function getInvoicesForSelector(int|string $id): void
+    {
+        AuthHelper::requireLogin();
+        $cardId = (int) $id;
+        $userId = (int) AuthHelper::id();
+        $purchaseDate = !empty($_GET['data_transacao']) ? trim((string) $_GET['data_transacao']) : date('Y-m-d');
+
+        try {
+            $data = $this->invoiceModel->getInvoicesForPurchaseSelector($cardId, $purchaseDate, $userId);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(400);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $e->getMessage()]);
+            exit;
+        }
+    }
 }

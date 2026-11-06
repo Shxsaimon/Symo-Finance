@@ -127,6 +127,111 @@ class CreditCardInvoice extends Model
     }
 
     /**
+     * Retorna a lista de faturas ativas/disponíveis de um cartão para o seletor de lançamento,
+     * identificando a fatura sugerida pela data da compra e fornecendo fallback automático se estiver paga.
+     *
+     * @param int $cardId
+     * @param string $purchaseDate
+     * @param int $userId
+     * @return array{faturas: array, fatura_sugerida_id: ?int, fallback_usado: bool, mensagem_fallback: ?string}
+     */
+    public function getInvoicesForPurchaseSelector(int $cardId, string $purchaseDate, int $userId): array
+    {
+        $card = (new CreditCard())->find($cardId);
+        if (!$card || (int) $card['usuario_id'] !== $userId) {
+            throw new InvalidArgumentException('Cartão de crédito não encontrado.');
+        }
+
+        $this->closeMaturedInvoicesForCard($cardId, $userId);
+
+        $diaFechamento = (int) $card['dia_fechamento'];
+        $calcRef = CreditCardCalendar::invoiceReferenceForPurchase($purchaseDate, $diaFechamento);
+
+        // Garante que a fatura calculada e a subsequente existam
+        $this->getOrCreateInvoice($cardId, $calcRef['mes'], $calcRef['ano']);
+        $nextRef = CreditCardCalendar::nextInvoiceReference($calcRef['mes'], $calcRef['ano'], 1);
+        $this->getOrCreateInvoice($cardId, $nextRef['mes'], $nextRef['ano']);
+
+        // Busca faturas do cartão (não pagas ou que correspondam ao ciclo da data)
+        $sql = "SELECT f.*
+                FROM `faturas_cartao` f
+                INNER JOIN `cartoes_credito` c ON c.id = f.cartao_credito_id
+                WHERE f.cartao_credito_id = :card_id
+                  AND c.usuario_id = :usuario_id
+                  AND (f.status != 'paga' OR (f.mes_referencia = :calc_mes AND f.ano_referencia = :calc_ano))
+                ORDER BY f.ano_referencia ASC, f.mes_referencia ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':card_id', $cardId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':calc_mes', $calcRef['mes'], PDO::PARAM_INT);
+        $stmt->bindValue(':calc_ano', $calcRef['ano'], PDO::PARAM_INT);
+        $stmt->execute();
+        $invoices = $stmt->fetchAll();
+
+        $faturaCalculada = null;
+        foreach ($invoices as $inv) {
+            if ((int) $inv['mes_referencia'] === $calcRef['mes'] && (int) $inv['ano_referencia'] === $calcRef['ano']) {
+                $faturaCalculada = $inv;
+                break;
+            }
+        }
+
+        $fallbackUsado = false;
+        $mensagemFallback = null;
+        $faturaSugeridaId = null;
+
+        if ($faturaCalculada !== null && $faturaCalculada['status'] === 'paga') {
+            $fallbackUsado = true;
+            // Procura a primeira fatura aberta posterior
+            foreach ($invoices as $inv) {
+                if ($inv['status'] !== 'paga' && (
+                    (int) $inv['ano_referencia'] > $calcRef['ano'] ||
+                    ((int) $inv['ano_referencia'] === $calcRef['ano'] && (int) $inv['mes_referencia'] > $calcRef['mes'])
+                )) {
+                    $faturaSugeridaId = (int) $inv['id'];
+                    $refFormatada = sprintf('%02d/%04d', $inv['mes_referencia'], $inv['ano_referencia']);
+                    $calcFormatada = sprintf('%02d/%04d', $calcRef['mes'], $calcRef['ano']);
+                    $mensagemFallback = "A fatura de {$calcFormatada} já está paga. A compra foi alocada automaticamente na próxima fatura aberta ({$refFormatada}).";
+                    break;
+                }
+            }
+        } elseif ($faturaCalculada !== null) {
+            $faturaSugeridaId = (int) $faturaCalculada['id'];
+        }
+
+        $faturasFormatadas = [];
+        foreach ($invoices as $inv) {
+            $ref = sprintf('%02d/%04d', $inv['mes_referencia'], $inv['ano_referencia']);
+            $statusLabel = ucfirst((string) $inv['status']);
+            $valorFormatado = FormatHelper::currency((float) $inv['valor_total']);
+            $isPaga = ($inv['status'] === 'paga');
+
+            $label = "Fatura {$ref} ({$statusLabel} — Total atual: {$valorFormatado})";
+            if ($isPaga) {
+                $label = "Fatura {$ref} (Paga — indisponível)";
+            }
+
+            $faturasFormatadas[] = [
+                'id'             => (int) $inv['id'],
+                'mes_referencia' => (int) $inv['mes_referencia'],
+                'ano_referencia' => (int) $inv['ano_referencia'],
+                'status'         => $inv['status'],
+                'valor_total'    => (float) $inv['valor_total'],
+                'label'          => $label,
+                'paga'           => $isPaga,
+            ];
+        }
+
+        return [
+            'faturas'            => $faturasFormatadas,
+            'fatura_sugerida_id' => $faturaSugeridaId,
+            'fallback_usado'     => $fallbackUsado,
+            'mensagem_fallback'  => $mensagemFallback,
+        ];
+    }
+
+    /**
      * Fecha faturas abertas cujo dia de fechamento já passou. Chamado sob demanda no runtime serverless.
      */
     public function closeMaturedInvoicesForCard(int $cardId, int $userId): void

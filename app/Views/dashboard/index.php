@@ -520,14 +520,68 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectMeioDash = document.getElementById('dash_desp_meio');
     const wrapContaDash = document.getElementById('dash_wrapper_select_conta');
     const wrapCartaoDash = document.getElementById('dash_wrapper_select_cartao');
+    const wrapFaturaDash = document.getElementById('dash_wrapper_select_fatura');
     const wrapStatusDash = document.getElementById('dash_wrapper_status_despesa');
     const selectContaDash = document.getElementById('dash_desp_conta');
     const selectCartaoDash = document.getElementById('dash_desp_cartao');
+    const selectFaturaDash = document.getElementById('dash_desp_fatura');
+    const dataCompraDash = document.getElementById('dash_desp_data');
+    const alertaFallbackDash = document.getElementById('dash_alerta_fatura_fallback');
+    const msgFallbackDash = document.getElementById('dash_msg_fatura_fallback');
     const statusDespDash = document.getElementById('dash_desp_status');
     const alertaLimiteDash = document.getElementById('dash_desp_alerta_limite');
     const valorDespDash = document.getElementById('dash_desp_valor');
     const checkParceladoDash = document.getElementById('dash_check_parcelado');
     const wrapParcelasDash = document.getElementById('dash_wrapper_parcelas');
+
+    async function carregarFaturasDash() {
+        if (!selectCartaoDash || !selectCartaoDash.value || !dataCompraDash) return;
+        const cardId = selectCartaoDash.value;
+        const dataVal = dataCompraDash.value;
+        if (!cardId) return;
+
+        try {
+            if (selectFaturaDash) {
+                selectFaturaDash.innerHTML = '<option value="">Carregando faturas...</option>';
+                selectFaturaDash.disabled = true;
+            }
+            if (alertaFallbackDash) alertaFallbackDash.classList.add('d-none');
+
+            const resp = await fetch('<?= BASE_URL ?>/cartoes/faturas-disponiveis/' + cardId + '?data_transacao=' + encodeURIComponent(dataVal));
+            if (!resp.ok) throw new Error('Falha ao carregar faturas');
+            const res = await resp.json();
+
+            if (selectFaturaDash) {
+                selectFaturaDash.innerHTML = '';
+                if (res.faturas && res.faturas.length > 0) {
+                    res.faturas.forEach(inv => {
+                        const opt = document.createElement('option');
+                        opt.value = inv.id;
+                        opt.textContent = inv.label;
+                        if (inv.paga) {
+                            opt.disabled = true;
+                        }
+                        if (inv.id === res.fatura_sugerida_id) {
+                            opt.selected = true;
+                        }
+                        selectFaturaDash.appendChild(opt);
+                    });
+                    selectFaturaDash.disabled = false;
+                } else {
+                    selectFaturaDash.innerHTML = '<option value="" disabled selected>Nenhuma fatura disponível</option>';
+                }
+            }
+
+            if (res.fallback_usado && alertaFallbackDash && msgFallbackDash) {
+                msgFallbackDash.textContent = res.mensagem_fallback;
+                alertaFallbackDash.classList.remove('d-none');
+            }
+        } catch (e) {
+            if (selectFaturaDash) {
+                selectFaturaDash.innerHTML = '<option value="" disabled selected>Erro ao carregar faturas</option>';
+            }
+        }
+    }
 
     function toggleDashExpensePayment() {
         if (!selectMeioDash) return;
@@ -536,6 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (wrapContaDash) wrapContaDash.classList.toggle('d-none', isCredit);
         if (wrapCartaoDash) wrapCartaoDash.classList.toggle('d-none', !isCredit);
+        if (wrapFaturaDash) wrapFaturaDash.classList.toggle('d-none', !isCredit);
         if (wrapStatusDash) wrapStatusDash.classList.toggle('d-none', isCredit);
 
         if (selectContaDash) {
@@ -545,6 +600,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectCartaoDash) {
             selectCartaoDash.disabled = !isCredit;
             selectCartaoDash.required = isCredit;
+        }
+        if (selectFaturaDash) {
+            selectFaturaDash.disabled = !isCredit;
         }
         if (statusDespDash) {
             statusDespDash.disabled = isCredit;
@@ -559,10 +617,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        if (isCredit && selectCartaoDash?.value) {
+            carregarFaturasDash();
+        } else if (alertaFallbackDash) {
+            alertaFallbackDash.classList.add('d-none');
+        }
     }
 
     selectMeioDash?.addEventListener('change', toggleDashExpensePayment);
-    selectCartaoDash?.addEventListener('change', toggleDashExpensePayment);
+    selectCartaoDash?.addEventListener('change', () => {
+        toggleDashExpensePayment();
+        carregarFaturasDash();
+    });
+    dataCompraDash?.addEventListener('change', carregarFaturasDash);
     valorDespDash?.addEventListener('input', toggleDashExpensePayment);
     toggleDashExpensePayment();
 
@@ -622,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
                                     <label for="dash_desp_valor" class="form-label fw-semibold">Valor (R$)</label>
-                                    <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-danger" id="dash_desp_valor" name="valor" placeholder="R$ 0,00" required>
+                                    <input type="text" class="form-control money-mask tabular-nums text-end fw-bold text-danger" id="dash_desp_valor" name="valor" placeholder="R$ 0,00" required>
                                 </div>
                                 <div class="col-6">
                                     <label for="dash_desp_data" class="form-label fw-semibold">Data da Compra</label>
@@ -675,6 +743,20 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+
+                            <!-- Select Condicional: Fatura de Destino do Cartão -->
+                            <div class="mb-3 d-none" id="dash_wrapper_select_fatura">
+                                <label for="dash_desp_fatura" class="form-label fw-semibold d-flex justify-content-between align-items-center mb-1">
+                                    <span>Fatura de Destino</span>
+                                    <span class="badge bg-light text-muted border fw-normal" style="font-size: 0.75rem;">Calculada pela data da compra</span>
+                                </label>
+                                <select class="form-select" id="dash_desp_fatura" name="fatura_id" disabled>
+                                    <option value="" selected disabled>Selecione um cartão para carregar as faturas</option>
+                                </select>
+                                <div class="alert alert-info py-2 px-3 mt-2 small d-none" id="dash_alerta_fatura_fallback" role="alert">
+                                    <i class="bi bi-info-circle me-1"></i> <span id="dash_msg_fatura_fallback"></span>
+                                </div>
                             </div>
                             <div class="alert alert-warning py-2 d-none" id="dash_desp_alerta_limite" role="status">
                                 A compra ultrapassa o limite disponível do cartão. O lançamento será permitido, mas confira o limite com a instituição.
@@ -733,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
                                     <label for="dash_rec_valor" class="form-label fw-semibold">Valor (R$)</label>
-                                    <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-success" id="dash_rec_valor" name="valor" placeholder="R$ 0,00" required>
+                                    <input type="text" class="form-control money-mask tabular-nums text-end fw-bold text-success" id="dash_rec_valor" name="valor" placeholder="R$ 0,00" required>
                                 </div>
                                 <div class="col-6">
                                     <label for="dash_rec_data" class="form-label fw-semibold">Data de Recebimento</label>

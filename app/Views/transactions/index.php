@@ -315,7 +315,7 @@ $anoAtual = (int) date('Y');
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="rec_valor" class="form-label fw-semibold">Valor (R$)</label>
-                            <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-success" id="rec_valor" name="valor" placeholder="R$ 0,00" required>
+                            <input type="text" class="form-control money-mask tabular-nums text-end fw-bold text-success" id="rec_valor" name="valor" placeholder="R$ 0,00" required>
                         </div>
                         <div class="col-6">
                             <label for="rec_data" class="form-label fw-semibold">Data de Recebimento</label>
@@ -397,7 +397,7 @@ $anoAtual = (int) date('Y');
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="desp_valor" class="form-label fw-semibold">Valor (R$)</label>
-                            <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold text-danger" id="desp_valor" name="valor" placeholder="R$ 0,00" required>
+                            <input type="text" class="form-control money-mask tabular-nums text-end fw-bold text-danger" id="desp_valor" name="valor" placeholder="R$ 0,00" required>
                         </div>
                         <div class="col-6">
                             <label for="desp_data" class="form-label fw-semibold">Data da Compra</label>
@@ -450,6 +450,20 @@ $anoAtual = (int) date('Y');
                                 <?php endif; ?>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+
+                    <!-- Select Condicional: Fatura de Destino do Cartão -->
+                    <div class="mb-3 d-none" id="wrapper_select_fatura">
+                        <label for="desp_fatura" class="form-label fw-semibold d-flex justify-content-between align-items-center mb-1">
+                            <span>Fatura de Destino</span>
+                            <span class="badge bg-light text-muted border fw-normal" style="font-size: 0.75rem;">Calculada pela data da compra</span>
+                        </label>
+                        <select class="form-select" id="desp_fatura" name="fatura_id" disabled>
+                            <option value="" selected disabled>Selecione um cartão para carregar as faturas</option>
+                        </select>
+                        <div class="alert alert-info py-2 px-3 mt-2 small d-none" id="alerta_fatura_fallback" role="alert">
+                            <i class="bi bi-info-circle me-1"></i> <span id="msg_fatura_fallback"></span>
+                        </div>
                     </div>
                     <div class="alert alert-warning py-2 d-none" id="desp_alerta_limite" role="status">
                         A compra ultrapassa o limite disponível do cartão. O lançamento será permitido, mas confira o limite com a instituição.
@@ -515,7 +529,7 @@ $anoAtual = (int) date('Y');
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="edit_valor" class="form-label fw-semibold">Valor (R$)</label>
-                            <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold" id="edit_valor" name="valor" required>
+                            <input type="text" class="form-control money-mask tabular-nums text-end fw-bold" id="edit_valor" name="valor" required>
                         </div>
                         <div class="col-6" id="edit_wrapper_data">
                             <label for="edit_data_vencimento" class="form-label fw-semibold" id="edit_label_data">Data da Compra</label>
@@ -595,25 +609,83 @@ $anoAtual = (int) date('Y');
         const selectMeioDespesa = document.getElementById('desp_meio');
         const wrapConta = document.getElementById('wrapper_select_conta');
         const wrapCartao = document.getElementById('wrapper_select_cartao');
+        const wrapFatura = document.getElementById('wrapper_select_fatura');
         const wrapStatus = document.getElementById('wrapper_status_despesa');
         const selectContaDespesa = document.getElementById('desp_conta');
         const selectCartaoDespesa = document.getElementById('desp_cartao');
+        const selectFaturaDespesa = document.getElementById('desp_fatura');
+        const dataCompraDespesa = document.getElementById('desp_data');
+        const alertaFallback = document.getElementById('alerta_fatura_fallback');
+        const msgFallback = document.getElementById('msg_fatura_fallback');
         const statusDespesa = document.getElementById('desp_status');
         const alertaLimite = document.getElementById('desp_alerta_limite');
         const valorDespesa = document.getElementById('desp_valor');
         const checkParcelado = document.getElementById('check_parcelado');
         const wrapParcelas = document.getElementById('wrapper_parcelas');
 
+        async function carregarFaturasTransacoes() {
+            if (!selectCartaoDespesa || !selectCartaoDespesa.value || !dataCompraDespesa) return;
+            const cardId = selectCartaoDespesa.value;
+            const dataVal = dataCompraDespesa.value;
+            if (!cardId) return;
+
+            try {
+                if (selectFaturaDespesa) {
+                    selectFaturaDespesa.innerHTML = '<option value="">Carregando faturas...</option>';
+                    selectFaturaDespesa.disabled = true;
+                }
+                if (alertaFallback) alertaFallback.classList.add('d-none');
+
+                const resp = await fetch('<?= BASE_URL ?>/cartoes/faturas-disponiveis/' + cardId + '?data_transacao=' + encodeURIComponent(dataVal));
+                if (!resp.ok) throw new Error('Falha ao carregar faturas');
+                const res = await resp.json();
+
+                if (selectFaturaDespesa) {
+                    selectFaturaDespesa.innerHTML = '';
+                    if (res.faturas && res.faturas.length > 0) {
+                        res.faturas.forEach(inv => {
+                            const opt = document.createElement('option');
+                            opt.value = inv.id;
+                            opt.textContent = inv.label;
+                            if (inv.paga) {
+                                opt.disabled = true;
+                            }
+                            if (inv.id === res.fatura_sugerida_id) {
+                                opt.selected = true;
+                            }
+                            selectFaturaDespesa.appendChild(opt);
+                        });
+                        selectFaturaDespesa.disabled = false;
+                    } else {
+                        selectFaturaDespesa.innerHTML = '<option value="" disabled selected>Nenhuma fatura disponível</option>';
+                    }
+                }
+
+                if (res.fallback_usado && alertaFallback && msgFallback) {
+                    msgFallback.textContent = res.mensagem_fallback;
+                    alertaFallback.classList.remove('d-none');
+                }
+            } catch (e) {
+                if (selectFaturaDespesa) {
+                    selectFaturaDespesa.innerHTML = '<option value="" disabled selected>Erro ao carregar faturas</option>';
+                }
+            }
+        }
+
         function toggleExpensePayment() {
             const selectedMethod = selectMeioDespesa?.selectedOptions[0];
             const isCredit = selectedMethod?.dataset.ehCredito === '1';
             wrapConta.classList.toggle('d-none', isCredit);
             wrapCartao.classList.toggle('d-none', !isCredit);
+            if (wrapFatura) wrapFatura.classList.toggle('d-none', !isCredit);
             wrapStatus.classList.toggle('d-none', isCredit);
             selectContaDespesa.disabled = isCredit;
             selectContaDespesa.required = !isCredit;
             selectCartaoDespesa.disabled = !isCredit;
             selectCartaoDespesa.required = isCredit;
+            if (selectFaturaDespesa) {
+                selectFaturaDespesa.disabled = !isCredit;
+            }
             statusDespesa.disabled = isCredit;
             alertaLimite.classList.add('d-none');
 
@@ -624,10 +696,20 @@ $anoAtual = (int) date('Y');
                     alertaLimite.classList.remove('d-none');
                 }
             }
+
+            if (isCredit && selectCartaoDespesa?.value) {
+                carregarFaturasTransacoes();
+            } else if (alertaFallback) {
+                alertaFallback.classList.add('d-none');
+            }
         }
 
         selectMeioDespesa?.addEventListener('change', toggleExpensePayment);
-        selectCartaoDespesa?.addEventListener('change', toggleExpensePayment);
+        selectCartaoDespesa?.addEventListener('change', () => {
+            toggleExpensePayment();
+            carregarFaturasTransacoes();
+        });
+        dataCompraDespesa?.addEventListener('change', carregarFaturasTransacoes);
         valorDespesa?.addEventListener('input', toggleExpensePayment);
         toggleExpensePayment();
 

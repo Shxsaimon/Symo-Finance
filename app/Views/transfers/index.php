@@ -262,7 +262,7 @@ $anoAtual = (int) date('Y');
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="transf_valor" class="form-label fw-semibold">Valor da Transferência *</label>
-                            <input type="text" class="form-control money-mask tabular-nums text-end fs-5 fw-bold" id="transf_valor" name="valor" placeholder="R$ 0,00" required>
+                            <input type="text" class="form-control money-mask tabular-nums text-end fw-bold" id="transf_valor" name="valor" placeholder="R$ 0,00" required>
                         </div>
                         <div class="col-6">
                             <label for="transf_data" class="form-label fw-semibold">Data da Transferência *</label>

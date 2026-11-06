@@ -217,6 +217,7 @@ Router::post('/meios-pagamento/reativar/{id}', [PaymentMethodController::class, 
 // -------------------------------------------------------------
 Router::get('/cartoes', [CreditCardController::class, 'index']);
 Router::get('/cartoes/detalhes/{id}', [CreditCardController::class, 'show']);
+Router::get('/cartoes/faturas-disponiveis/{id}', [CreditCardController::class, 'getInvoicesForSelector']);
 Router::get('/faturas/{id}', [CreditCardController::class, 'invoice']);
 Router::post('/cartoes/salvar', [CreditCardController::class, 'store']);
 Router::post('/cartoes/atualizar/{id}', [CreditCardController::class, 'update']);

@@ -91,12 +91,36 @@ class Transaction extends Model
             // Se for despesa no cartão de crédito, localiza ou gera a fatura
             if ($tipo === 'despesa' && $cartaoCreditoId !== null) {
                 $invoiceModel = new CreditCardInvoice();
-                $fatura = $invoiceModel->getOrCreateInvoiceForPurchase($cartaoCreditoId, $dataTransacao);
-                $fatura = $invoiceModel->findForUpdate((int) $fatura['id'], $userId)
-                    ?? throw new InvalidArgumentException('A fatura da compra não está disponível.');
-                if ($fatura['status'] === 'paga') {
-                    throw new InvalidArgumentException('Não é possível incluir uma nova compra em uma fatura já paga.');
+                $faturaIdEscolhida = !empty($data['fatura_id']) ? (int) $data['fatura_id'] : null;
+
+                if ($faturaIdEscolhida !== null) {
+                    $fatura = $invoiceModel->findForUpdate($faturaIdEscolhida, $userId)
+                        ?? throw new InvalidArgumentException('A fatura selecionada não está disponível.');
+                    if ((int) $fatura['cartao_credito_id'] !== $cartaoCreditoId) {
+                        throw new InvalidArgumentException('A fatura selecionada não pertence ao cartão informado.');
+                    }
+                    if ($fatura['status'] === 'paga') {
+                        throw new InvalidArgumentException('Não é possível incluir uma nova compra em uma fatura já paga.');
+                    }
+                } else {
+                    $fatura = $invoiceModel->getOrCreateInvoiceForPurchase($cartaoCreditoId, $dataTransacao);
+                    $fatura = $invoiceModel->findForUpdate((int) $fatura['id'], $userId)
+                        ?? throw new InvalidArgumentException('A fatura da compra não está disponível.');
+                    // Fallback da Opção B: se a fatura da data estiver paga, busca a próxima fatura aberta
+                    if ($fatura['status'] === 'paga') {
+                        $card = (new CreditCard())->find($cartaoCreditoId);
+                        $closingDay = (int) ($card['dia_fechamento'] ?? 0);
+                        $calcRef = CreditCardCalendar::invoiceReferenceForPurchase($dataTransacao, $closingDay);
+                        $nextRef = CreditCardCalendar::nextInvoiceReference($calcRef['mes'], $calcRef['ano'], 1);
+                        $fatura = $invoiceModel->getOrCreateInvoice($cartaoCreditoId, $nextRef['mes'], $nextRef['ano']);
+                        $fatura = $invoiceModel->findForUpdate((int) $fatura['id'], $userId)
+                            ?? throw new InvalidArgumentException('A próxima fatura aberta não está disponível.');
+                        if ($fatura['status'] === 'paga') {
+                            throw new InvalidArgumentException('Não é possível incluir uma nova compra em uma fatura já paga.');
+                        }
+                    }
                 }
+
                 $faturaId = (int) $fatura['id'];
                 $status = 'pendente'; // Despesa no cartão fica pendente até a fatura ser paga
                 $dataPagamento = null;
@@ -213,10 +237,30 @@ class Transaction extends Model
 
             $closingDay = 0;
             $baseInvoiceRef = null;
+            $faturaIdEscolhida = !empty($data['fatura_id']) ? (int) $data['fatura_id'] : null;
+
             if ($cartaoCreditoId !== null) {
                 $card = (new CreditCard())->find($cartaoCreditoId);
                 $closingDay = (int) ($card['dia_fechamento'] ?? 0);
-                $baseInvoiceRef = CreditCardCalendar::invoiceReferenceForPurchase($dataPrimeiraParcela, $closingDay);
+
+                if ($faturaIdEscolhida !== null) {
+                    $faturaBase = $invoiceModel->findForUpdate($faturaIdEscolhida, $userId);
+                    if ($faturaBase && (int) $faturaBase['cartao_credito_id'] === $cartaoCreditoId && $faturaBase['status'] !== 'paga') {
+                        $baseInvoiceRef = [
+                            'mes' => (int) $faturaBase['mes_referencia'],
+                            'ano' => (int) $faturaBase['ano_referencia'],
+                        ];
+                    }
+                }
+
+                if ($baseInvoiceRef === null) {
+                    $baseInvoiceRef = CreditCardCalendar::invoiceReferenceForPurchase($dataPrimeiraParcela, $closingDay);
+                    // Fallback da Opção B: se a fatura base estiver paga, avança para a próxima aberta
+                    $faturaBaseCheck = $invoiceModel->getOrCreateInvoice($cartaoCreditoId, $baseInvoiceRef['mes'], $baseInvoiceRef['ano']);
+                    if ($faturaBaseCheck['status'] === 'paga') {
+                        $baseInvoiceRef = CreditCardCalendar::nextInvoiceReference($baseInvoiceRef['mes'], $baseInvoiceRef['ano'], 1);
+                    }
+                }
             }
 
             for ($i = 1; $i <= $totalParcelas; $i++) {
