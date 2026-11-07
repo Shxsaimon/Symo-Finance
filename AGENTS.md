@@ -130,6 +130,7 @@ git diff --check
 ├── vercel.json                  # Runtime, rewrites e headers da Vercel
 ├── .vercelignore                # Exclusão de documentação e scripts locais no deploy Vercel
 ├── package.json                 # Dependência @vercel/blob
+├── CHANGELOG.md                 # Histórico oficial de versões, melhorias contínuas e correções (SemVer)
 ├── LICENSE                      # Licença GNU General Public License v3.0 (GPL-3.0)
 ├── README.md                    # Apresentação do repositório
 └── AGENTS.md                    # Este arquivo de contexto (modo manutenção)
@@ -145,7 +146,7 @@ Toda intervenção de IA neste repositório em modo de manutenção deve seguir 
 1. **Ler `docs/MANUTENCAO.md`:** Entender a arquitetura, estrutura das pastas, regras de banco e autenticação.
 2. **Ler `docs/FSD.md`:** Validar as regras de negócio oficiais vigentes e limites de escopo.
 3. **Ler `docs/DESIGN.md`:** Se a alteração envolver interface visual, consultar cores, tipografia, espaçamentos e componentes.
-4. **Ler `docs/STATUS.md`:** Verificar o estado atual das fases e pendências.
+4. **Ler `docs/STATUS.md` e `CHANGELOG.md`:** Verificar o estado atual das fases, melhorias recentes e pendências.
 5. **Ler `docs/ERROS.md`:** Conhecer o histórico de erros para evitar reincidências de problemas conhecidos.
 6. **Entender o pedido do usuário:** Esclarecer dúvidas antes de alterar código caso o pedido seja ambíguo.
 7. **Explicar o plano antes de alterar arquivos:** Apresentar a hipótese de solução, os arquivos que serão alterados e como serão testados.
@@ -162,7 +163,10 @@ Toda intervenção de IA neste repositório em modo de manutenção deve seguir 
    - Executar `php -l` em todos os arquivos PHP criados ou modificados.
    - Executar `git diff --check` para validar ausência de conflitos e espaços em branco residuais.
    - Executar testes funcionais ou validar transações e concorrência no ambiente de desenvolvimento.
-2. **Atualizar `docs/STATUS.md`:** Marcar tarefas concluídas no checklist e atualizar o estado da fase.
+2. **Registrar o progresso pelo Filtro em 3 Níveis:**
+   - *Nível 1 (microajustes/invisíveis):* Apenas mensagem clara e padronizada no Git commit.
+   - *Nível 2 (melhorias visuais, ajustes de regras, novos campos pontuais ou correções de bugs):* Registrar no `CHANGELOG.md` sob a seção adequada (`Adicionado`, `Modificado`, `Corrigido`, etc.) e atualizar `docs/FSD.md` se envolver regra oficial. Não cria nova fase no plano ou status.
+   - *Nível 3 (grandes módulos estruturais e épicos de roadmap):* Registrar a nova versão de marco no `CHANGELOG.md`, atualizar `docs/FSD.md` se envolver ou alterar regras de negócio, e atualizar o checklist e o estado da respectiva fase em `docs/STATUS.md` e `docs/PLANO.md`.
 3. **Registrar erro e solução em `docs/ERROS.md`:** Apenas se tiver ocorrido um erro ou incompatibilidade real que precisou de resolução técnica.
 4. **Fazer commit ou entregar os comandos:** Fornecer os comandos git formatados (`git add`, `git commit -m "..."`, `git push`) prontos para execução.
 5. **Explicar ao usuário como validar:** Indicar claramente como testar e verificar a mudança no navegador ou terminal.
@@ -263,16 +267,20 @@ Trate `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md` e `docs/ERROS.md` como do
 - `docs/FSD.md` é a fonte de verdade para o comportamento, as regras de negócio e os critérios funcionais atuais. Em caso de divergência, seguir o FSD; não alterar o FSD para fazê-lo coincidir com registros antigos do plano ou do status.
 - `docs/MANUTENCAO.md` consolida a arquitetura técnica, convenções de código, banco de dados, passos operacionais e critérios de segurança para manutenção.
 - `docs/COMO-PEDIR-MUDANCAS.md` guia usuários na elaboração de solicitações e prompts para agentes.
-- `docs/PLANO.md` contextualiza o trabalho a executar. Cada fase planejada deve explicitar nome, objetivo, checklist de tarefas, validações, critérios de pronto, arquivos/pastas envolvidos e dependências.
-- `docs/STATUS.md` acompanha o progresso: manter a visão geral das fases e, em cada fase, um checklist do que precisa ser feito, marcando com `[x]` somente o que foi concluído, seguido de um campo `Estado` que sintetize a situação da implementação. Pode conter informações gerais úteis sobre o sistema, mas não deve substituir o detalhamento de execução do plano.
-- Plano e status também preservam o histórico do trabalho realizado. Itens concluídos podem registrar a abordagem adotada naquele momento, mesmo que o comportamento tenha sido alterado depois. Não reescrever esse histórico para simular que a implementação atual sempre foi assim; quando necessário, registrar no plano o escopo atual a executar e manter o FSD como referência normativa.
+- `CHANGELOG.md` registra o histórico oficial de versões (SemVer) e todas as alterações notáveis do produto (tanto as melhorias contínuas, regras e correções cotidianas quanto a conclusão dos grandes módulos estruturais e épicos de roadmap), categorizados em `Adicionado`, `Modificado`, `Descontinuado`, `Removido`, `Corrigido` e `Segurança`.
+- `docs/PLANO.md` contextualiza exclusivamente os grandes marcos estruturais e épicos de roadmap aprovados pelo usuário.
+- `docs/STATUS.md` acompanha o progresso exclusivamente das grandes fases e épicos de roadmap.
+
+> [!CRITICAL]
+> **Atenção para Agentes — Regra de Governança sobre Novas Fases:**
+> NUNCA crie uma nova "Fase" no `docs/PLANO.md` ou `docs/STATUS.md` para correções de bugs, pequenas melhorias de interface, ajustes finos de regras existentes ou novos campos isolados. Para essas alterações de manutenção, utilize sempre o `CHANGELOG.md`. Novas Fases no plano e status são reservadas estritamente para novos módulos estruturais completos ou épicos de roadmap formalmente autorizados pelo usuário.
 
 ### Alinhamento de ideias de desenvolvimento
 
 - Quando o usuário desenvolvedor trouxer ideias ou necessidades em uma conversa de alinhamento, primeiro esclarecer objetivo, escopo e critérios de aceite antes de iniciar a implementação.
-- Depois que a necessidade estiver alinhada, sugerir registrá-la em `docs/PLANO.md`, que contextualiza o que deverá ser feito e continua sendo a referência para organizar as próximas evoluções mesmo após as fases iniciais.
-- Incluir a funcionalidade no plano quando o usuário confirmar ou já solicitar explicitamente seu registro/execução; preservar prioridades e dependências acordadas.
-- Ao iniciar uma demanda planejada, consultar o plano junto aos demais arquivos vivos e atualizar seu estado real ao concluir.
+- Se for uma melhoria de manutenção ou refinamento de regra, planejar a entrega e direcionar o registro para o `CHANGELOG.md` (atualizando `docs/FSD.md` caso altere regras oficiais).
+- Se for um novo módulo estrutural ou épico de roadmap, conduzir o alinhamento de escopo antes de codificar: detalhar o plano em `docs/PLANO.md`, preparar a fase no `docs/STATUS.md` e registrar/atualizar as regras funcionais no `docs/FSD.md` caso a funcionalidade envolva ou altere regras de negócio.
+- Ao concluir a implementação do épico, garantir a conformidade final do `docs/FSD.md` (se aplicável), registrar a entrega no `CHANGELOG.md` como nova versão de marco e atualizar o estado da fase em `docs/STATUS.md` e `docs/PLANO.md`.
 
 ---
 
@@ -287,6 +295,6 @@ Trate `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md` e `docs/ERROS.md` como do
 - [ ] Assets continuam locais (sem CDNs em runtime) e uploads continuam privados.
 - [ ] Validação estática executada com sucesso (`php -l` em todos os arquivos alterados).
 - [ ] Ausência de conflitos e espaços residuais checada (`git diff --check`).
-- [ ] `docs/STATUS.md` atualizado com o progresso real.
+- [ ] Documentação de progresso atualizada: `CHANGELOG.md` sempre atualizado com a entrega realizada (Níveis 2 e 3); `docs/STATUS.md` e `docs/PLANO.md` atualizados quando a entrega for um grande épico de roadmap (Nível 3).
 - [ ] `docs/ERROS.md` atualizado caso tenha ocorrido e sido resolvido incidente relevante.
 - [ ] Resumo objetivo entregue ao usuário em português do Brasil com instruções claras de validação e comandos git.

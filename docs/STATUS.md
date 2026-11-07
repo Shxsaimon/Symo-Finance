@@ -1,14 +1,18 @@
 # Status do Projeto — Symo
 
-Este documento é o arquivo vivo de acompanhamento do progresso de implementação do **Symo**.
+Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marcos estruturais e épicos de roadmap** do **Symo**.
+
+> **Nota de governança:** Este documento e o `docs/PLANO.md` acompanham exclusivamente os grandes marcos estruturais e épicos de roadmap do Symo Finance. Para o histórico cronológico de melhorias contínuas, polimentos visuais, novos campos pontuais e correções de regras, consulte o [CHANGELOG.md](../CHANGELOG.md).
 
 ---
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 03/11/2026
-- **Fase Prioritária Atual:** Preparação do repositório para abertura pública no GitHub (revisão de `.gitignore`, criação de `.vercelignore`, adição de `LICENSE` sob GPL-3.0, atualização do `README.md` com badges e destaques de engenharia, reescrita do protótipo estático `docs/code.html` fiel ao layout real, estruturação de `docs/screenshots/` e higienização de `.gitkeep` e fontes duplicadas). Documentação Final de Manutenção e Fase 21 concluídas.
-- **Documentação de Manutenção:** Criados `docs/MANUTENCAO.md` (guia técnico para devs e IA) e `docs/COMO-PEDIR-MUDANCAS.md` (guia para usuários leigos interagirem com IAs com 8 modelos de prompts). Arquivo `AGENTS.md` atualizado para Modo Manutenção com protocolo estrito de trabalho antes e depois de alterações.
+- **Data da Última Atualização:** 06/11/2026
+- **Fase Prioritária Atual:** Fase 20 concluída. Governança de documentação e `CHANGELOG.md` estruturados. Próximo foco nos épicos de roadmap: Fase 14 (OAuth Google) e Fase 18 (Compartilhamento por conta).
+- **Histórico de Melhorias Contínuas:** Todas as melhorias visuais, novos campos pontuais, refinamentos de regras e correções de bugs que não constituem uma nova fase estrutural são registrados cronologicamente no [CHANGELOG.md](../CHANGELOG.md) sob o versionamento SemVer.
+- **Preparação do Repositório:** Revisão de `.gitignore`, criação de `.vercelignore`, adição de `LICENSE` sob GPL-3.0, atualização do `README.md` com badges e destaques de engenharia, reescrita do protótipo estático `docs/code.html` fiel ao layout real, estruturação de `docs/screenshots/` e higienização de `.gitkeep` e fontes duplicadas.
+- **Documentação de Manutenção:** Criados `docs/MANUTENCAO.md` (guia técnico para devs e IA), `docs/COMO-PEDIR-MUDANCAS.md` (guia para usuários leigos interagirem com IAs) e `CHANGELOG.md` (histórico cronológico no padrão Keep a Changelog). Arquivo `AGENTS.md` atualizado para Modo Manutenção com protocolo estrito de trabalho antes e depois de alterações.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
 - **Próximo Passo Recomendado:** Itens de roadmap: Fase 14 (implementação do OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta — roadmap).
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
@@ -60,11 +64,6 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 | **Fase 19** | Investimentos | Concluída; |
 | **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
-| **Fase 21** | Correção do fluxo de despesas e ciclos de faturas de cartão | Concluída |
-| **Documentação Final** | Criação do Guia de Manutenção, Guia de Mudanças e Contexto para Agentes em Modo Manutenção | Concluída |
-| **Fase 22** | Modal de lançamento unificado no Dashboard e padronização visual de receitas | Concluída |
-| **Fase 23** | Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura | Concluída |
-| **Fase 24** | Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas | Concluída |
 
 ---
 
@@ -280,27 +279,6 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Validar autorização, unicidade, CSRF, avatar e atualização da sessão em ambiente integrado.
 - **Estado:** Concluída.
 
-### Fase 21 — Correção do fluxo de despesas e ciclos de faturas de cartão
-- [x] Alinhar que o meio de pagamento define a modalidade: crédito exige cartão; os demais meios exigem conta bancária e status.
-- [x] Alinhar que o campo do modal se chamará **Data da Compra** e representa a data em que a compra ocorreu.
-- [x] Definir a fronteira exclusiva do fechamento: antes do dia entra no ciclo corrente; no dia ou depois, no próximo.
-- [x] Alinhar fechamento automático das faturas, pagamento integral com validação de saldo e alerta sem bloqueio quando o limite for excedido.
-- [x] Definir ciclo consecutivo para parcelas, preservando a data mensal de cada parcela e ajustando dias inexistentes ao último dia do mês.
-- [x] Alinhar preservação do histórico de cartões inativos e possibilidade de corrigir a fatura associada à compra.
-- [x] Definir ajuste do vencimento para o próximo dia útil quando cair em fim de semana ou feriado bancário nacional; a fonte/calendário confiável deve ser definida na implementação.
-- [x] Registrar o escopo, os critérios de aceite e as validações previstas em `docs/PLANO.md`.
-- [x] Atualizar o FSD e implementar o fluxo de despesas, associação às faturas e progressão mensal de parcelas.
-- [x] Automatizar o fechamento das faturas, corrigir associações quando necessário e aplicar vencimento em dia útil.
-- [x] Implementar alerta não bloqueante de limite, bloqueio de cartão inativo e pagamento integral com validação atômica de saldo; preservar CSRF, auditoria e isolamento por usuário.
-- [x] Executar `php -l` nos arquivos PHP alterados e `git diff --check`.
-- [x] Criar e executar teste focado da fronteira de fechamento, parcelas e calendário de vencimentos não úteis.
-- [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
-- [x] Gerar compras parceladas sem sufixo redundante, ocultar duplicação herdada em lançamentos, relatórios e faturas, e alinhar botões e ícone de calendário ao padrão visual Symo (lançamentos, cartões, transferências e investimentos).
-- [x] Corrigir link da ação de fatura nos compromissos pendentes do dashboard para a fatura específica (`/faturas/{fatura_id}`).
-- [x] Corrigir a seleção da fatura atual nos cards de resumo de cartão de crédito para refletir o ciclo corrente de compras baseado no dia de fechamento, sem exibir faturas de parcelas futuras distantes.
-- [x] Executar validação integrada das operações transacionais e concorrentes em PostgreSQL/Neon e MySQL mantido.
-- **Estado:** Concluída; implementada, validada com testes transacionais/concorrentes no Neon e publicada em produção.
-
 ### Revisão Geral de Segurança e Boas Práticas
 - [x] Revisar autenticação, complexidade de senhas, proteção contra força bruta, sessão com expiração de 60 minutos e cookies seguros (`HttpOnly`, `SameSite=Lax`, `Secure` com suporte a proxy HTTPS).
 - [x] Revisar controle de acesso (RBAC `dev`/`admin`), isolamento por `usuario_id` em todos os módulos e proteção contra acesso indevido a recursos privados (IDOR), restringindo a entrega de avatares ao próprio titular ou ao perfil `dev`.
@@ -317,34 +295,3 @@ Este documento é o arquivo vivo de acompanhamento do progresso de implementaç�
 - [x] Atualização de `AGENTS.md` para o Modo Manutenção com o protocolo de 7 etapas prévias e 5 etapas posteriores, regras de segurança, stack oficial e diretrizes para evitar regressões.
 - [x] Registro das pendências residuais de roadmap: Fase 14 (OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta).
 - **Estado:** Concluída; documentação final de manutenção estabelecida e contexto de agentes atualizado para modo manutenção.
-
-### Fase 22 — Modal de lançamento unificado no Dashboard e padronização visual de receitas
-- [x] Criar classe `.btn-symo-revenue` com a cor roxa secundária (`#600de6` / hover `#5300c4`) e estilos de abas `.nav-pills-symo` no design system (`public/css/custom.css`).
-- [x] Injetar categorias ativas (receita e despesa) e meios de pagamento no `DashboardController` para alimentar o modal no Dashboard.
-- [x] Transformar o botão "+ Novo Lançamento" do Dashboard em trigger do modal `#modalNovoLancamento`.
-- [x] Estruturar o modal com abas de seleção rápida entre Despesa e Receita no topo e cabeçalho na cor principal do Symo.
-- [x] Manter os campos validados de despesa (alternância dinâmica conta/cartão, alerta de limite de crédito e switch de parcelamento de 2x a 72x).
-- [x] Preservar campos validados de receita (categoria, conta de destino, meio de pagamento e status inicial).
-- [x] Adicionar `redirect_to` nos formulários e no método `TransactionController::store` para permanecer no Dashboard com o período de mês/ano selecionado preservado após o lançamento.
-- [x] Atualizar o botão de "Nova Receita" na view de lançamentos (`app/Views/transactions/index.php`) para o estilo `.btn-symo-revenue`.
-- [x] Validar ausência de conflitos e espaços residuais com `git diff --check` e sintaxe estática com `php -l`.
-- **Estado:** Concluída; implementada e validada em desenvolvimento.
-
-### Fase 23 — Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
-- [x] Ajustar consulta em `CreditCard::getCurrentOpenInvoice` para dar prioridade máxima a faturas fechadas pendentes de pagamento (`status = 'fechada'`), exibindo a fatura aberta do ciclo corrente somente na ausência de faturas fechadas não pagas.
-- [x] Criar métodos `invoiceOpeningDate` e `nextInvoiceReference` em `CreditCardCalendar` para cálculo determinístico do primeiro dia do ciclo e transição de faturas consecutivas.
-- [x] Atualizar rotina de criação de compras parceladas (`Transaction::createInstallmentTransactions`): primeira parcela na data da compra e parcelas 2 em diante registradas na data de abertura da respectiva fatura mensal.
-- [x] Atualizar sincronização de parcelas subsequentes na edição de transações (`Transaction::update`) para manter consistência das datas no cartão.
-- [x] Alinhar especificações no documento funcional `docs/FSD.md`.
-- [x] Validar cenários de datas e faturas através de testes focados e checagens estáticas com `php -l` e `git diff --check`.
-- **Estado:** Concluída; implementada e validada em desenvolvimento.
-
-### Fase 24 — Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas
-- [x] Criar método `CreditCardInvoice::getInvoicesForPurchaseSelector` para resolver faturas elegíveis, fatura sugerida e mensagem de fallback.
-- [x] Criar endpoint `GET /cartoes/faturas-disponiveis/{id}` em `CreditCardController` e registrar rota em `index.php`.
-- [x] Atualizar `Transaction::create` e `Transaction::createInstallmentTransactions` para aceitar `fatura_id` e acionar fallback automático para a próxima fatura aberta se a calculada estiver paga.
-- [x] Adicionar campo dinâmico de fatura de destino e alerta de fallback nos modais de despesa do Dashboard (`app/Views/dashboard/index.php`) e da tela de lançamentos (`app/Views/transactions/index.php`).
-- [x] Padronizar visualmente campos de entrada monetária e seletores (altura padrão de 38px e remoção do `fs-5` dos inputs de valor nos modais de Despesa, Receita, Edição e Transferência).
-- [x] Atualizar regras e blindagem de faturas pagas em `docs/FSD.md`.
-- [x] Validar integridade e ausência de regressões com `php -l` e `git diff --check`.
-- **Estado:** Concluída; implementada e validada em desenvolvimento.

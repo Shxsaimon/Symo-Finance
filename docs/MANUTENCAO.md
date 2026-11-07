@@ -402,7 +402,7 @@ Para adicionar um novo campo a uma entidade já existente no sistema, execute ri
    - Execute `php -l` nos arquivos alterados.
    - Teste cadastro com campo preenchido, campo vazio, caracteres especiais e dados de outro usuário (garantindo que o isolamento persiste).
 7. **Atualizar Documentos:**
-   - Registre a adição no `docs/STATUS.md` e em `docs/FSD.md` se alterar regras do negócio.
+   - Registre a adição no `CHANGELOG.md` sob a seção `### Adicionado` e atualize o `docs/FSD.md` se alterar as regras de negócio oficiais.
 
 ---
 
@@ -487,18 +487,25 @@ Qualquer alteração no código deve manter rigorosamente estes padrões de segu
 
 ---
 
-## 12. Como Registrar o Progresso
+## 12. Como Registrar o Progresso (Filtro em 3 Níveis)
 
-Após qualquer alteração concluída com sucesso:
-1. Abra `docs/STATUS.md`.
-2. Marque as tarefas concluídas no checklist com `[x]`.
-3. Atualize o campo `Data da Última Atualização` e o `Estado` da respectiva fase.
-4. Caso tenha resolvido um erro técnico importante, registre-o em `docs/ERROS.md`.
+Toda alteração futura deve ser registrada utilizando o **Filtro em 3 Níveis**, garantindo que a documentação permaneça limpa e proporcional ao impacto da mudança:
+
+1. **Nível 1 (Micro / Quase invisível):**
+   - *Exemplos:* ajuste de 1px em margem/padding, correção de digitação em comentário, refatoração interna sem impacto externo.
+   - *Registro:* **Apenas mensagem descritiva no Git commit** (não precisa registrar em nenhum documento).
+2. **Nível 2 (Médio / Melhorias contínuas, polimentos, regras e correções):**
+   - *Exemplos:* melhorias visuais perceptíveis, novos campos isolados em cadastros existentes, refinamentos de regras de cálculo/negócio, correções de bugs.
+   - *Registro:* **`CHANGELOG.md`** na raiz do projeto, sob o cabeçalho da versão/data correspondente, categorizado em `Adicionado`, `Modificado`, `Descontinuado`, `Removido`, `Corrigido` ou `Segurança`. Se a regra de negócio oficial foi alterada, atualize também o `docs/FSD.md`. Se foi resolvido um erro técnico relevante, registre a análise de causa raiz em `docs/ERROS.md`.
+3. **Nível 3 (Macro / Grandes módulos estruturais e épicos de roadmap):**
+   - *Exemplos:* novo módulo completo (ex: Fase 14 OAuth Google, Fase 18 Contas Compartilhadas), novas tabelas estruturais de sistema, mudanças profundas de arquitetura.
+   - *Registro:* **`CHANGELOG.md`** registrando a nova versão de marco (`MINOR` ou `MAJOR`), somado à atualização do checklist e estado da Fase correspondente em **`docs/STATUS.md`** e **`docs/PLANO.md`**. Se a alteração envolver ou alterar regras funcionais do negócio, atualizar também o **`docs/FSD.md`**.
 
 ---
 
 ## 13. O que NÃO Fazer
 
+- **NÃO crie novas Fases no `docs/PLANO.md` ou `docs/STATUS.md`** para correções de bugs, pequenas melhorias de UI, ajustes de regras existentes ou campos pontuais (use sempre o `CHANGELOG.md`).
 - **NÃO** reescreva partes do sistema ou adote frameworks (Laravel, Symfony, etc.) sem decisão explícita e alinhada.
 - **NÃO** instale dependências desnecessárias ou utilize CDNs externas para componentes visuais.
 - **NÃO** remova verificações de CSRF, RBAC ou isolamento de `usuario_id` para "resolver rápido" um problema de permissão.

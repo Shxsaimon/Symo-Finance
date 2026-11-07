@@ -1,6 +1,8 @@
 # Plano de Construção Incremental — Symo
 
-Este documento detalha o planejamento de implementação fase a fase do sistema **Symo (Gestão Financeira Pessoal e Compartilhada)**, com base estrita no `docs/FSD.md` e `docs/DESIGN.md`.
+Este documento detalha o planejamento de implementação fase a fase dos grandes marcos estruturais e épicos do sistema **Symo (Gestão Financeira Pessoal e Compartilhada)**, com base estrita no `docs/FSD.md` e `docs/DESIGN.md`.
+
+> **Nota de governança:** Este documento e o `docs/STATUS.md` acompanham exclusivamente os grandes marcos estruturais e épicos de roadmap do Symo Finance. Para o histórico cronológico de melhorias contínuas, polimentos visuais, novos campos pontuais e correções de regras, consulte o [CHANGELOG.md](../CHANGELOG.md).
 
 ---
 
@@ -26,10 +28,6 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
 - **Fase 18:** Compartilhamento por conta (roadmap)
 - **Fase 19:** Investimentos
 - **Fase 20:** Perfil do usuário e acesso pela navegação
-- **Fase 21:** Correção do fluxo de despesas e ciclos de faturas de cartão
-- **Fase 22:** Modal de lançamento unificado no Dashboard e padronização visual de receitas
-- **Fase 23:** Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
-- **Fase 24:** Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas
 
 ---
 
@@ -399,93 +397,3 @@ Este documento detalha o planejamento de implementação fase a fase do sistema 
   - [x] Preservar CSRF e auditoria; exigir senha atual, confirmação e mínimo de 8 caracteres para troca de senha; manter validações do avatar.
   - [x] Testar em ambiente integrado e autenticado e-mail inválido, duplicado, válido ainda não verificado, tentativa de alterar outro usuário e sessão após atualização.
 - **Critérios de aceite:** Todos os usuários autenticados encontram e acessam `/perfil`; alterações afetam somente o próprio usuário; e-mails inválidos ou duplicados são recusados, e um e-mail sintaticamente válido pode ser salvo sem confirmação; `/configuracoes` não oferece edição de perfil nem fuso horário.
-
-### Fase 21 — Correção do fluxo de despesas e ciclos de faturas de cartão
-- **Estado:** Concluída; implementada, validada com testes transacionais/concorrentes no Neon e publicada em produção.
-- **Objetivo:** Remover a seleção duplicada de destino e meio de pagamento, garantir que compras no cartão sejam associadas ao ciclo de fatura correto e manter coerentes as parcelas, o limite e a quitação da fatura.
-- **Regras já alinhadas:**
-  - O meio de pagamento define a modalidade: meios marcados como crédito exigem a seleção de um cartão; os demais exigem uma conta bancária e permitem informar o status pago ou pendente.
-  - No modal de despesa, substituir o rótulo **Data de Vencimento** por **Data da Compra**. A data informada representa quando a compra ocorreu.
-  - Em despesas fora do cartão, `data_transacao` e `data_vencimento` permanecem iguais. Em compras no cartão, `data_transacao` guarda a data da compra e `data_vencimento` acompanha o vencimento da fatura vinculada.
-  - O fechamento é exclusivo: compras anteriores ao dia de fechamento pertencem ao ciclo que fecha naquele mês; compras feitas no próprio dia ou depois pertencem ao ciclo seguinte.
-  - O vencimento decorre da sequência do ciclo: se o dia de vencimento for posterior ao fechamento, ocorre no mesmo mês; se for igual ou anterior, ocorre no mês seguinte.
-  - O vencimento calculado que cair em fim de semana ou feriado bancário nacional será ajustado para o próximo dia útil. O calendário é implementado localmente em helper versionado, sem depender de consulta externa em tempo de execução.
-  - As faturas mudam automaticamente de aberta para fechada conforme o ciclo, atualizadas sob demanda nas consultas e operações; pagamentos continuam sendo integrais, em conta bancária ativa, e devem ser recusados se não houver saldo suficiente.
-  - O limite excedido deve gerar alerta, mas não bloquear o registro. Cartões inativos não aceitam novas compras, mas seu histórico e suas faturas permanecem acessíveis.
-  - Compras parceladas geram uma parcela por ciclo mensal consecutivo. Cada parcela conserva sua própria `data_transacao`, no mesmo dia da parcela inicial; quando o mês não tiver esse dia, usa seu último dia (por exemplo, dia 31 ajustado para 28 ou 29 em fevereiro, depois dia 31 em março e dia 30 em abril).
-  - Deve ser possível corrigir manualmente a fatura vinculada a uma compra quando o ciclo calculado não corresponder ao lançamento efetivo do emissor.
-- **Checklist de implementação:**
-  - [x] Atualizar o FSD com as regras aprovadas para data da compra, ciclos de fatura, parcelas, vencimento em dias não úteis e pagamento integral.
-  - [x] Remover **Forma de Saída** e derivar os campos de conta/cartão e status a partir do meio de pagamento; validar compatibilidade também no backend.
-  - [x] Alterar o rótulo do campo para **Data da Compra** e preservar a distinção entre data da compra e vencimento da fatura.
-  - [x] Associar compras avulsas e parceladas ao ciclo calculado pela data da compra, aplicando a fronteira exclusiva do fechamento.
-  - [x] Gerar datas de parcelas mês a mês sem transbordo de calendário em meses curtos.
-  - [x] Automatizar o fechamento de faturas e permitir corrigir a fatura de uma compra, preservando os totais das faturas afetadas e a auditoria.
-  - [x] Ajustar vencimentos que caiam em fins de semana ou feriados bancários nacionais para o próximo dia útil, com calendário local e versionado.
-  - [x] Alertar sobre limite excedido sem bloquear compras; impedir novas compras em cartão inativo sem bloquear o acesso ao histórico.
-  - [x] Validar no backend saldo suficiente e atomicidade ao pagar faturas integralmente; preservar CSRF, autorização, isolamento por usuário e auditoria.
-  - [x] Criar teste focado para fronteira do fechamento, sequência mensal e vencimentos em fins de semana/feriados.
-  - [x] Validar manualmente, em ambiente local conectado ao Neon e sem publicar em produção, a associação de compras parceladas aos ciclos de fatura.
-  - [x] Gerar compras parceladas sem sufixo redundante e ocultar a duplicação herdada em lançamentos, relatórios e faturas; padronizar cores de botões e ícone de calendário nas telas de lançamentos, cartões, transferências e investimentos.
-  - [x] Corrigir link de visualização da fatura no widget de compromissos pendentes do dashboard para a fatura correta (`/faturas/{fatura_id}`).
-  - [x] Corrigir a seleção da fatura atual nos cards de resumo de cartão de crédito para refletir o ciclo corrente de compras baseado no dia de fechamento, sem transbordar para parcelas futuras distantes.
-  - [x] Executar validações integradas com PostgreSQL/Neon e MySQL mantido, incluindo operações transacionais e concorrência.
-- **Critérios de aceite:** O meio de pagamento selecionado determina uma única modalidade de saída e combinações inválidas são rejeitadas no backend; compras são exibidas na fatura correta conforme data e ciclo; parcelas mantêm a progressão mensal e os valores exatos; faturas fecham e são pagas conforme as regras alinhadas; nenhuma operação parcial ou inconsistente altera saldos, vínculos, totais ou dados de outro usuário.
-- **Arquivos/Pastas Envolvidos:** `app/Views/transactions/`, `app/Controllers/TransactionController.php`, `app/Models/Transaction.php`, `app/Models/CreditCard.php`, `app/Models/CreditCardInvoice.php`, `app/Controllers/CreditCardController.php`, `app/Views/credit-cards/`, testes relacionados, `database/migrations/` se necessária, `docs/FSD.md`, `docs/STATUS.md` e `AGENTS.md` se as regras para agentes mudarem.
-- **Dependências:** Fases 6, 7 e 8 concluídas; requer manter as regras de isolamento e atomicidade estabelecidas na Fase 16.
-
-### Fase 22 — Modal de lançamento unificado no Dashboard e padronização visual de receitas
-- **Estado:** Concluída; implementada e validada em desenvolvimento.
-- **Objetivo:** Permitir o lançamento de receitas e despesas diretamente a partir do Dashboard por meio de modal interativo com abas no topo, eliminando a navegação intermediária para a tela de lançamentos e padronizando os botões de receita na paleta do design system.
-- **Checklist de implementação:**
-  - [x] Criar estilo `.btn-symo-revenue` baseado no roxo secundário (`#600de6`, hover `#5300c4`) e estilos de abas `.nav-pills-symo` em `public/css/custom.css`.
-  - [x] Disponibilizar categorias ativas de receita e despesa e meios de pagamento no `DashboardController` para alimentar os formulários do modal.
-  - [x] Converter o botão "+ Novo Lançamento" no Dashboard em trigger para o modal `#modalNovoLancamento`.
-  - [x] Implementar abas no topo do modal para alternância instantânea entre Despesa e Receita com seus respectivos formulários e regras.
-  - [x] Garantir comportamento dinâmico de despesa (alternância entre conta bancária e cartão de crédito, alerta de limite de crédito e toggle de parcelamento de 2x a 72x).
-  - [x] Configurar `redirect_to` para manter a navegação no próprio Dashboard com o período de mês/ano selecionado preservado após o salvamento.
-  - [x] Atualizar o botão de "Nova Receita" na tela de lançamentos para utilizar o padrão visual `.btn-symo-revenue`.
-  - [x] Executar validação estática de sintaxe (`php -l`) e verificação de integridade (`git diff --check`).
-- **Critérios de aceite:** O botão "+ Novo Lançamento" do Dashboard abre o modal com abas de Despesa e Receita; salvar um registro pelo modal atualiza a base e retorna ao Dashboard com os KPIs e gráficos recalculados; botões de receita seguem o tom roxo secundário sem o uso de verde Bootstrap.
-- **Arquivos/Pastas Envolvidos:** `public/css/custom.css`, `app/Controllers/DashboardController.php`, `app/Views/dashboard/index.php`, `app/Views/transactions/index.php`, `docs/PLANO.md`, `docs/STATUS.md`.
-- **Dependências:** Fases 5, 8 e 10 concluídas.
-
-### Fase 23 — Prioridade de fatura fechada nos cards de cartões e parcelas futuras na abertura de fatura
-- **Estado:** Concluída; implementada e validada em desenvolvimento.
-- **Objetivo:** Garantir que o card de cartão de crédito priorize faturas com status `fechada` pendentes de pagamento antes de exibir o ciclo aberto, e alinhar a geração de parcelas futuras de cartão de crédito para serem lançadas no dia de abertura da sua respectiva fatura (dia do fechamento anterior).
-- **Regras já alinhadas:**
-  - No card de resumo de cartões (`CreditCard::getCurrentOpenInvoice`), verificar primeiro a existência de fatura `fechada` não quitada; se houver, exibi-la imediatamente com a badge Fechada. Somente na ausência de fatura fechada pendente, exibir a fatura do ciclo aberto atual.
-  - A 1ª parcela de compras no cartão preserva a data real da transação para determinação do ciclo de início.
-  - As parcelas 2 a $N$ são vinculadas aos ciclos mensais consecutivos seguintes e registradas contabilmente no dia de abertura da respectiva fatura (dia do fechamento anterior do cartão).
-  - O fechamento e a abertura de fatura permanecem fixos no dia nominal (mesmo em fins de semana e feriados); apenas a data de vencimento é ajustada para dia útil.
-- **Checklist de implementação:**
-  - [x] Ajustar `CreditCard::getCurrentOpenInvoice` para consultar prioritariamente faturas fechadas pendentes (`status = 'fechada'`) antes da fatura do ciclo aberto.
-  - [x] Adicionar métodos `CreditCardCalendar::invoiceOpeningDate` e `CreditCardCalendar::nextInvoiceReference` para cálculo de abertura de ciclo e progressão de referências de fatura.
-  - [x] Atualizar `Transaction::createInstallmentTransactions` para registrar parcelas 2 a $N$ no cartão na data de abertura da fatura correspondente.
-  - [x] Atualizar a sincronização de parcelas subsequentes em `Transaction::update` para manter a coerência de datas na edição.
-  - [x] Atualizar o `docs/FSD.md` com as regras aprovadas.
-  - [x] Validar cenários com testes unitários de cálculo de datas e ausência de regressões com `php -l` e `git diff --check`.
-- **Critérios de aceite:** Cards de cartões exibem faturas fechadas não pagas com prioridade máxima; compras parceladas no cartão registram parcelas 2 em diante na data de abertura da fatura; compras parceladas fora do cartão mantêm o dia da compra.
-- **Arquivos/Pastas Envolvidos:** `app/Models/CreditCard.php`, `app/Helpers/CreditCardCalendar.php`, `app/Models/Transaction.php`, `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md`.
-- **Dependências:** Fases 7, 8, 21 e 22 concluídas.
-
-### Fase 24 — Campo de fatura de destino em compras no crédito com cálculo dinâmico e fallback para faturas pagas
-- **Estado:** Concluída; implementada e validada em desenvolvimento.
-- **Objetivo:** Permitir transparência e controle na alocação de compras em cartão de crédito, calculando e exibindo automaticamente a fatura sugerida com seu saldo acumulado e status, oferecendo flexibilidade para o usuário selecionar outra fatura aberta e aplicando fallback inteligente quando a data informada recair em um ciclo já pago.
-- **Regras já alinhadas:**
-  - Em compras no crédito, um campo "Fatura de Destino" exibe a fatura calculada pela data informada com referência, status e total acumulado.
-  - O usuário pode alterar a fatura de destino no modal, selecionando qualquer fatura aberta ou fechada não paga do mesmo cartão.
-  - Faturas com status `paga` são blindadas e desabilitadas para seleção.
-  - Caso o usuário não altere e a data da compra recaia em uma fatura já paga, o sistema aplica fallback automático alocando a compra na próxima fatura aberta e exibindo alerta contextual.
-  - Em compras parceladas, a fatura selecionada recebe a 1ª parcela e as subsequentes seguem a progressão mensal de abertura.
-  - O documento funcional `docs/FSD.md` foi revisado para remover qualquer menção obsoleta a mover faturas pós-lançamento.
-- **Checklist de implementação:**
-  - [x] Criar método `CreditCardInvoice::getInvoicesForPurchaseSelector` para resolver faturas elegíveis, fatura sugerida e mensagem de fallback.
-  - [x] Criar endpoint `GET /cartoes/faturas-disponiveis/{id}` em `CreditCardController` e registrar rota em `index.php`.
-  - [x] Atualizar `Transaction::create` e `Transaction::createInstallmentTransactions` para aceitar `fatura_id` e acionar fallback automático para a próxima fatura aberta se a calculada estiver paga.
-  - [x] Adicionar campo dinâmico de fatura de destino e alerta de fallback nos modais de despesa do Dashboard (`app/Views/dashboard/index.php`) e da tela de lançamentos (`app/Views/transactions/index.php`).
-  - [x] Atualizar regras e blindagem de faturas pagas em `docs/FSD.md`.
-  - [x] Executar verificações de sintaxe (`php -l`) e ausência de conflitos (`git diff --check`).
-- **Critérios de aceite:** O modal de despesa exibe a fatura calculada com total e status ao selecionar crédito; o usuário pode alterar para outra fatura aberta; datas em faturas já pagas são automaticamente alocadas na próxima fatura aberta com aviso claro; faturas pagas permanecem blindadas.
-- **Arquivos/Pastas Envolvidos:** `app/Models/CreditCardInvoice.php`, `app/Controllers/CreditCardController.php`, `index.php`, `app/Models/Transaction.php`, `app/Views/dashboard/index.php`, `app/Views/transactions/index.php`, `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md`.
-- **Dependências:** Fases 7, 8, 21, 22 e 23 concluídas.
