@@ -283,6 +283,7 @@ class CreditCard extends Model
                        WHERE f.cartao_credito_id = :card_id
                          AND c.usuario_id = :usuario_id
                          AND f.status = 'fechada'
+                         AND f.valor_total > 0
                          AND (f.ano_referencia < :ano OR (f.ano_referencia = :ano AND f.mes_referencia <= :mes))
                        ORDER BY f.ano_referencia ASC, f.mes_referencia ASC
                        LIMIT 1";

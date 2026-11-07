@@ -233,9 +233,24 @@ class CreditCardInvoice extends Model
 
     /**
      * Fecha faturas abertas cujo dia de fechamento já passou. Chamado sob demanda no runtime serverless.
+     * Faturas com valor acumulado > 0 transitam para 'fechada' (pendentes de pagamento).
+     * Faturas com valor acumulado <= 0 transitam automaticamente para 'paga' (sem débito bancário).
      */
     public function closeMaturedInvoicesForCard(int $cardId, int $userId): void
     {
+        // 1. Saneamento defensivo: faturas fechadas com saldo <= 0 sem transações ativas transitam para 'paga'
+        $stmtSanear = $this->db->prepare("UPDATE faturas_cartao
+            SET status = 'paga', pago_em = CURRENT_TIMESTAMP, atualizado_em = NOW()
+            WHERE cartao_credito_id = :card_id AND status = 'fechada' AND valor_total <= 0
+                AND EXISTS (SELECT 1 FROM cartoes_credito c
+                    WHERE c.id = faturas_cartao.cartao_credito_id AND c.usuario_id = :usuario_id)
+                AND NOT EXISTS (
+                    SELECT 1 FROM transacoes t
+                    WHERE t.fatura_id = faturas_cartao.id AND t.usuario_id = :usuario_id AND t.excluido_em IS NULL
+                )");
+        $stmtSanear->execute(['card_id' => $cardId, 'usuario_id' => $userId]);
+
+        // 2. Busca faturas abertas que atingiram ou passaram da data de fechamento
         $stmt = $this->db->prepare("SELECT f.* FROM faturas_cartao f
             INNER JOIN cartoes_credito c ON c.id = f.cartao_credito_id
             WHERE f.cartao_credito_id = :card_id AND c.usuario_id = :usuario_id
@@ -250,17 +265,30 @@ class CreditCardInvoice extends Model
             return;
         }
 
-        $update = $this->db->prepare("UPDATE faturas_cartao
+        $updateFechada = $this->db->prepare("UPDATE faturas_cartao
             SET status = 'fechada', atualizado_em = NOW()
             WHERE id = :id AND status = 'aberta'
                 AND EXISTS (SELECT 1 FROM cartoes_credito c
                     WHERE c.id = faturas_cartao.cartao_credito_id AND c.usuario_id = :usuario_id)");
 
+        $updatePaga = $this->db->prepare("UPDATE faturas_cartao
+            SET status = 'paga', pago_em = CURRENT_TIMESTAMP, atualizado_em = NOW()
+            WHERE id = :id AND status = 'aberta'
+                AND EXISTS (SELECT 1 FROM cartoes_credito c
+                    WHERE c.id = faturas_cartao.cartao_credito_id AND c.usuario_id = :usuario_id)");
+
         foreach ($maturedInvoices as $invoice) {
-            $update->execute(['id' => $invoice['id'], 'usuario_id' => $userId]);
-            if ($update->rowCount() === 1) {
-                $this->recalculateTotal((int) $invoice['id']);
-                $this->logAudit('UPDATE', (int) $invoice['id'], $invoice, ['status' => 'fechada'], $userId);
+            $total = $this->recalculateTotal((int) $invoice['id'], $userId);
+            if ($total > 0) {
+                $updateFechada->execute(['id' => $invoice['id'], 'usuario_id' => $userId]);
+                if ($updateFechada->rowCount() === 1) {
+                    $this->logAudit('UPDATE', (int) $invoice['id'], $invoice, ['status' => 'fechada'], $userId);
+                }
+            } else {
+                $updatePaga->execute(['id' => $invoice['id'], 'usuario_id' => $userId]);
+                if ($updatePaga->rowCount() === 1) {
+                    $this->logAudit('UPDATE', (int) $invoice['id'], $invoice, ['status' => 'paga'], $userId);
+                }
             }
         }
     }
@@ -363,13 +391,15 @@ class CreditCardInvoice extends Model
 
     /**
      * Recalcula o valor total da fatura com base nas transações ativas associadas.
+     * Se o total for <= 0 e a fatura estiver 'fechada', realiza quitação automática para 'paga'.
      *
      * @param int $invoiceId
+     * @param int|null $userId
      * @return float
      */
-    public function recalculateTotal(int $invoiceId): float
+    public function recalculateTotal(int $invoiceId, ?int $userId = null): float
     {
-        $userId = (int) AuthHelper::id();
+        $userId = $userId ?? (int) AuthHelper::id();
         $sql = "SELECT COALESCE(SUM(t.valor), 0) as total
                 FROM `transacoes` t
                 WHERE t.fatura_id = :fatura_id AND t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
@@ -391,6 +421,20 @@ class CreditCardInvoice extends Model
         $stmtUp->bindValue(':id', $invoiceId, PDO::PARAM_INT);
         $stmtUp->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmtUp->execute();
+
+        // Se o total recalculado for <= 0 e a fatura estiver fechada (sem saldo devedor),
+        // transita automaticamente para 'paga' para evitar que fique como pendência impagável.
+        if ($total <= 0) {
+            $sqlAutoPay = "UPDATE `faturas_cartao`
+                           SET status = 'paga', pago_em = CURRENT_TIMESTAMP, atualizado_em = NOW()
+                           WHERE id = :id AND status = 'fechada'
+                             AND EXISTS (SELECT 1 FROM cartoes_credito c
+                                 WHERE c.id = faturas_cartao.cartao_credito_id AND c.usuario_id = :usuario_id)";
+            $stmtAutoPay = $this->db->prepare($sqlAutoPay);
+            $stmtAutoPay->bindValue(':id', $invoiceId, PDO::PARAM_INT);
+            $stmtAutoPay->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+            $stmtAutoPay->execute();
+        }
 
         return $total;
     }

@@ -40,7 +40,7 @@ $corCartao = !empty($fatura['cartao_cor']) ? htmlspecialchars($fatura['cartao_co
         </div>
     </div>
     <div class="d-flex gap-2">
-        <?php if ($fatura['status'] === 'fechada'): ?>
+        <?php if ($fatura['status'] === 'fechada' && (float) $fatura['valor_total'] > 0): ?>
             <button type="button" class="btn btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#modalPagarFaturaInvoice">
                 <i class="bi bi-cash-stack me-1"></i> Pagar Fatura
             </button>

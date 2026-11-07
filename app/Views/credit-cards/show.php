@@ -137,7 +137,7 @@ $barraCor = ($porcentagem > 80) ? 'bg-danger' : (($porcentagem > 50) ? 'bg-warni
                                         <i class="bi bi-list-ul"></i>
                                     </a>
 
-                                    <?php if ($f['status'] === 'fechada'): ?>
+                                    <?php if ($f['status'] === 'fechada' && (float) $f['valor_total'] > 0): ?>
                                         <!-- Pagar Fatura -->
                                         <button type="button" class="btn btn-success btn-pay-invoice"
                                                 data-id="<?= $f['id'] ?>"
@@ -148,9 +148,14 @@ $barraCor = ($porcentagem > 80) ? 'bg-danger' : (($porcentagem > 50) ? 'bg-warni
                                             <i class="bi bi-cash-stack me-1"></i> Pagar
                                         </button>
 
-                                    <?php else: ?>
+                                    <?php elseif ($f['status'] === 'paga'): ?>
                                         <!-- Informações de Quitação -->
-                                        <button type="button" class="btn btn-outline-success disabled" title="Paga em <?= FormatHelper::dateTime($f['pago_em']) ?> via <?= htmlspecialchars($f['conta_pagamento_nome'] ?? 'Conta bancária', ENT_QUOTES, 'UTF-8') ?>">
+                                        <?php
+                                            $infoQuitacao = !empty($f['conta_pagamento_nome'])
+                                                ? 'Paga em ' . FormatHelper::dateTime($f['pago_em']) . ' via ' . htmlspecialchars($f['conta_pagamento_nome'], ENT_QUOTES, 'UTF-8')
+                                                : ((float) $f['valor_total'] <= 0 ? 'Fatura sem lançamentos (liquidada automaticamente)' : 'Paga em ' . FormatHelper::dateTime($f['pago_em']));
+                                        ?>
+                                        <button type="button" class="btn btn-outline-success disabled" title="<?= $infoQuitacao ?>">
                                             <i class="bi bi-check2-all"></i>
                                         </button>
                                     <?php endif; ?>

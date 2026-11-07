@@ -201,7 +201,13 @@ class Trash extends Model
                     throw new InvalidArgumentException('A fatura vinculada à compra não está disponível.');
                 }
                 if ($invoice['status'] === 'paga') {
-                    throw new InvalidArgumentException('Não é possível restaurar uma compra vinculada a uma fatura já paga.');
+                    if (!empty($invoice['conta_pagamento_id'])) {
+                        throw new InvalidArgumentException('Não é possível restaurar uma compra vinculada a uma fatura já paga.');
+                    }
+                    // Fatura foi quitada automaticamente por estar sem lançamentos: reabre ou fecha conforme a data de fechamento
+                    $novoStatus = ($invoice['data_fechamento'] <= date('Y-m-d')) ? 'fechada' : 'aberta';
+                    $stmtReabrir = $this->db->prepare("UPDATE faturas_cartao SET status = :status, pago_em = NULL, atualizado_em = NOW() WHERE id = :id");
+                    $stmtReabrir->execute(['status' => $novoStatus, 'id' => $invoice['id']]);
                 }
             }
 

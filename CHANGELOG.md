@@ -36,6 +36,10 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - **Rótulo "Data da Compra":** Substituição do termo "Data de Vencimento" por "Data da Compra" no modal de despesas, refletindo a data de competência da operação.
 
 ### Corrigido
+- **Auto-quitação de faturas de cartão zeradas (Feedback 15):** Faturas de cartão com valor total zerado (`valor_total <= 0`) cujo dia de fechamento já passou passam automaticamente para o status `paga` sem débito em conta bancária, evitando que fiquem travadas como pendências impagáveis no card de cartões.
+- **Transição de faturas fechadas ao cancelar ou excluir lançamentos (Feedback 15):** Ao excluir ou cancelar transações vinculadas a uma fatura fechada que reduzam seu saldo devedor a zero, o status da fatura é atualizado automaticamente para `paga`, impedindo que faturas vazias fiquem retidas como fechadas.
+- **Restauração de transações em faturas auto-quitadas (Feedback 15):** Ao restaurar da lixeira uma despesa vinculada a uma fatura que foi quitada automaticamente por saldo zerado (sem conta bancária de liquidação), a fatura é reaberta/fechada adequadamente sem bloquear a recuperação do lançamento.
+- **Ações na tabela de faturas do cartão (Feedback 15):** O botão "Pagar" só é exibido para faturas fechadas com valor estritamente positivo (`valor_total > 0`), e faturas abertas não exibem mais indevidamente o botão de quitação ("Paga em...").
 - **Link de faturas no Dashboard:** Corrigido o botão de visualização de fatura no widget de compromissos pendentes para apontar para a rota oficial `/faturas/{fatura_id}`, eliminando erro 404 em rota inexistente `/cartoes/ver/{id}`.
 - **Seleção de fatura atual no cartão:** Corrigida a lógica de seleção de fatura nos cards de cartão para refletir o ciclo corrente com base no dia de fechamento, sem transbordar para faturas de parcelas futuras distantes.
 - **Preservação da data de lançamento na edição:** Correção em `TransactionController` e `Transaction` para manter inalterada a `data_transacao` ao editar outros campos de um lançamento.
