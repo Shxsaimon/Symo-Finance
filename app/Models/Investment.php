@@ -37,6 +37,23 @@ class Investment extends Model
             'SELECT i.*, c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status
              FROM investimentos i
              INNER JOIN contas c ON c.id = i.conta_id
+             WHERE i.id = :id AND i.usuario_id = :usuario_id AND i.excluido_em IS NULL
+             LIMIT 1'
+        );
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+
+        return $row !== false ? $row : null;
+    }
+
+    public function findWithTrashed(int $id): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT i.*, c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status
+             FROM investimentos i
+             LEFT JOIN contas c ON c.id = i.conta_id
              WHERE i.id = :id AND i.usuario_id = :usuario_id
              LIMIT 1'
         );
@@ -57,7 +74,7 @@ class Investment extends Model
         $sql = 'SELECT i.*, c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status
                 FROM investimentos i
                 INNER JOIN contas c ON c.id = i.conta_id
-                WHERE i.usuario_id = :usuario_id';
+                WHERE i.usuario_id = :usuario_id AND i.excluido_em IS NULL';
         $params = [':usuario_id' => [(int) AuthHelper::id(), PDO::PARAM_INT]];
 
         $status = $filters['status'] ?? 'ativo';
@@ -114,7 +131,7 @@ class Investment extends Model
     public function getTotalInvested(): float
     {
         $stmt = $this->db->prepare(
-            "SELECT COALESCE(SUM(saldo_atual), 0) FROM investimentos WHERE usuario_id = :usuario_id AND status = 'ativo'"
+            "SELECT COALESCE(SUM(saldo_atual), 0) FROM investimentos WHERE usuario_id = :usuario_id AND status = 'ativo' AND excluido_em IS NULL"
         );
         $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
@@ -125,7 +142,7 @@ class Investment extends Model
     public function getActiveCount(): int
     {
         $stmt = $this->db->prepare(
-            "SELECT COUNT(*) FROM investimentos WHERE usuario_id = :usuario_id AND status = 'ativo'"
+            "SELECT COUNT(*) FROM investimentos WHERE usuario_id = :usuario_id AND status = 'ativo' AND excluido_em IS NULL"
         );
         $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
@@ -318,6 +335,61 @@ class Investment extends Model
     }
 
     /**
+     * Exclui logicamente uma posição de investimento (soft delete).
+     * Exige que o saldo atual seja exatamente zero.
+     * Os movimentos ativos vinculados são marcados como excluídos em lote com o mesmo timestamp.
+     *
+     * @param int $id
+     * @param int $userId
+     * @return array{success: bool, message: string}
+     */
+    public function deletePosition(int $id, int $userId): array
+    {
+        $this->db->beginTransaction();
+        try {
+            $posicao = $this->lockPosition($id, $userId);
+            if (round((float) $posicao['saldo_atual'], 2) > 0) {
+                throw new InvalidArgumentException('Para excluir o investimento, resgate ou ajuste seu saldo para R$ 0,00 primeiro.');
+            }
+
+            $now = date('Y-m-d H:i:s');
+
+            // Soft delete da posição de investimento
+            $stmt = $this->db->prepare(
+                'UPDATE investimentos SET excluido_em = :excluido_em, excluido_por = :por, atualizado_em = NOW()
+                 WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL'
+            );
+            $stmt->bindValue(':excluido_em', $now, PDO::PARAM_STR);
+            $stmt->bindValue(':por', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+
+            // Marca os movimentos ativos vinculados com o mesmo timestamp da exclusão do pai
+            $stmtMov = $this->db->prepare(
+                'UPDATE investimento_movimentos SET excluido_em = :excluido_em, excluido_por = :por, atualizado_em = NOW()
+                 WHERE investimento_id = :investimento_id AND usuario_id = :usuario_id AND excluido_em IS NULL'
+            );
+            $stmtMov->bindValue(':excluido_em', $now, PDO::PARAM_STR);
+            $stmtMov->bindValue(':por', $userId, PDO::PARAM_INT);
+            $stmtMov->bindValue(':investimento_id', $id, PDO::PARAM_INT);
+            $stmtMov->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+            $stmtMov->execute();
+
+            $this->logAudit('SOFT_DELETE', $id, $posicao, [
+                'excluido_em'  => $now,
+                'excluido_por' => $userId,
+            ], $userId);
+
+            $this->db->commit();
+            return ['success' => true, 'message' => 'Investimento excluído com sucesso e enviado para a lixeira.'];
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Registra um movimento de forma atômica.
      *
      * @param array<string, mixed> $data tipo, valor (ajuste: novo_total), data_movimento, observacoes
@@ -488,7 +560,7 @@ class Investment extends Model
     public function hasPositionsForAccount(int $contaId): bool
     {
         $stmt = $this->db->prepare(
-            'SELECT (SELECT COUNT(*) FROM investimentos WHERE conta_id = :conta_id AND usuario_id = :usuario_id)
+            'SELECT (SELECT COUNT(*) FROM investimentos WHERE conta_id = :conta_id AND usuario_id = :usuario_id AND excluido_em IS NULL)
                   + (SELECT COUNT(*) FROM investimento_movimentos WHERE conta_id = :conta_mov AND usuario_id = :usuario_mov AND excluido_em IS NULL)'
         );
         $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
@@ -581,7 +653,7 @@ class Investment extends Model
     private function lockPosition(int $id, int $userId): array
     {
         $stmt = $this->db->prepare(
-            'SELECT * FROM investimentos WHERE id = :id AND usuario_id = :usuario_id FOR UPDATE'
+            'SELECT * FROM investimentos WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL FOR UPDATE'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
@@ -634,7 +706,7 @@ class Investment extends Model
     }
 
     /** Recalcula o saldo da posição a partir do saldo inicial e dos movimentos ativos. */
-    private function recalculate(int $investimentoId, int $userId): void
+    public function recalculate(int $investimentoId, int $userId): void
     {
         $stmt = $this->db->prepare(
             "SELECT i.saldo_inicial + COALESCE(SUM(CASE WHEN m.tipo = 'resgate' THEN -m.valor ELSE m.valor END), 0)

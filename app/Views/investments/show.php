@@ -62,6 +62,17 @@ $tiposBadge = ['aporte' => 'text-bg-primary', 'resgate' => 'text-bg-warning', 'r
                 <button type="submit" class="btn-symo-primary"><i class="bi bi-arrow-counterclockwise"></i> Reativar</button>
             </form>
         <?php endif; ?>
+
+        <?php if ((float) $investimento['saldo_atual'] <= 0): ?>
+            <form action="<?= BASE_URL ?>/investimentos/excluir/<?= $invId ?>" method="POST" onsubmit="return confirm('Deseja excluir este investimento? Ele será enviado para a lixeira e você poderá restaurá-lo a qualquer momento.');">
+                <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                <button type="submit" class="btn-symo-primary"><i class="bi bi-trash"></i> Excluir</button>
+            </form>
+        <?php else: ?>
+            <button type="button" class="btn-symo-primary opacity-50" onclick="alert('Para excluir o investimento, resgate ou ajuste seu saldo para R$ 0,00 primeiro.');" title="Zere o saldo para permitir a exclusão">
+                <i class="bi bi-trash"></i> Excluir
+            </button>
+        <?php endif; ?>
     </div>
 </div>
 

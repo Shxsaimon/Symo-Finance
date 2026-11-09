@@ -15,7 +15,7 @@ class Trash extends Model
     /**
      * Retorna a quantidade de itens na lixeira para cada entidade e o total.
      *
-     * @return array{transacoes: int, contas: int, categorias: int, total: int}
+     * @return array{transacoes: int, contas: int, categorias: int, investimentos: int, movimentos_investimento: int, total: int}
      */
     public function getCounts(): array
     {
@@ -23,25 +23,45 @@ class Trash extends Model
         $sqlT = "SELECT COUNT(*) FROM `transacoes` WHERE {$scope} AND excluido_em IS NOT NULL";
         $sqlC = "SELECT COUNT(*) FROM `contas` WHERE {$scope} AND excluido_em IS NOT NULL";
         $sqlCat = "SELECT COUNT(*) FROM `categorias` WHERE {$scope} AND excluido_em IS NOT NULL";
+        $sqlI = "SELECT COUNT(*) FROM `investimentos` WHERE {$scope} AND excluido_em IS NOT NULL";
+        $sqlM = "SELECT COUNT(*) FROM `investimento_movimentos` m
+                 INNER JOIN `investimentos` i ON i.id = m.investimento_id
+                 WHERE {$this->ownerClause('m.usuario_id')}
+                   AND m.excluido_em IS NOT NULL
+                   AND i.excluido_em IS NULL";
 
         $stmtTransacoes = $this->db->prepare($sqlT);
         $this->bindOwner($stmtTransacoes);
         $stmtTransacoes->execute();
         $transacoes = (int) $stmtTransacoes->fetchColumn();
+
         $stmtContas = $this->db->prepare($sqlC);
         $this->bindOwner($stmtContas);
         $stmtContas->execute();
         $contas = (int) $stmtContas->fetchColumn();
+
         $stmtCategorias = $this->db->prepare($sqlCat);
         $this->bindOwner($stmtCategorias);
         $stmtCategorias->execute();
         $categorias = (int) $stmtCategorias->fetchColumn();
 
+        $stmtInvestimentos = $this->db->prepare($sqlI);
+        $this->bindOwner($stmtInvestimentos);
+        $stmtInvestimentos->execute();
+        $investimentos = (int) $stmtInvestimentos->fetchColumn();
+
+        $stmtMovimentos = $this->db->prepare($sqlM);
+        $this->bindOwner($stmtMovimentos, 'm.usuario_id');
+        $stmtMovimentos->execute();
+        $movimentos = (int) $stmtMovimentos->fetchColumn();
+
         return [
-            'transacoes' => $transacoes,
-            'contas'     => $contas,
-            'categorias' => $categorias,
-            'total'      => $transacoes + $contas + $categorias,
+            'transacoes'              => $transacoes,
+            'contas'                  => $contas,
+            'categorias'              => $categorias,
+            'investimentos'           => $investimentos,
+            'movimentos_investimento' => $movimentos,
+            'total'                   => $transacoes + $contas + $categorias + $investimentos + $movimentos,
         ];
     }
 
@@ -112,9 +132,53 @@ class Trash extends Model
     }
 
     /**
+     * Retorna a listagem de posições de investimento excluídas.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getDeletedInvestments(): array
+    {
+        $sql = "SELECT i.*, c.nome as conta_nome, ue.nome as excluido_por_nome,
+                       (SELECT COUNT(*) FROM `investimento_movimentos` m WHERE m.investimento_id = i.id) as total_movimentos
+                FROM `investimentos` i
+                LEFT JOIN `contas` c ON i.conta_id = c.id
+                LEFT JOIN `usuarios` ue ON i.excluido_por = ue.id
+                WHERE {$this->ownerClause('i.usuario_id')} AND i.excluido_em IS NOT NULL
+                ORDER BY i.excluido_em DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $this->bindOwner($stmt, 'i.usuario_id');
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Retorna movimentações  de investimentos excluídas cujo investimento pai está ativo.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getDeletedInvestmentMovements(): array
+    {
+        $sql = "SELECT m.*, i.nome as investimento_nome, c.nome as conta_nome, ue.nome as excluido_por_nome
+                FROM `investimento_movimentos` m
+                INNER JOIN `investimentos` i ON m.investimento_id = i.id
+                LEFT JOIN `contas` c ON m.conta_id = c.id
+                LEFT JOIN `usuarios` ue ON m.excluido_por = ue.id
+                WHERE {$this->ownerClause('m.usuario_id')}
+                  AND m.excluido_em IS NOT NULL
+                  AND i.excluido_em IS NULL
+                ORDER BY m.excluido_em DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $this->bindOwner($stmt, 'm.usuario_id');
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Restaura um item da lixeira com reprocessamento de saldo quando aplicável.
      *
-     * @param string $entity 'transacao', 'conta' ou 'categoria'
+     * @param string $entity 'transacao', 'conta', 'categoria', 'investimento' ou 'movimento_investimento'
      * @param int $id
      * @param int $currentUserId
      * @return array{success: bool, message: string}
@@ -122,12 +186,17 @@ class Trash extends Model
     public function restore(string $entity, int $id, int $currentUserId): array
     {
         $tables = [
-            'transacao'  => 'transacoes',
-            'transacoes' => 'transacoes',
-            'conta'      => 'contas',
-            'contas'     => 'contas',
-            'categoria'  => 'categorias',
-            'categorias' => 'categorias',
+            'transacao'              => 'transacoes',
+            'transacoes'             => 'transacoes',
+            'conta'                  => 'contas',
+            'contas'                 => 'contas',
+            'categoria'              => 'categorias',
+            'categorias'             => 'categorias',
+            'investimento'           => 'investimentos',
+            'investimentos'          => 'investimentos',
+            'investimento_movimento' => 'investimento_movimentos',
+            'movimento_investimento' => 'investimento_movimentos',
+            'investimento_movimentos'=> 'investimento_movimentos',
         ];
 
         if (!isset($tables[$entity])) {
@@ -137,16 +206,18 @@ class Trash extends Model
         $this->tabela = $tables[$entity];
 
         return match ($entity) {
-            'transacao', 'transacoes' => $this->restoreTransaction($id, $currentUserId),
-            'conta', 'contas'         => $this->restoreAccount($id, $currentUserId),
-            'categoria', 'categorias' => $this->restoreCategory($id, $currentUserId),
+            'transacao', 'transacoes'                                           => $this->restoreTransaction($id, $currentUserId),
+            'conta', 'contas'                                                   => $this->restoreAccount($id, $currentUserId),
+            'categoria', 'categorias'                                           => $this->restoreCategory($id, $currentUserId),
+            'investimento', 'investimentos'                                     => $this->restoreInvestment($id, $currentUserId),
+            'investimento_movimento', 'movimento_investimento', 'investimento_movimentos' => $this->restoreInvestmentMovement($id, $currentUserId),
         };
     }
 
     /**
      * Exclui definitivamente um item da lixeira (Hard Delete).
      *
-     * @param string $entity 'transacao', 'conta' ou 'categoria'
+     * @param string $entity 'transacao', 'conta', 'categoria', 'investimento' ou 'movimento_investimento'
      * @param int $id
      * @param int $currentUserId
      * @return array{success: bool, message: string}
@@ -154,10 +225,12 @@ class Trash extends Model
     public function purge(string $entity, int $id, int $currentUserId): array
     {
         return match ($entity) {
-            'transacao', 'transacoes' => $this->purgeRecord('transacoes', $id, $currentUserId),
-            'conta', 'contas'         => $this->purgeRecord('contas', $id, $currentUserId),
-            'categoria', 'categorias' => $this->purgeRecord('categorias', $id, $currentUserId),
-            default                   => ['success' => false, 'message' => 'Tipo de entidade inválido para expurgo.'],
+            'transacao', 'transacoes'                                           => $this->purgeRecord('transacoes', $id, $currentUserId),
+            'conta', 'contas'                                                   => $this->purgeRecord('contas', $id, $currentUserId),
+            'categoria', 'categorias'                                           => $this->purgeRecord('categorias', $id, $currentUserId),
+            'investimento', 'investimentos'                                     => $this->purgeInvestment($id, $currentUserId),
+            'investimento_movimento', 'movimento_investimento', 'investimento_movimentos' => $this->purgeRecord('investimento_movimentos', $id, $currentUserId),
+            default                                                             => ['success' => false, 'message' => 'Tipo de entidade inválido para expurgo.'],
         };
     }
 
@@ -318,6 +391,238 @@ class Trash extends Model
     }
 
     /**
+     * Restaura uma posição de investimento e reativa suas movimentações que foram excluídas junto com ela.
+     *
+     * @param int $id
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    private function restoreInvestment(int $id, int $currentUserId): array
+    {
+        $this->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM `investimentos` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL FOR UPDATE"
+            );
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmt);
+            $stmt->execute();
+            $inv = $stmt->fetch();
+            if (!$inv) {
+                throw new InvalidArgumentException('Investimento não encontrado ou não está na lixeira.');
+            }
+
+            // Verifica se a conta vinculada ainda existe e está ativa
+            $contaId = (int) $inv['conta_id'];
+            $stmtConta = $this->db->prepare(
+                "SELECT * FROM `contas` WHERE id = :conta_id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NULL"
+            );
+            $stmtConta->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
+            $this->bindOwner($stmtConta);
+            $stmtConta->execute();
+            if (!$stmtConta->fetch()) {
+                throw new InvalidArgumentException('A conta bancária vinculada ao investimento está excluída ou indisponível. Restaure-a antes.');
+            }
+
+            $excluidoEmInvestimento = $inv['excluido_em'];
+
+            // Restaura o investimento
+            $stmtUp = $this->db->prepare(
+                "UPDATE `investimentos` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND {$this->ownerClause('usuario_id')}"
+            );
+            $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmtUp);
+            $stmtUp->execute();
+
+            // Restaura em cascata os movimentos que foram excluídos junto com o investimento (mesmo excluido_em)
+            $stmtUpMov = $this->db->prepare(
+                "UPDATE `investimento_movimentos` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW()
+                 WHERE investimento_id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em = :excluido_em"
+            );
+            $stmtUpMov->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmtUpMov);
+            $stmtUpMov->bindValue(':excluido_em', $excluidoEmInvestimento, PDO::PARAM_STR);
+            $stmtUpMov->execute();
+
+            // Recalcula o saldo do investimento
+            (new Investment())->recalculate($id, $currentUserId);
+
+            $this->logAudit('RESTORE', $id, ['excluido_em' => $inv['excluido_em']], ['excluido_em' => null], $currentUserId);
+
+            $this->commit();
+            return ['success' => true, 'message' => "Investimento '{$inv['nome']}' e suas movimentações ativas foram restaurados com sucesso."];
+        } catch (Throwable $e) {
+            $this->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Expurgar definitivamente um investimento e todos os seus movimentos em cascata.
+     *
+     * @param int $id
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    private function purgeInvestment(int $id, int $currentUserId): array
+    {
+        $this->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM `investimentos` WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL FOR UPDATE"
+            );
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmt);
+            $stmt->execute();
+            $inv = $stmt->fetch();
+            if (!$inv) {
+                throw new InvalidArgumentException('Investimento não encontrado ou não está na lixeira.');
+            }
+
+            // Exclui todos os movimentos vinculados (em cascata)
+            $stmtDelMov = $this->db->prepare(
+                "DELETE FROM `investimento_movimentos` WHERE investimento_id = :id AND {$this->ownerClause('usuario_id')}"
+            );
+            $stmtDelMov->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmtDelMov);
+            $stmtDelMov->execute();
+
+            // Exclui a posição de investimento
+            $stmtDel = $this->db->prepare(
+                "DELETE FROM `investimentos` WHERE id = :id AND {$this->ownerClause('usuario_id')}"
+            );
+            $stmtDel->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmtDel);
+            $stmtDel->execute();
+
+            $this->tabela = 'investimentos';
+            $this->logAudit('PURGE', $id, $inv, null, $currentUserId);
+
+            $this->commit();
+            return ['success' => true, 'message' => "Investimento '{$inv['nome']}' e todas as suas movimentações foram expurgados definitivamente."];
+        } catch (Throwable $e) {
+            $this->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Restaura uma movimentação de investimento e reaplica o impacto financeiro.
+     *
+     * @param int $id
+     * @param int $currentUserId
+     * @return array{success: bool, message: string}
+     */
+    private function restoreInvestmentMovement(int $id, int $currentUserId): array
+    {
+        $this->beginTransaction();
+        try {
+            // 1. Busca e bloqueia o movimento excluído
+            $stmt = $this->db->prepare(
+                "SELECT * FROM `investimento_movimentos`
+                 WHERE id = :id AND {$this->ownerClause('usuario_id')} AND excluido_em IS NOT NULL
+                 FOR UPDATE"
+            );
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmt);
+            $stmt->execute();
+            $mov = $stmt->fetch();
+            if (!$mov) {
+                throw new InvalidArgumentException('Movimento não encontrado ou não está na lixeira.');
+            }
+
+            // 2. Busca e bloqueia a posição de investimento
+            $stmtInv = $this->db->prepare(
+                "SELECT * FROM `investimentos`
+                 WHERE id = :id AND {$this->ownerClause('usuario_id')}
+                 FOR UPDATE"
+            );
+            $stmtInv->bindValue(':id', (int) $mov['investimento_id'], PDO::PARAM_INT);
+            $this->bindOwner($stmtInv);
+            $stmtInv->execute();
+            $inv = $stmtInv->fetch();
+            if (!$inv) {
+                throw new InvalidArgumentException('O investimento vinculado a este movimento não foi encontrado.');
+            }
+
+            if (!empty($inv['excluido_em'])) {
+                throw new InvalidArgumentException('O investimento deste movimento está na lixeira. Restaure o investimento primeiro.');
+            }
+
+            $valor = (float) $mov['valor'];
+            $tipo  = (string) $mov['tipo'];
+
+            // 3. Validação atômica e reaplicação dos impactos financeiros na conta bancária (se houver)
+            if ($tipo === 'aporte') {
+                $contaId = (int) $mov['conta_id'];
+                $stmtConta = $this->db->prepare(
+                    "SELECT * FROM `contas` WHERE id = :id AND {$this->ownerClause('usuario_id')} FOR UPDATE"
+                );
+                $stmtConta->bindValue(':id', $contaId, PDO::PARAM_INT);
+                $this->bindOwner($stmtConta);
+                $stmtConta->execute();
+                $conta = $stmtConta->fetch();
+
+                if (!$conta || !empty($conta['excluido_em']) || $conta['status'] !== 'ativa') {
+                    throw new InvalidArgumentException('A conta bancária deste aporte está inativa ou excluída.');
+                }
+                if ((float) $conta['saldo_atual'] < $valor) {
+                    throw new InvalidArgumentException('Saldo insuficiente na conta vinculada para restaurar este aporte.');
+                }
+                // Debita da conta bancária
+                $sqlConta = "UPDATE `contas` SET saldo_atual = saldo_atual - :valor, atualizado_em = NOW() WHERE id = :conta_id AND usuario_id = :usuario_id";
+                $stmtC = $this->db->prepare($sqlConta);
+                $stmtC->bindValue(':valor', $valor);
+                $stmtC->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
+                $stmtC->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+                $stmtC->execute();
+            } elseif ($tipo === 'resgate') {
+                $contaId = (int) $mov['conta_id'];
+                $stmtConta = $this->db->prepare(
+                    "SELECT * FROM `contas` WHERE id = :id AND {$this->ownerClause('usuario_id')} FOR UPDATE"
+                );
+                $stmtConta->bindValue(':id', $contaId, PDO::PARAM_INT);
+                $this->bindOwner($stmtConta);
+                $stmtConta->execute();
+                $conta = $stmtConta->fetch();
+
+                if (!$conta || !empty($conta['excluido_em']) || $conta['status'] !== 'ativa') {
+                    throw new InvalidArgumentException('A conta bancária deste resgate está inativa ou excluída.');
+                }
+                if ((float) $inv['saldo_atual'] < $valor) {
+                    throw new InvalidArgumentException('Saldo insuficiente no investimento para restaurar este resgate.');
+                }
+                // Credita na conta bancária
+                $sqlConta = "UPDATE `contas` SET saldo_atual = saldo_atual + :valor, atualizado_em = NOW() WHERE id = :conta_id AND usuario_id = :usuario_id";
+                $stmtC = $this->db->prepare($sqlConta);
+                $stmtC->bindValue(':valor', $valor);
+                $stmtC->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
+                $stmtC->bindValue(':usuario_id', $currentUserId, PDO::PARAM_INT);
+                $stmtC->execute();
+            }
+
+            // 4. Limpa as flags de exclusão do movimento
+            $sqlUp = "UPDATE `investimento_movimentos` SET excluido_em = NULL, excluido_por = NULL, atualizado_em = NOW() WHERE id = :id AND {$this->ownerClause('usuario_id')}";
+            $stmtUp = $this->db->prepare($sqlUp);
+            $stmtUp->bindValue(':id', $id, PDO::PARAM_INT);
+            $this->bindOwner($stmtUp);
+            $stmtUp->execute();
+
+            // 5. Recalcula o saldo da posição de investimento
+            (new Investment())->recalculate((int) $mov['investimento_id'], $currentUserId);
+
+            $this->tabela = 'investimento_movimentos';
+            $this->logAudit('RESTORE', $id, ['excluido_em' => $mov['excluido_em']], ['excluido_em' => null], $currentUserId);
+
+            $this->commit();
+            return ['success' => true, 'message' => "Movimentação de " . ucfirst($tipo) . " no investimento '{$inv['nome']}' restaurada com sucesso."];
+        } catch (Throwable $e) {
+            $this->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Executa exclusão física definitiva no banco de dados.
      *
      * @param string $tableName
@@ -327,7 +632,7 @@ class Trash extends Model
      */
     private function purgeRecord(string $tableName, int $id, int $currentUserId): array
     {
-        $allowed = ['transacoes', 'contas', 'categorias'];
+        $allowed = ['transacoes', 'contas', 'categorias', 'investimentos', 'investimento_movimentos'];
         if (!in_array($tableName, $allowed, true)) {
             return ['success' => false, 'message' => 'Tabela inválida para expurgo.'];
         }

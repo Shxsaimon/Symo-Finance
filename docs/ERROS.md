@@ -203,3 +203,12 @@ Sempre que um erro for identificado e resolvido, adicione uma nova entrada segui
   3. Separação entre exceções de validação de negócio (`InvalidArgumentException` e `DomainException`) e falhas técnicas inesperadas (`Throwable`), registrando detalhes apenas no log interno e exibindo o diagnóstico técnico da tela 500 para o perfil `dev` mesmo quando `APP_DEBUG=false`.
   4. Neutralização de caracteres iniciais de fórmula na exportação CSV, comparação em tempo constante e validação de host no proxy `api/blob.js`, detecção de `HTTP_X_FORWARDED_PROTO` em `index.php`, padronização da regra de senha mínima de 8 caracteres com letras e números e preenchimento dos `.htaccess` internos.
 - **Como evitar no futuro:** Manter validação de destino em redirecionamentos dinâmicos, restringir mensagens de exceção exibidas na interface às classes de domínio e revisar controles de autorização em rotas de mídia privada.
+
+---
+
+## 2026-11-09 - Erro de FOR UPDATE no lado anulável de outer join no PostgreSQL ao restaurar movimento de investimento
+
+- **Sintoma:** Ao restaurar uma movimentação de investimento pela lixeira (`/lixeira`), o sistema disparava `SQLSTATE[0A000]: Feature not supported: 7 ERROR: FOR UPDATE cannot be applied to the nullable side of an outer join`.
+- **Causa:** O método `Trash::restoreInvestmentMovement` utilizava uma query unificada contendo `LEFT JOIN contas c` com cláusula genérica `FOR UPDATE`. No PostgreSQL, não é permitido aplicar `FOR UPDATE` sem qualificação de tabelas quando há junções externas (outer join / LEFT JOIN), pois a tabela no lado opcional (nullable side) pode produzir linhas nulas que não admitem lock exclusivo.
+- **Solução aplicada:** A restauração da movimentação foi refatorada para realizar o bloqueio transacional (`FOR UPDATE`) em consultas isoladas por tabela (`investimento_movimentos`, `investimentos` e, condicionalmente, `contas`), eliminando o `LEFT JOIN` com locking e preservando a integridade atômica e concorrência tanto em PostgreSQL quanto em MySQL.
+- **Como evitar no futuro:** Nunca utilizar `FOR UPDATE` global em consultas com `LEFT JOIN` ou `RIGHT JOIN`. Para operações atômicas complexas envolvendo múltiplas entidades, bloquear cada registro individualmente em queries dedicadas com chave primária dentro da transação.

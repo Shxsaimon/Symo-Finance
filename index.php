@@ -251,6 +251,7 @@ Router::post('/investimentos/salvar', [InvestmentController::class, 'store']);
 Router::post('/investimentos/atualizar/{id}', [InvestmentController::class, 'update']);
 Router::post('/investimentos/reativar/{id}', [InvestmentController::class, 'reactivate']);
 Router::post('/investimentos/desativar/{id}', [InvestmentController::class, 'deactivate']);
+Router::post('/investimentos/excluir/{id}', [InvestmentController::class, 'delete']);
 Router::post('/investimentos/movimentos/salvar/{id}', [InvestmentController::class, 'storeMovement']);
 Router::post('/investimentos/movimentos/atualizar/{id}', [InvestmentController::class, 'updateMovement']);
 Router::post('/investimentos/movimentos/excluir/{id}', [InvestmentController::class, 'deleteMovement']);

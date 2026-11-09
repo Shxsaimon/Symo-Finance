@@ -149,6 +149,25 @@ class InvestmentController extends Controller
         $this->redirect('/investimentos/' . $id);
     }
 
+    public function delete(int|string $id): void
+    {
+        $id = (int) $id;
+        $this->guardPost('/investimentos/' . $id);
+
+        try {
+            $result = $this->investmentModel->deletePosition($id, (int) AuthHelper::id());
+            FlashHelper::set('success', $result['message']);
+            $this->redirect('/investimentos');
+        } catch (InvalidArgumentException $e) {
+            FlashHelper::set('error', $e->getMessage());
+            $this->redirect('/investimentos/' . $id);
+        } catch (Throwable $e) {
+            LoggerHelper::error($e);
+            FlashHelper::set('error', 'Não foi possível excluir o investimento.');
+            $this->redirect('/investimentos/' . $id);
+        }
+    }
+
     public function storeMovement(int|string $id): void
     {
         $id = (int) $id;

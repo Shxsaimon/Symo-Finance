@@ -38,6 +38,12 @@ $csrfToken = CsrfHelper::generateToken();
                     <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1"><?= $counts['categorias'] ?></span>
                 </a>
             </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link <?= ($activeTab === 'investimentos') ? 'active fw-bold' : '' ?>" href="<?= BASE_URL ?>/lixeira?aba=investimentos">
+                    <i class="bi bi-piggy-bank me-1"></i>Investimentos
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1"><?= ($counts['investimentos'] ?? 0) + ($counts['movimentos_investimento'] ?? 0) ?></span>
+                </a>
+            </li>
         </ul>
     </div>
 
@@ -248,6 +254,185 @@ $csrfToken = CsrfHelper::generateToken();
                                             <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                                             <input type="hidden" name="entidade" value="categorias">
                                             <input type="hidden" name="id" value="<?= (int)$cat['id'] ?>">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+
+        <!-- 4. ABA DE INVESTIMENTOS -->
+        <?php if ($activeTab === 'investimentos'): ?>
+            <!-- Seção 1: Posições de Investimento Excluídas -->
+            <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                <span class="fw-bold fs-6"><i class="bi bi-piggy-bank me-2 text-muted"></i>Posições de Investimento Excluídas</span>
+                <span class="badge text-bg-secondary rounded-pill"><?= count($investimentos) ?></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 symo-table">
+                    <thead>
+                        <tr>
+                            <th>Investimento</th>
+                            <th>Conta Vinculada</th>
+                            <th>Classe</th>
+                            <th>Movimentações</th>
+                            <th>Excluído por / Em</th>
+                            <th class="text-end" style="width: 170px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($investimentos)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-trash3 fs-2 d-block mb-2 text-secondary"></i>
+                                    A lixeira de posições de investimento está vazia.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($investimentos as $inv): ?>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold" style="color: var(--symo-on-surface);">
+                                            <?= htmlspecialchars($inv['nome'], ENT_QUOTES, 'UTF-8') ?>
+                                        </div>
+                                        <?php if (!empty($inv['custodiante']) || !empty($inv['finalidade'])): ?>
+                                            <small class="text-muted">
+                                                <?= htmlspecialchars(implode(' · ', array_filter([$inv['custodiante'] ?? '', $inv['finalidade'] ?? ''])), ENT_QUOTES, 'UTF-8') ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            <?= htmlspecialchars($inv['conta_nome'] ?? 'Conta indisponível', ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted small">
+                                            <?= htmlspecialchars(Investment::CLASSES[$inv['classe']] ?? $inv['classe'], ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">
+                                            <?= (int) $inv['total_movimentos'] ?> vinculada(s)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 0.8rem;">
+                                            <span class="fw-semibold"><?= htmlspecialchars($inv['excluido_por_nome'] ?? 'Sistema', ENT_QUOTES, 'UTF-8') ?></span>
+                                            <small class="text-muted d-block"><?= FormatHelper::datetime($inv['excluido_em']) ?></small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- Restaurar Investimento -->
+                                        <form action="<?= BASE_URL ?>/lixeira/restaurar" method="POST" class="d-inline" onsubmit="return confirm('Deseja restaurar este investimento e reativar suas movimentações vinculadas?');">
+                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                            <input type="hidden" name="entidade" value="investimentos">
+                                            <input type="hidden" name="id" value="<?= (int) $inv['id'] ?>">
+                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Restaurar Investimento">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
+                                            </button>
+                                        </form>
+
+                                        <!-- Expurgar Definitivo -->
+                                        <form action="<?= BASE_URL ?>/lixeira/expurgar" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: A exclusão definitiva apagará o investimento e todas as suas movimentações de forma irreversível. Continuar?');">
+                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                            <input type="hidden" name="entidade" value="investimentos">
+                                            <input type="hidden" name="id" value="<?= (int) $inv['id'] ?>">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Seção 2: Movimentações Excluídas -->
+            <div class="p-3 bg-light border-bottom border-top d-flex justify-content-between align-items-center">
+                <span class="fw-bold fs-6"><i class="bi bi-list-check me-2 text-muted"></i>Movimentações de Investimento Excluídas</span>
+                <span class="badge text-bg-secondary rounded-pill"><?= count($movimentosInvestimento) ?></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 symo-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Data Orig.</th>
+                            <th>Investimento / Conta</th>
+                            <th>Tipo</th>
+                            <th class="text-end">Valor (R$)</th>
+                            <th>Excluído por / Em</th>
+                            <th class="text-end" style="width: 170px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($movimentosInvestimento)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-trash3 fs-2 d-block mb-2 text-secondary"></i>
+                                    Nenhuma movimentação de investimento na lixeira.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($movimentosInvestimento as $m): ?>
+                                <tr>
+                                    <td class="tabular-nums text-muted" style="font-size: 0.85rem;">
+                                        <?= FormatHelper::date($m['data_movimento']) ?>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold" style="color: var(--symo-on-surface);">
+                                            <?= htmlspecialchars($m['investimento_nome'], ENT_QUOTES, 'UTF-8') ?>
+                                        </div>
+                                        <?php if (!empty($m['conta_nome'])): ?>
+                                            <small class="text-muted d-block">Conta: <?= htmlspecialchars($m['conta_nome'], ENT_QUOTES, 'UTF-8') ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                            $tipoBadge = match ($m['tipo']) {
+                                                'aporte'     => 'bg-primary-subtle text-primary border border-primary-subtle',
+                                                'resgate'    => 'bg-success-subtle text-success border border-success-subtle',
+                                                'rendimento' => 'bg-info-subtle text-info border border-info-subtle',
+                                                default      => 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+                                            };
+                                        ?>
+                                        <span class="badge <?= $tipoBadge ?> px-2 py-1 rounded-pill">
+                                            <?= htmlspecialchars(Investment::TIPOS_MOVIMENTO[$m['tipo']] ?? ucfirst($m['tipo']), ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-end tabular-nums fw-bold">
+                                        <?= FormatHelper::currency((float) $m['valor']) ?>
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 0.8rem;">
+                                            <span class="fw-semibold"><?= htmlspecialchars($m['excluido_por_nome'] ?? 'Sistema', ENT_QUOTES, 'UTF-8') ?></span>
+                                            <small class="text-muted d-block"><?= FormatHelper::datetime($m['excluido_em']) ?></small>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- Restaurar Movimento -->
+                                        <form action="<?= BASE_URL ?>/lixeira/restaurar" method="POST" class="d-inline" onsubmit="return confirm('Deseja restaurar esta movimentação? Os saldos serão recalculados.');">
+                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                            <input type="hidden" name="entidade" value="investimento_movimentos">
+                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Restaurar Movimento">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
+                                            </button>
+                                        </form>
+
+                                        <!-- Expurgar Definitivo -->
+                                        <form action="<?= BASE_URL ?>/lixeira/expurgar" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: A exclusão definitiva não pode ser desfeita. Continuar?');">
+                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                            <input type="hidden" name="entidade" value="investimento_movimentos">
+                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
                                             <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>

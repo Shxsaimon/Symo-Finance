@@ -20,6 +20,10 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [2.3.0] — 2026-11-06 — Pacote de Usabilidade do Dashboard, Refinamento de Lançamentos e Faturas de Cartão
 
 ### Adicionado
+- **Exclusão de investimentos com Soft Delete e Lixeira (Feedback 16):** Adicionado botão e fluxo de exclusão de posições de investimento na página de detalhes (`/investimentos/{id}`). Exige que o saldo atual seja R$ 0,00 para garantir a consistência patrimonial e a rastreabilidade financeira.
+- **Aba de Investimentos na Lixeira:** Integração completa do módulo de investimentos com a Lixeira do sistema (`/lixeira?aba=investimentos`), permitindo visualizar investimentos excluídos, restaurá-los (reativando a posição e seus movimentos associados) ou expurgá-los definitivamente em cascata.
+- **Lixeira de movimentações de investimentos:** Movimentações de investimentos (aportes, resgates, rendimentos e ajustes) excluídas individualmente agora contam com listagem, restauração segura com reprocessamento atômico de saldos e expurgo físico na Lixeira.
+- **Migration 021:** Adicionadas colunas `excluido_em` e `excluido_por` na tabela `investimentos` (PostgreSQL e MySQL legado), com índice de escopo `idx_investimentos_excluido_em`.
 - **Modal unificado no Dashboard:** Botão "+ Novo Lançamento" abre modal interativo (`#modalNovoLancamento`) com abas superiores para alternância rápida entre Despesa e Receita, evitando trocas de página.
 - **Campo de Fatura de Destino dinâmico:** Seletor de fatura no modal de despesa em compras no crédito com cálculo dinâmico, exibição do status e total acumulado do ciclo.
 - **Endpoint assíncrono de faturas:** Rota `GET /cartoes/faturas-disponiveis/{id}` em `CreditCardController` alimentando as faturas abertas e fechadas não pagas disponíveis para seleção.
@@ -36,6 +40,7 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - **Rótulo "Data da Compra":** Substituição do termo "Data de Vencimento" por "Data da Compra" no modal de despesas, refletindo a data de competência da operação.
 
 ### Corrigido
+- **Restauração de movimentações de investimento na lixeira com PostgreSQL (Feedback 16):** Refatorada a query de bloqueio transacional (`FOR UPDATE`) no método `Trash::restoreInvestmentMovement`, substituindo a junção com `LEFT JOIN` por consultas atômicas dedicadas para cada tabela envolvida (`investimento_movimentos`, `investimentos` e `contas`), eliminando a incompatibilidade do PostgreSQL com locks em tabelas do lado anulável de outer joins (`SQLSTATE[0A000]`).
 - **Auto-quitação de faturas de cartão zeradas (Feedback 15):** Faturas de cartão com valor total zerado (`valor_total <= 0`) cujo dia de fechamento já passou passam automaticamente para o status `paga` sem débito em conta bancária, evitando que fiquem travadas como pendências impagáveis no card de cartões.
 - **Transição de faturas fechadas ao cancelar ou excluir lançamentos (Feedback 15):** Ao excluir ou cancelar transações vinculadas a uma fatura fechada que reduzam seu saldo devedor a zero, o status da fatura é atualizado automaticamente para `paga`, impedindo que faturas vazias fiquem retidas como fechadas.
 - **Restauração de transações em faturas auto-quitadas (Feedback 15):** Ao restaurar da lixeira uma despesa vinculada a uma fatura que foi quitada automaticamente por saldo zerado (sem conta bancária de liquidação), a fatura é reaberta/fechada adequadamente sem bloquear a recuperação do lançamento.

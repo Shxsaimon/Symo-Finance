@@ -807,7 +807,9 @@ Sem preferência registrada, a opção é considerada ativa para o usuário.
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 * `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-* *Índices:* `idx_investimentos_user_status (usuario_id, status)`, `idx_investimentos_conta (conta_id)`
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL, FK para `usuarios`
+* *Índices:* `idx_investimentos_user_status (usuario_id, status)`, `idx_investimentos_conta (conta_id)`, `idx_investimentos_excluido_em (usuario_id, excluido_em)`
 
 #### Tabela `investimento_movimentos` (Fase 19)
 
@@ -1472,6 +1474,7 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 11. Contas legadas do tipo `investimento` permanecem intactas e separadas, sem migração automática; o tipo deixa de ser oferecido em novos cadastros. O card da aba Contas soma as posições ativas e os saldos das contas legadas ativas desse tipo; o Dashboard soma somente as posições.
 12. Os investimentos são privados por usuário e não herdam o compartilhamento da Fase 18.
 13. Fora da primeira versão: carência, vencimento, rentabilidade automática, metas e integração externa.
+14. A exclusão de posições de investimento é lógica (soft delete) com retenção e recuperação na Lixeira. A exclusão exige que o saldo atual seja exatamente zero (`saldo_atual == 0.00`). Ao excluir o investimento, suas movimentações ativas vinculadas são enviadas para a lixeira agrupadas sob a posição. Movimentações de investimentos excluídas individualmente contam com listagem, restauração atômica e expurgo definitivo na Lixeira.
 
 ### 27.6. Critérios Técnicos para a Aba Investimentos
 

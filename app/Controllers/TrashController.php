@@ -28,7 +28,7 @@ class TrashController extends Controller
         AuthHelper::requireLogin();
 
         $activeTab = $_GET['aba'] ?? 'transacoes';
-        if (!in_array($activeTab, ['transacoes', 'contas', 'categorias'], true)) {
+        if (!in_array($activeTab, ['transacoes', 'contas', 'categorias', 'investimentos'], true)) {
             $activeTab = 'transacoes';
         }
 
@@ -36,14 +36,18 @@ class TrashController extends Controller
         $transacoes = $this->trashModel->getDeletedTransactions();
         $contas     = $this->trashModel->getDeletedAccounts();
         $categorias = $this->trashModel->getDeletedCategories();
+        $investimentos = $this->trashModel->getDeletedInvestments();
+        $movimentosInvestimento = $this->trashModel->getDeletedInvestmentMovements();
 
         $this->render('trash/index', [
-            'title'      => 'Lixeira do Sistema — Symo',
-            'activeTab'  => $activeTab,
-            'counts'     => $counts,
-            'transacoes' => $transacoes,
-            'contas'     => $contas,
-            'categorias' => $categorias,
+            'title'                  => 'Lixeira do Sistema — Symo',
+            'activeTab'              => $activeTab,
+            'counts'                 => $counts,
+            'transacoes'             => $transacoes,
+            'contas'                 => $contas,
+            'categorias'             => $categorias,
+            'investimentos'          => $investimentos,
+            'movimentosInvestimento' => $movimentosInvestimento,
         ], 'layouts/main');
     }
 
@@ -77,7 +81,14 @@ class TrashController extends Controller
             FlashHelper::set('error', $result['message']);
         }
 
-        $this->redirect('/lixeira?aba=' . urlencode($entidade));
+        $abaRedirect = match ($entidade) {
+            'investimento', 'investimentos', 'investimento_movimento', 'movimento_investimento', 'investimento_movimentos' => 'investimentos',
+            'conta', 'contas' => 'contas',
+            'categoria', 'categorias' => 'categorias',
+            default => 'transacoes',
+        };
+
+        $this->redirect('/lixeira?aba=' . $abaRedirect);
     }
 
     /**
@@ -110,7 +121,14 @@ class TrashController extends Controller
             FlashHelper::set('error', $result['message']);
         }
 
-        $this->redirect('/lixeira?aba=' . urlencode($entidade));
+        $abaRedirect = match ($entidade) {
+            'investimento', 'investimentos', 'investimento_movimento', 'movimento_investimento', 'investimento_movimentos' => 'investimentos',
+            'conta', 'contas' => 'contas',
+            'categoria', 'categorias' => 'categorias',
+            default => 'transacoes',
+        };
+
+        $this->redirect('/lixeira?aba=' . $abaRedirect);
     }
 }
 
