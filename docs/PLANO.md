@@ -28,6 +28,8 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
 - **Fase 18:** Compartilhamento por conta (roadmap)
 - **Fase 19:** Investimentos
 - **Fase 20:** Perfil do usuário e acesso pela navegação
+- **Fase 21:** Revisão Geral de UX/UI, Design Tokens e Padronização de Componentes Frontend
+- **Fase 22:** Gestão do Sistema, Histórico de Atualizações e Pipeline Seguro de Migrations
 
 ---
 
@@ -288,7 +290,7 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
   - [x] Adicionar a tela à navegação administrativa desktop e mobile.
   - [x] Validar sintaxe PHP e diagnósticos estáticos dos arquivos alterados.
   - [x] Validar listagem e leitura das imagens em ambiente integrado com banco e Vercel Blob.
-- **Estado:** Implementada; validação integrada depende do ambiente configurado.
+- **Estado:** Concluída.
 
 ### Fase 16 — Correção dos achados prioritários de isolamento e integridade
 - **Checklist:**
@@ -338,7 +340,7 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
   - [x] Executar a migration no banco alvo pelo workflow oficial e confirmar a conclusão sem divergências.
   - [x] Executar a migration do catálogo pelo workflow oficial.
   - [x] Publicar o ajuste de inativação/reativação global e validar o fluxo pela tela.
-- **Estado:** Migration aplicada; correção de reativação preparada, publicação e validação integrada validados.
+- **Estado:** Concluída.
 - **Critérios de aceite:** A inativação individual não altera as opções dos demais; inativar globalmente impede novos usos para todos e reativar restaura a disponibilidade sem mudar preferências pessoais; nenhum vínculo histórico é perdido; somente o `dev` altera o status global.
 
 ### Fase 18 — Compartilhamento por conta
@@ -357,7 +359,7 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
 - **Critérios de aceite:** Convites pendentes não concedem acesso; o participante vê apenas lançamentos posteriores ao aceite e da conta autorizada; revogação encerra o acesso; e transferências nunca cruzam proprietários.
 
 ### Fase 19 — Investimentos
-- **Estado:** Implementada e validada no ambiente de testes; pendente de teste manual e aplicação em produção.
+- **Estado:** Concluída.
 - **Objetivo:** Criar a aba Investimentos para registrar posições (aplicações e reservas/"caixinhas") sem exigir conta bancária do tipo `investimento`.
 - **Regras já alinhadas:**
   - Posição: nome livre, conta vinculada obrigatória (ativa e não do tipo legado `investimento`), custodiante opcional em texto livre, classe opcional e finalidade opcional (apenas etiqueta). Saldo inicial zero ou maior, com data editável, sem movimentar contas.
@@ -397,3 +399,97 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
   - [x] Preservar CSRF e auditoria; exigir senha atual, confirmação e mínimo de 8 caracteres para troca de senha; manter validações do avatar.
   - [x] Testar em ambiente integrado e autenticado e-mail inválido, duplicado, válido ainda não verificado, tentativa de alterar outro usuário e sessão após atualização.
 - **Critérios de aceite:** Todos os usuários autenticados encontram e acessam `/perfil`; alterações afetam somente o próprio usuário; e-mails inválidos ou duplicados são recusados, e um e-mail sintaticamente válido pode ser salvo sem confirmação; `/configuracoes` não oferece edição de perfil nem fuso horário.
+
+---
+
+### Fase 21 — Revisão Geral de UX/UI, Design Tokens e Padronização de Componentes Frontend
+- **Estado:** Planejada (Roadmap).
+- **Objetivo:** Reformulação completa da experiência visual, de feedback e ergonômica do Symo, substituindo interações nativas do navegador e layouts densos de estilo contábil/ERP por uma interface moderna, consistente, acolhedora e fluida tanto no desktop quanto no mobile.
+- **Regras já alinhadas:**
+  - **Temas e Cores:**
+    - Implementar seletor formal de tema: **Claro**, **Escuro** e **Automático (do sistema)**, acessível tanto no menu do usuário (ao lado da foto no cabeçalho) quanto nas preferências em `/configuracoes`.
+    - Padronizar cores e hierarquia de botões de ação: perigo destacado para excluir/apagar/expurgar; secundário/neutro para editar; link/discreto para visualização/detalhes.
+    - Atualizar a aplicação para a nova identidade visual e logotipo desenvolvidos no Figma, substituindo elementos genéricos.
+    - Eliminar personalizações legadas corporativas em Configurações (ex.: "Nome da Empresa"), consolidando a identidade estritamente voltada a finanças pessoais/familiares.
+  - **Layout e Navegação:**
+    - Sidebar desktop com suporte a recolher/colapsar (exibindo apenas ícones) para ganho de área útil de tela.
+    - Remover o sufixo redundante `" — Symo"` dos cabeçalhos internos de cada tela.
+    - Navegação mobile mantida via menu lateral offcanvas otimizado para toque, sem inclusão de bottom bar.
+  - **Componentes Globais de Feedback e Interação:**
+    - Substituir integralmente caixas de diálogo nativas (`window.confirm`) por modais padronizados com o design system do Symo e botões de perigo para ações destrutivas.
+    - Substituir alertas estáticos de topo que empurram o conteúdo por um sistema de notificações flutuantes (*Toasts*) com auto-fechamento e ícones por severidade.
+    - Adicionar estado de carregamento (*loading*) com spinner e trava anti-duplo clique em botões de formulário durante o processamento.
+    - Revisar e enriquecer os estados vazios (*empty states*) de todas as telas com ilustrações/ícones temáticos e botões de ação direta.
+  - **Formulários e Entradas:**
+    - Validação visual nos campos com destaque suave e texto explicativo abaixo de campos pendentes ou incorretos ao submeter.
+    - Máscaras e formatação em tempo real para campos monetários (`R$ 0,00`) e datas (`DD/MM/AAAA`).
+  - **Tabelas e Listagens (Fim do estilo ERP/Contábil):**
+    - Redesenhar visualmente as tabelas no desktop com tipografia mais leve, badges de status modernos e espaçamento equilibrado.
+    - No mobile, eliminar o scroll horizontal desconfortável das tabelas clássicas, transformando as listagens em **cards compactos e empilhados** (estilo feed/extrato bancário moderno) otimizados para a largura útil do smartphone.
+  - **Dashboard e Gráficos:**
+    - Unificar o seletor de Mês/Ano do Dashboard ao modelo da aba Investimentos: navegação por setas `< Mês/Ano >` com clique central para abrir modal/picker de mês e ano específicos.
+    - Redesenhar o gráfico de evolução financeira dos últimos 6 meses para mobile, exibindo **3 meses em tamanho legível** com navegação/arraste para os outros 3 meses.
+    - Personalizar tooltips e curvas do Chart.js com as cores da marca e contraste adaptado ao tema claro/escuro.
+  - **Metodologia de Execução:**
+    - A revisão será executada de forma minuciosa **tela a tela**, validando e adaptando cada módulo do sistema (Dashboard, Lançamentos, Contas, Categorias, Cartões/Faturas, Transferências, Investimentos, Relatórios, Lixeira, Configurações/Perfil).
+- **Checklist de implementação:**
+  - [ ] Implementar suporte a tema Claro, Escuro e Automático com seletor no menu do usuário e em `/configuracoes`.
+  - [ ] Padronizar cores de botões e ações de tabela (excluir, editar, visualizar) em todas as views.
+  - [ ] Integrar novo logotipo e identidade visual do Figma e remover configurações corporativas legadas.
+  - [ ] Implementar recolhimento/colapso da sidebar no desktop e limpar títulos internos das telas.
+  - [ ] Criar utilitário global de modais de confirmação customizados do Symo e substituir todos os `confirm()`.
+  - [ ] Implementar contêiner de Toasts flutuantes com integração ao `FlashHelper` e auto-dismiss.
+  - [ ] Implementar proteção anti-duplo clique e spinners de loading nos botões de submissão de formulários.
+  - [ ] Revisar e implementar empty states ilustrados com CTAs diretos em todas as listagens.
+  - [ ] Implementar validação visual com mensagens sob os campos e máscaras monetárias/datas fluidas.
+  - [ ] Redesenhar tabelas desktop com estilo moderno e implementar visualização em cards empilhados no mobile.
+  - [ ] Padronizar o seletor de Mês/Ano do Dashboard com setas e picker central.
+  - [ ] Adaptar o gráfico de evolução financeira de 6 meses para visualização em 3 meses paginados no mobile.
+  - [ ] Executar revisão e refinamento tela a tela em todo o sistema.
+- **Critérios de aceite:** 100% das telas harmonizadas; nenhum `confirm()` nativo em uso; alternância de tema fluida; mobile sem rolagem horizontal em tabelas; gráficos legíveis em telas pequenas; formulários com validação clara e proteção contra duplo clique.
+
+---
+
+### Fase 22 — Gestão do Sistema, Histórico de Atualizações e Pipeline Seguro de Migrations
+- **Estado:** Planejada (Roadmap).
+- **Objetivo:** Estabelecer um ciclo de atualização seguro e controlado internamente pelo perfil `dev`, integrando autorização de commits da branch `main`, aplicação atômica de migrations no banco antes do deploy na Vercel, histórico detalhado de releases e contingência em tempo de execução para prevenir indisponibilidade por descompasso de schema.
+- **Regras já alinhadas:**
+  - **Fluxo de Deploy e Git:**
+    - Branch única de desenvolvimento: `main`, sem dependência de branches intermediárias.
+    - O deploy automático de produção acionado por push na `main` será desativado nas configurações da Vercel.
+    - O deploy de produção na Vercel será disparado exclusivamente por Deploy Hook chamado pelo GitHub Actions após confirmação de sucesso na execução das migrations.
+  - **Nova Tela "Sistema" (`/sistema`):**
+    - Tela dedicada e exclusiva do perfil `dev`, protegida por `requireDev()` e adicionada ao menu de Administração.
+    - A gestão técnica de migrations e GitHub Actions é completamente transferida de `/configuracoes` para `/sistema`, deixando `/configuracoes` restrita a preferências do usuário.
+    - **Painel Unificado de Atualizações e Migrations:**
+      - Exibição da versão atual do sistema e SHA do commit ativo.
+      - Comparativo com a branch `main` via API do GitHub: listagem dos commits pendentes contendo mensagem, autor, data/hora e a versão correspondente a cada commit (extraída do `CHANGELOG.md` no momento do commit).
+      - Indicador de migrations pendentes no código em relação ao banco Neon.
+      - Botão principal unificado: **"Autorizar e Atualizar Sistema"**.
+      - Ao autorizar a atualização, o Symo dispara um workflow dedicado no GitHub Actions que:
+        1. Executa `php migrate.php` contra o Neon de produção. Em caso de falha, o workflow aborta imediatamente, mantendo o ambiente de produção na versão estável anterior sem publicar o código novo;
+        2. Se as migrations concluírem com 100% de sucesso, aciona o Deploy Hook da Vercel para publicar a versão;
+        3. Registra os metadados do lote de atualização no histórico do sistema.
+    - **Histórico Consolidado de Atualizações:**
+      - Substitui a listagem isolada de migrations por um histórico detalhado de atualizações do sistema: data/hora, versão alcançada, usuário que autorizou, lista de commits integrados, migrations executadas no lote e logs de execução.
+    - **Aba de Diagnóstico e Ambiente:**
+      - Monitoramento do status operacional e latência dos serviços integrados:
+        - *PostgreSQL (Neon):* teste de conectividade ativa (`SELECT 1`), medição de latência em milissegundos e status SSL;
+        - *Vercel Blob:* validação da presença e formato das credenciais e integridade do proxy autenticado;
+        - *GitHub Actions API:* validação do token (`GITHUB_ACTIONS_TOKEN`) e conectividade com a API de repositórios;
+        - *Runtime PHP:* versão do PHP, fuso horário ativo, limites de memória/execução e presença de extensões essenciais (`pdo_pgsql`, `openssl`, `mbstring`, `fileinfo`).
+  - **Mecanismo de Proteção em Tempo de Execução (Modo Manutenção / Gatekeeper no PHP):**
+    - Verificação no bootstrap (`index.php`): se o código em execução contiver migrations superiores às aplicadas no banco:
+      - Usuários comuns: redirecionamento para página amigável HTTP 503 ("O Symo está sendo atualizado. Voltamos em alguns instantes."), prevenindo erros 500 ou quebras de tela;
+      - Usuário `dev`: acesso mantido ou tela de contingência para execução emergencial direta das migrations pendentes.
+- **Checklist de implementação:**
+  - [ ] Desativar o auto-deploy de produção na `main` na Vercel e configurar o Deploy Hook como segredo do repositório.
+  - [ ] Criar workflow dedicado no GitHub Actions (`system-update.yml`) orquestrando: migrations no Neon ➔ validação de sucesso ➔ chamada do Deploy Hook da Vercel.
+  - [ ] Criar controller, rota `/sistema`, view dedicada e navegação administrativa exclusiva para o perfil `dev`.
+  - [ ] Migrar controles e visualizador de logs de migrations de `/configuracoes` para `/sistema`.
+  - [ ] Implementar integração com a API do GitHub para buscar commits pendentes na `main` e parsear a versão associada no `CHANGELOG.md`.
+  - [ ] Criar tabela/modelo para registrar o histórico consolidado de atualizações (versão, commits, migrations, data e autor).
+  - [ ] Desenvolver a aba de Diagnóstico e Ambiente com testes de conectividade ativa do Neon, Blob, GitHub API e PHP.
+  - [ ] Implementar o guardião de contingência no `index.php` com tela amigável 503 para usuários comuns quando houver descompasso de migrations.
+  - [ ] Testar o ciclo completo de ponta a ponta: commit na `main` ➔ detecção na tela `/sistema` ➔ autorização ➔ migration atômica ➔ deploy na Vercel ➔ registro no histórico.
+- **Critérios de aceite:** Pushes na `main` não atualizam a produção automaticamente; atualizações ocorrem somente por autorização do `dev` no Symo; o código novo nunca entra no ar antes da migration ter sido aplicada com sucesso; falhas em migrations abortam o deploy sem quebrar o sistema; usuários nunca visualizam erros de schema/SQL; a tela `/sistema` centraliza atualizações, histórico e diagnóstico do ambiente.

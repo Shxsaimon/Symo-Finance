@@ -64,6 +64,8 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 | **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
 | **Fase 19** | Investimentos | Concluída; |
 | **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
+| **Fase 21** | Revisão Geral de UX/UI, Design Tokens e Padronização de Componentes Frontend | Planejada (Roadmap) |
+| **Fase 22** | Gestão do Sistema, Histórico de Atualizações e Pipeline Seguro de Migrations | Planejada (Roadmap) |
 
 ---
 
@@ -295,3 +297,31 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 - [x] Atualização de `AGENTS.md` para o Modo Manutenção com o protocolo de 7 etapas prévias e 5 etapas posteriores, regras de segurança, stack oficial e diretrizes para evitar regressões.
 - [x] Registro das pendências residuais de roadmap: Fase 14 (OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta).
 - **Estado:** Concluída; documentação final de manutenção estabelecida e contexto de agentes atualizado para modo manutenção.
+
+### Fase 21 — Revisão Geral de UX/UI, Design Tokens e Padronização de Componentes Frontend
+- [ ] Implementar suporte a tema Claro, Escuro e Automático com seletor no menu do usuário e em `/configuracoes`.
+- [ ] Padronizar cores de botões e ações de tabela (excluir, editar, visualizar) em todas as views.
+- [ ] Integrar novo logotipo e identidade visual do Figma e remover configurações corporativas legadas.
+- [ ] Implementar recolhimento/colapso da sidebar no desktop e limpar títulos internos das telas.
+- [ ] Criar utilitário global de modais de confirmação customizados do Symo e substituir todos os `confirm()`.
+- [ ] Implementar contêiner de Toasts flutuantes com integração ao `FlashHelper` e auto-dismiss.
+- [ ] Implementar proteção anti-duplo clique e spinners de loading nos botões de submissão de formulários.
+- [ ] Revisar e implementar empty states ilustrados com CTAs diretos em todas as listagens.
+- [ ] Implementar validação visual com mensagens sob os campos e máscaras monetárias/datas fluidas.
+- [ ] Redesenhar tabelas desktop com estilo moderno e implementar visualização em cards empilhados no mobile.
+- [ ] Padronizar o seletor de Mês/Ano do Dashboard com setas e picker central.
+- [ ] Adaptar o gráfico de evolução financeira de 6 meses para visualização em 3 meses paginados no mobile.
+- [ ] Executar revisão e refinamento tela a tela em todo o sistema.
+- **Estado:** Planejada (Roadmap); escopo e diretrizes alinhados integralmente.
+
+### Fase 22 — Gestão do Sistema, Histórico de Atualizações e Pipeline Seguro de Migrations
+- [ ] Desativar o auto-deploy de produção na `main` na Vercel e configurar o Deploy Hook como segredo do repositório.
+- [ ] Criar workflow dedicado no GitHub Actions (`system-update.yml`) orquestrando: migrations no Neon ➔ validação de sucesso ➔ chamada do Deploy Hook da Vercel.
+- [ ] Criar controller, rota `/sistema`, view dedicada e navegação administrativa exclusiva para o perfil `dev`.
+- [ ] Migrar controles e visualizador de logs de migrations de `/configuracoes` para `/sistema`.
+- [ ] Implementar integração com a API do GitHub para buscar commits pendentes na `main` e parsear a versão associada no `CHANGELOG.md`.
+- [ ] Criar tabela/modelo para registrar o histórico consolidado de atualizações (versão, commits, migrations, data e autor).
+- [ ] Desenvolver a aba de Diagnóstico e Ambiente com testes de conectividade ativa do Neon, Blob, GitHub API e PHP.
+- [ ] Implementar o guardião de contingência no `index.php` com tela amigável 503 para usuários comuns quando houver descompasso de migrations.
+- [ ] Testar o ciclo completo de ponta a ponta: commit na `main` ➔ detecção na tela `/sistema` ➔ autorização ➔ migration atômica ➔ deploy na Vercel ➔ registro no histórico.
+- **Estado:** Planejada (Roadmap); escopo e diretrizes alinhados integralmente.
