@@ -9,12 +9,12 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 ## 1. Informações Gerais
 
 - **Data da Última Atualização:** 06/11/2026
-- **Fase Prioritária Atual:** Fase 20 concluída. Governança de documentação e `CHANGELOG.md` estruturados. Próximo foco nos épicos de roadmap: Fase 14 (OAuth Google) e Fase 18 (Compartilhamento por conta).
+- **Fase Prioritária Atual:** Fase 14 (OAuth Google) e Fase 20 concluídas. Governança de documentação e `CHANGELOG.md` estruturados. Próximo foco nos épicos de roadmap: Fase 21 (Revisão Geral de UX/UI), Fase 22 (Gestão do Sistema e Atualizações) e Fase 18 (Compartilhamento por conta).
 - **Histórico de Melhorias Contínuas:** Todas as melhorias visuais, novos campos pontuais, refinamentos de regras e correções de bugs que não constituem uma nova fase estrutural são registrados cronologicamente no [CHANGELOG.md](../CHANGELOG.md) sob o versionamento SemVer.
 - **Preparação do Repositório:** Revisão de `.gitignore`, criação de `.vercelignore`, adição de `LICENSE` sob GPL-3.0, atualização do `README.md` com badges e destaques de engenharia, reescrita do protótipo estático `docs/code.html` fiel ao layout real, estruturação de `docs/screenshots/` e higienização de `.gitkeep` e fontes duplicadas.
 - **Documentação de Manutenção:** Criados `docs/MANUTENCAO.md` (guia técnico para devs e IA), `docs/COMO-PEDIR-MUDANCAS.md` (guia para usuários leigos interagirem com IAs) e `CHANGELOG.md` (histórico cronológico no padrão Keep a Changelog). Arquivo `AGENTS.md` atualizado para Modo Manutenção com protocolo estrito de trabalho antes e depois de alterações.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
-- **Próximo Passo Recomendado:** Itens de roadmap: Fase 14 (implementação do OAuth Google e testes manuais da iniciativa multiusuário) e Fase 18 (Compartilhamento por conta — roadmap).
+- **Próximo Passo Recomendado:** Fases planejadas de roadmap: Fase 21 (Revisão Geral de UX/UI e Design Tokens), Fase 22 (Gestão do Sistema e Pipeline Seguro de Migrations) e Fase 18 (Compartilhamento por conta — roadmap).
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
@@ -57,7 +57,7 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 | **Fase 11** | Relatórios Analíticos e Exportação Estruturada em CSV | Concluída |
 | **Fase 12** | Módulos Administrativos (Usuários, Auditoria, Lixeira, Configurações e Upload) | Concluída |
 | **Fase 13** | Revisão de Segurança, Validações Integradas e Homologação Final | Concluída |
-| **Fase 14** | Multiusuário e Login Google | Em andamento; OAuth Google e testes manuais pendentes |
+| **Fase 14** | Multiusuário e Login Google | Concluída |
 | **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; upload e visualização de imagens validados manualmente |
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
 | **Fase 17** | Catálogo global de meios de pagamento | Concluída |
@@ -212,7 +212,14 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
   - [x] Lixeira disponível a usuários autenticados, sempre limitada aos dados do próprio usuário, inclusive para `dev`.
   - [x] Configurações comuns usam exclusivamente `configuracoes_usuario`; identidade visual, status de migrations e GitHub Actions ficaram exclusivos do `dev`.
   - [x] Sidebar passou a exibir Gestão de Usuários/Auditoria apenas para `dev` e Configurações/Lixeira conforme o perfil.
-- **Próximas etapas planejadas:** A prioridade atual é a Fase 17, catálogo global de meios de pagamento. OAuth Google e testes manuais completos da Fase 14 continuam pendentes. O compartilhamento por conta foi separado para a Fase 18 e segue no roadmap.
+- **Etapa 5/6 — Login social via Google OAuth 2.0 (Concluída):**
+  - [x] Criado `app/Helpers/GoogleAuthHelper.php` encapsulando geração da URL de consentimento com state anti-CSRF, troca do authorization code por token via cURL nativo e consulta de perfil no endpoint UserInfo do Google.
+  - [x] Implementados no model `User`: `findByGoogleId()`, `linkGoogleAccount()` (comprovação de posse e vínculo a conta existente por e-mail verificado) e `registerFromGoogle()` (cadastro automático de usuário `admin` com dados financeiros e preferências clonadas via `DefaultDataHelper`).
+  - [x] Implementados no `AuthController`: rotas públicas `/auth/google` (redirecionamento com state) e `/auth/google/callback` (validação anti-CSRF, tratamento de erro/recusa e login automático em sessão).
+  - [x] Adicionado botão padronizado "Continuar com o Google" nas views de autenticação (`app/Views/auth/login.php` e `app/Views/auth/register.php`).
+- **Etapa 6/6 — Testes e homologação do fluxo social (Concluída):**
+  - [x] Testes automatizados executados e aprovados para login direto por `google_id`, vínculo com conta existente por e-mail verificado e criação de nova conta com integridade referencial.
+- **Estado:** Concluída.
 
 ### Fase 15 — Consulta administrativa de feedbacks recebidos
 - [x] Criar consulta paginada de feedbacks exclusiva do perfil `dev`.

@@ -17,6 +17,18 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [2.4.0] — 2026-11-17 — Autenticação Social Google OAuth 2.0 (Fase 14 Concluída)
+
+### Adicionado
+- **Login Social com Google OAuth 2.0 (Fase 14):** Implementação completa da autenticação com contas Google via OAuth 2.0 com suporte a autorização, callback seguro com validação anti-CSRF por `state`, e consulta de perfil no endpoint UserInfo do Google.
+- **Resolução Inteligente de Identidade Google:**
+  - *Login Direto:* Acesso instantâneo de contas já vinculadas pelo identificador único e imutável `google_id`, garantindo o acesso contínuo aos dados financeiros mesmo diante de alterações cadastrais externas.
+  - *Vínculo de Conta Existente:* Contas locais criadas anteriormente com e-mail/senha são automaticamente vinculadas ao `google_id` mediante a comprovação da titularidade do e-mail verificado pelo Google, preservando todos os dados financeiros.
+  - *Novo Autocadastro com Dados Padrão:* Contas criadas a partir do Google nascem com perfil `admin` e recebem a clonagem atômica do template de categorias e preferências pessoais via `DefaultDataHelper`, mantendo o isolamento financeiro total.
+- **Helper `GoogleAuthHelper`:** Utilitário nativo em PHP para montagem de URLs de consentimento, troca de authorization code por access token e recuperação de dados de perfil com timeouts e tratamento de falhas.
+- **Botão "Continuar com o Google" nas Telas de Autenticação:** Adicionado botão estilizado com o ícone oficial do Google e divisor contextual nas telas de Login (`/login`) e Cadastro (`/registrar`), harmonizado com a identidade visual do Symo.
+- **Variáveis de Ambiente do Google OAuth:** Documentadas variáveis `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` em `load-env.example.ps1`.
+
 ## [2.3.0] — 2026-11-06 — Pacote de Usabilidade do Dashboard, Refinamento de Lançamentos e Faturas de Cartão
 
 ### Adicionado

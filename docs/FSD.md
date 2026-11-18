@@ -260,8 +260,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 * **Objetivo:** Garantir acesso individual seguro, criação autônoma de conta e isolamento financeiro.
 * **Usuários Envolvidos:** Visitantes, `admin`, `operador` legado e `dev` técnico.
-* **Ações Entregues:** Autocadastro, login e logout, perfil, senha, avatar, sessão persistida no banco e bloqueio por tentativas inválidas.
-* **Planejado:** OAuth Google, verificação de e-mail e recuperação de senha por e-mail. A tela de esqueci a senha ainda não conclui uma redefinição.
+* **Ações Entregues:** Autocadastro local e autenticação social via Google OAuth 2.0 (com resolução de identidade: login direto por `google_id`, vínculo automático com comprovação de e-mail e cadastro com dados padrão), login e logout, perfil, senha, avatar, sessão persistida no banco e bloqueio por tentativas inválidas.
+* **Planejado:** Verificação de e-mail e recuperação de senha por e-mail transacional. A tela de esqueci a senha ainda não conclui uma redefinição.
 
 ### 6.2. Módulo de Dashboard Financeiro
 
@@ -1407,13 +1407,12 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 
 ## 27. Pontos Pendentes e Decisões Futuras
 
-1. **OAuth Google (Fase 14):** Implementar autorização, callback, validação de identidade, vínculo por `google_id`, login e criação de conta com dados padrão.
-2. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
+1. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
+2. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
 3. **Contas Compartilhadas (Fase 18):** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
 4. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
-5. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
-6. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
-7. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
+5. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
+6. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
 
 ### 27.1. Critérios Funcionais para Contas Compartilhadas
 

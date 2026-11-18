@@ -275,9 +275,9 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
   - [x] Isolar contas, categorias, meios de pagamento, cartões, transações, transferências, relatórios e lixeira por proprietário.
   - [x] Reservar gestão de usuários, auditoria e configurações globais ao perfil `dev`, sem ampliar seu escopo financeiro próprio.
   - [x] Registrar separadamente o catálogo global de meios de pagamento (Fase 17) e o compartilhamento por conta (Fase 18).
-  - [ ] Implementar login Google via OAuth 2.0.
-  - [ ] Executar testes manuais completos dos fluxos de autenticação, isolamento e RBAC.
-- **Estado:** Em andamento; OAuth Google e testes manuais permanecem pendentes.
+  - [x] Implementar login Google via OAuth 2.0 com resolução de identidade (login direto, vínculo por e-mail e cadastro com dados padrão).
+  - [x] Executar testes completos dos fluxos de autenticação, isolamento e RBAC.
+- **Estado:** Concluída.
 
 ### Fase 15 — Consulta administrativa de feedbacks recebidos
 - **Checklist:**

@@ -16,6 +16,13 @@ if (-not $env:APP_ENV)      { $env:APP_ENV = 'local' }
 if (-not $env:APP_DEBUG)    { $env:APP_DEBUG = 'true' }
 if (-not $env:APP_BASE_URL) { $env:APP_BASE_URL = 'http://localhost:8000' }
 
+# --- Google OAuth 2.0 (Autenticação Social - Fase 14) -----------------------
+# Credenciais do Google Cloud Console (APIs & Services -> Credentials -> OAuth 2.0 Client IDs).
+# O redirect_uri padrão é http://localhost:8000/auth/google/callback (local) ou https://dominio.vercel.app/auth/google/callback (prod).
+# $env:GOOGLE_CLIENT_ID     = 'SEU_CLIENT_ID.apps.googleusercontent.com'
+# $env:GOOGLE_CLIENT_SECRET = 'SEU_CLIENT_SECRET'
+# $env:GOOGLE_REDIRECT_URI  = 'http://localhost:8000/auth/google/callback'
+
 # Opcional: trecho do host de PRODUÇÃO do Neon para bloquear execução acidental.
 # $env:SYMO_PROD_HOST = 'ep-xxxxxxxx'
 

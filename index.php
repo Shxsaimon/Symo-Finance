@@ -182,6 +182,8 @@ Router::post('/logout', [AuthController::class, 'logout']);
 Router::get('/esqueci-senha', [AuthController::class, 'showForgotPassword']);
 Router::get('/registrar', [AuthController::class, 'showRegister']);
 Router::post('/registrar', [AuthController::class, 'register']);
+Router::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
+Router::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
 // Rota de Dashboard (Protegida por Autenticação com Layout Mestre)
 Router::get('/dashboard', [DashboardController::class, 'index']);

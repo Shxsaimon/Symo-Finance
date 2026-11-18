@@ -230,4 +230,163 @@ class AuthController extends Controller
         FlashHelper::set('success', 'Conta criada com sucesso! Bem-vindo(a) ao Symo.');
         $this->redirect('/dashboard');
     }
+
+    /**
+     * Redireciona o usuário para o fluxo de consentimento do Google OAuth 2.0.
+     *
+     * @return void
+     */
+    public function redirectToGoogle(): void
+    {
+        if (AuthHelper::check()) {
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        if (!GoogleAuthHelper::isConfigured()) {
+            FlashHelper::set('error', 'O login com o Google ainda não foi configurado neste ambiente.');
+            $this->redirect('/login');
+            return;
+        }
+
+        $state = bin2hex(random_bytes(32));
+        $_SESSION['google_oauth_state'] = $state;
+
+        $authUrl = GoogleAuthHelper::getAuthUrl($state);
+        header('Location: ' . $authUrl);
+        exit;
+    }
+
+    /**
+     * Processa o retorno (callback) do Google OAuth 2.0 após a autorização do usuário.
+     *
+     * @return void
+     */
+    public function handleGoogleCallback(): void
+    {
+        if (AuthHelper::check()) {
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        $query = $this->getQuery();
+
+        // 1. Tratamento de cancelamento ou recusa pelo usuário no Google
+        if (!empty($query['error'])) {
+            $errorMsg = ($query['error'] === 'access_denied')
+                ? 'Acesso cancelado no Google.'
+                : 'Falha na autenticação com o Google: ' . htmlspecialchars((string) $query['error'], ENT_QUOTES, 'UTF-8');
+            FlashHelper::set('info', $errorMsg);
+            $this->redirect('/login');
+            return;
+        }
+
+        // 2. Validação do state contra a sessão (proteção anti-CSRF no OAuth)
+        $savedState = $_SESSION['google_oauth_state'] ?? null;
+        unset($_SESSION['google_oauth_state']);
+
+        $returnedState = (string) ($query['state'] ?? '');
+        if (!$savedState || !hash_equals((string) $savedState, $returnedState)) {
+            LoggerHelper::security('CSRF_INVALID', ['action' => 'google_oauth_callback']);
+            FlashHelper::set('error', 'Falha na validação de segurança da requisição Google. Tente novamente.');
+            $this->redirect('/login');
+            return;
+        }
+
+        // 3. Validação da presença do authorization code
+        $code = trim((string) ($query['code'] ?? ''));
+        if ($code === '') {
+            FlashHelper::set('error', 'Código de autorização não recebido do Google.');
+            $this->redirect('/login');
+            return;
+        }
+
+        // 4. Troca do código de autorização por access token
+        $tokenData = GoogleAuthHelper::exchangeCode($code);
+        $accessToken = (string) ($tokenData['access_token'] ?? '');
+        if ($accessToken === '') {
+            FlashHelper::set('error', 'Não foi possível autenticar junto ao Google. Tente novamente.');
+            $this->redirect('/login');
+            return;
+        }
+
+        // 5. Consulta aos dados de perfil do usuário no Google
+        $userInfo = GoogleAuthHelper::getUserInfo($accessToken);
+        if (!$userInfo || empty($userInfo['sub']) || empty($userInfo['email'])) {
+            FlashHelper::set('error', 'Não foi possível recuperar os dados de perfil da sua conta Google.');
+            $this->redirect('/login');
+            return;
+        }
+
+        if (empty($userInfo['email_verified'])) {
+            FlashHelper::set('error', 'Apenas contas Google com e-mail verificado podem ser utilizadas para acesso.');
+            $this->redirect('/login');
+            return;
+        }
+
+        $googleId = (string) $userInfo['sub'];
+        $email    = trim(strtolower((string) $userInfo['email']));
+
+        // 6. Resolução da conta do usuário em 3 cenários
+        // Cenário A: Usuário já possui vínculo ativo pelo google_id
+        $user = $this->userModel->findByGoogleId($googleId);
+        if ($user) {
+            if (!User::isActive($user)) {
+                LoggerHelper::security('LOGIN_INACTIVE_USER', ['usuario_id' => $user['id']], $email);
+                FlashHelper::set('error', 'Esta conta de acesso foi inativada. Entre em contato com o Administrador do sistema.');
+                $this->redirect('/login');
+                return;
+            }
+
+            AuthHelper::login($user);
+            $this->userModel->touch((int) $user['id']);
+            LoggerHelper::security('LOGIN_GOOGLE_SUCCESS', ['usuario_id' => $user['id']], $user['email']);
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        // Cenário B: Conta local já existente com o mesmo e-mail verificado (comprovação de posse e vínculo seguro)
+        $userByEmail = $this->userModel->findByEmail($email);
+        if ($userByEmail) {
+            if (!User::isActive($userByEmail)) {
+                LoggerHelper::security('LOGIN_INACTIVE_USER', ['usuario_id' => $userByEmail['id']], $email);
+                FlashHelper::set('error', 'Esta conta de acesso foi inativada. Entre em contato com o Administrador do sistema.');
+                $this->redirect('/login');
+                return;
+            }
+
+            $this->userModel->linkGoogleAccount((int) $userByEmail['id'], $googleId);
+            $userByEmail['google_id'] = $googleId;
+
+            AuthHelper::login($userByEmail);
+            $this->userModel->touch((int) $userByEmail['id']);
+            LoggerHelper::security('LINK_GOOGLE_SUCCESS', ['usuario_id' => $userByEmail['id']], $email);
+
+            FlashHelper::set('success', 'Sua conta Google foi vinculada com sucesso! Bem-vindo(a) ao Symo.');
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        // Cenário C: Novo usuário (cadastro automático com dados financeiros padrão)
+        $result = $this->userModel->registerFromGoogle($userInfo);
+        if (!$result['success']) {
+            FlashHelper::set('error', (string) $result['message']);
+            $this->redirect('/login');
+            return;
+        }
+
+        $newUser = $result['user'] ?? null;
+        if (!$newUser) {
+            FlashHelper::set('success', 'Conta criada com sucesso via Google! Acesse com sua conta Google.');
+            $this->redirect('/login');
+            return;
+        }
+
+        AuthHelper::login($newUser);
+        $this->userModel->touch((int) $newUser['id']);
+        LoggerHelper::security('REGISTER_GOOGLE_SUCCESS', ['usuario_id' => $newUser['id']], $email);
+
+        FlashHelper::set('success', 'Conta criada com sucesso com sua conta Google! Bem-vindo(a) ao Symo.');
+        $this->redirect('/dashboard');
+    }
 }

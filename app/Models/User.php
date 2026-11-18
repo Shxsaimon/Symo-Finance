@@ -22,9 +22,9 @@ class User extends Model
      */
     public function findByEmail(string $email): ?array
     {
-        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, criado_em, atualizado_em 
-                FROM `{$this->tabela}` 
-                WHERE email = :email AND excluido_em IS NULL 
+        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em
+                FROM `{$this->tabela}`
+                WHERE email = :email AND excluido_em IS NULL
                 LIMIT 1";
 
         $stmt = $this->db->prepare($sql);
@@ -33,6 +33,58 @@ class User extends Model
 
         $result = $stmt->fetch();
         return $result !== false ? $result : null;
+    }
+
+    /**
+     * Localiza um usuário pelo seu identificador único do Google (google_id).
+     *
+     * @param string $googleId
+     * @return array<string, mixed>|null
+     */
+    public function findByGoogleId(string $googleId): ?array
+    {
+        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em
+                FROM `{$this->tabela}`
+                WHERE google_id = :google_id AND excluido_em IS NULL
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':google_id', trim($googleId), PDO::PARAM_STR);
+        $stmt->execute();
+
+        $result = $stmt->fetch();
+        return $result !== false ? $result : null;
+    }
+
+    /**
+     * Vincula a identidade do Google (google_id) a uma conta existente.
+     *
+     * @param int $userId ID do usuário
+     * @param string $googleId Identificador único retornado pelo Google
+     * @return bool
+     */
+    public function linkGoogleAccount(int $userId, string $googleId): bool
+    {
+        $usuarioAntigo = $this->find($userId);
+        if (!$usuarioAntigo) {
+            return false;
+        }
+
+        $sql = "UPDATE `{$this->tabela}`
+                SET google_id = :google_id,
+                    atualizado_em = NOW()
+                WHERE id = :id AND excluido_em IS NULL";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':google_id', trim($googleId), PDO::PARAM_STR);
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $success = $stmt->execute();
+
+        if ($success) {
+            $this->logAudit('UPDATE', $userId, ['google_id' => $usuarioAntigo['google_id'] ?? null], ['google_id' => $googleId], $userId);
+        }
+
+        return $success;
     }
 
     /**
@@ -333,7 +385,10 @@ class User extends Model
 
         $hash = password_hash($senha, PASSWORD_BCRYPT, ['cost' => 12]);
 
-        $this->db->beginTransaction();
+        $ownsTransaction = !$this->db->inTransaction();
+        if ($ownsTransaction) {
+            $this->db->beginTransaction();
+        }
         try {
             $isPgsql = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
             $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, criado_em, atualizado_em)
@@ -367,7 +422,7 @@ class User extends Model
             $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
             $stmtAudit->execute();
 
-            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
+            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
             $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
             $stmtUser->execute();
             $novoUsuario = $stmtUser->fetch();
@@ -376,12 +431,95 @@ class User extends Model
                 throw new RuntimeException('Usuário recém-criado não pôde ser recuperado após o cadastro.');
             }
 
-            $this->db->commit();
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->commit();
+            }
             return ['success' => true, 'user_id' => $newId, 'user' => $novoUsuario, 'message' => 'Conta criada com sucesso.'];
         } catch (Throwable $e) {
-            $this->db->rollBack();
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             LoggerHelper::error($e, ['context' => 'User::registerSelf', 'email' => $email]);
             return ['success' => false, 'message' => 'Não foi possível concluir o cadastro. Tente novamente em instantes.'];
+        }
+    }
+
+    /**
+     * Cadastra uma nova conta de usuário autenticada pelo Google OAuth 2.0 e popula dados padrão.
+     *
+     * @param array{sub: string, email: string, name?: string, picture?: ?string} $googleUser
+     * @return array{success: bool, user_id?: int, user?: array<string, mixed>, message: string}
+     */
+    public function registerFromGoogle(array $googleUser): array
+    {
+        $nome = trim((string) ($googleUser['name'] ?? ''));
+        $email = trim(strtolower((string) ($googleUser['email'] ?? '')));
+        $googleId = trim((string) ($googleUser['sub'] ?? ''));
+
+        if ($nome === '') {
+            $nome = explode('@', $email)[0];
+        }
+
+        if (empty($googleId) || empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'Dados de perfil do Google incompletos ou inválidos.'];
+        }
+
+        if ($this->emailExists($email)) {
+            return ['success' => false, 'message' => 'Já existe uma conta associada a este endereço de e-mail.'];
+        }
+
+        $ownsTransaction = !$this->db->inTransaction();
+        if ($ownsTransaction) {
+            $this->db->beginTransaction();
+        }
+        try {
+            $isPgsql = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
+            $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, google_id, avatar, criado_em, atualizado_em)
+                    VALUES (:nome, :email, NULL, 'admin', 'ativo', :google_id, NULL, NOW(), NOW())"
+                    . ($isPgsql ? " RETURNING id" : "");
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
+            $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+            $stmt->bindValue(':google_id', $googleId, PDO::PARAM_STR);
+            $stmt->execute();
+
+            $newId = $isPgsql ? (int) $stmt->fetchColumn() : (int) $this->db->lastInsertId();
+
+            if ($newId <= 0) {
+                throw new RuntimeException('Não foi possível obter o ID do usuário recém-criado via Google.');
+            }
+
+            DefaultDataHelper::popularDadosPadrao($this->db, $newId);
+
+            $enderecoIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $stmtAudit = $this->db->prepare("INSERT INTO auditoria_logs (usuario_id, tabela, registro_id, acao, valores_antigos, valores_novos, endereco_ip, criado_em)
+                    VALUES (:usuario_id, :tabela, :registro_id, 'INSERT', NULL, :valores_novos, :endereco_ip, NOW())");
+            $stmtAudit->bindValue(':usuario_id', $newId, PDO::PARAM_INT);
+            $stmtAudit->bindValue(':tabela', $this->tabela, PDO::PARAM_STR);
+            $stmtAudit->bindValue(':registro_id', $newId, PDO::PARAM_INT);
+            $stmtAudit->bindValue(':valores_novos', json_encode(['nome' => $nome, 'email' => $email, 'perfil' => 'admin', 'google_id' => $googleId], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), PDO::PARAM_STR);
+            $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
+            $stmtAudit->execute();
+
+            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
+            $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
+            $stmtUser->execute();
+            $novoUsuario = $stmtUser->fetch();
+
+            if (!$novoUsuario) {
+                throw new RuntimeException('Usuário recém-criado via Google não pôde ser recuperado.');
+            }
+
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->commit();
+            }
+            return ['success' => true, 'user_id' => $newId, 'user' => $novoUsuario, 'message' => 'Conta criada com sucesso via Google.'];
+        } catch (Throwable $e) {
+            if ($ownsTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            LoggerHelper::error($e, ['context' => 'User::registerFromGoogle', 'email' => $email]);
+            return ['success' => false, 'message' => 'Não foi possível concluir o cadastro via Google. Tente novamente em instantes.'];
         }
     }
 
