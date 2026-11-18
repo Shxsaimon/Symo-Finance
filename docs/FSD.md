@@ -308,7 +308,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.6. Módulo de Cadastros Básicos (Contas, Categorias e Meios de Pagamento)
 
 * **Objetivo:** Estruturar a base cadastral de suporte aos lançamentos financeiros.
-* **Usuários Envolvidos:** Contas, categorias e cartões pertencem ao usuário autenticado; `admin` e `dev` administram os próprios itens. Meios de pagamento seguem o catálogo global da Fase 17, com disponibilidade individual.
+* **Usuários Envolvidos:** Contas, categorias e cartões pertencem ao usuário autenticado; `admin` e `dev` administram os próprios itens. Meios de pagamento seguem o catálogo global, com disponibilidade individual.
 
 
 * **Ações Permitidas:** O `dev` cria, edita e altera o status global das opções. Cada usuário autenticado ativa/inativa opções para si. Contas, categorias e cartões continuam sob administração do próprio usuário; em cada conta, o usuário pode escolher se o saldo entra no Saldo Atual. Contas do tipo `investimento` ficam sempre fora desse valor.
@@ -793,7 +793,7 @@ Sem preferência registrada, a opção é considerada ativa para o usuário.
 * `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 * *Índices:* `idx_feedback_usuario (usuario_id)`, `idx_feedback_status (status)`
 
-#### Tabela `investimentos` (Fase 19)
+#### Tabela `investimentos`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `usuario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
@@ -811,7 +811,7 @@ Sem preferência registrada, a opção é considerada ativa para o usuário.
 * `excluido_por`: INT UNSIGNED NULL, FK para `usuarios`
 * *Índices:* `idx_investimentos_user_status (usuario_id, status)`, `idx_investimentos_conta (conta_id)`, `idx_investimentos_excluido_em (usuario_id, excluido_em)`
 
-#### Tabela `investimento_movimentos` (Fase 19)
+#### Tabela `investimento_movimentos`
 
 * `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
 * `usuario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
@@ -914,7 +914,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Cadastro e parametrização das classificações financeiras.
 * **Estado atual:** `admin` e `dev` administram os próprios cadastros; `operador` é legado e não tem compartilhamento ativo.
-* **Evolução dos meios de pagamento (Fase 17):** catálogo global; criação e alteração de status global exclusivas do `dev`, incluindo reativação pela listagem. Cada usuário, inclusive `dev`, controla apenas a própria disponibilidade individual. A inativação global ou individual impede novos lançamentos no escopo correspondente, preservando os históricos.
+* **Evolução dos meios de pagamento:** catálogo global; criação e alteração de status global exclusivas do `dev`, incluindo reativação pela listagem. Cada usuário, inclusive `dev`, controla apenas a própria disponibilidade individual. A inativação global ou individual impede novos lançamentos no escopo correspondente, preservando os históricos.
 * **Informações:** Listagens tabulares com badges de cores, ícones associados, tipo e estado de disponibilidade.
 
 ### 12.8. Módulo de Relatórios e Exportação (`/relatorios`)
@@ -1407,12 +1407,13 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 
 ## 27. Pontos Pendentes e Decisões Futuras
 
-1. **OAuth Google:** Implementar autorização, callback, validação de identidade, vínculo por `google_id`, login e criação de conta com dados padrão.
+1. **OAuth Google (Fase 14):** Implementar autorização, callback, validação de identidade, vínculo por `google_id`, login e criação de conta com dados padrão.
 2. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
-3. **Contas Compartilhadas:** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
-4. **Catálogo Global de Meios de Pagamento (Fase 17):** Um catálogo único substituirá os cadastros por usuário. O `dev` poderá criar opções e alterar sua disponibilidade global; usuários autenticados poderão ativar/inativar cada opção apenas para si. Opções globalmente ou individualmente inativas não estarão disponíveis em novos lançamentos, mas as referências e a exibição histórica serão preservadas. O catálogo inicial terá Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária. A migration deverá validar equivalências e preservar todos os vínculos.
-5. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
-6. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
+3. **Contas Compartilhadas (Fase 18):** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
+4. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
+5. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
+6. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
+7. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
 
 ### 27.1. Critérios Funcionais para Contas Compartilhadas
 
@@ -1436,53 +1437,38 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 * A implementação deve incluir testes de IDOR para leitura, criação, atualização, exclusão, transferência, exportação CSV e restauração de dados compartilhados.
 * Cartões de crédito, faturas, categorias e preferências não ganham compartilhamento implícito.
 
-### 27.3. Critérios Funcionais para o Catálogo Global de Meios de Pagamento
+### 27.3. Critérios Funcionais e Visuais para a Revisão de UX/UI (Fase 21)
 
-1. O catálogo é único para todos os usuários e começa com Dinheiro, Pix, Cartão de Débito, Cartão de Crédito, Boleto Bancário e Transferência Bancária.
-2. Somente o perfil `dev` pode criar opções e alterar sua disponibilidade global. Inativar altera `status` para `inativo`; reativar altera para `ativo`, sem exclusão física.
-3. Cada usuário autenticado, inclusive `dev`, pode ativar ou inativar opções somente para si; essa preferência não altera a disponibilidade para os demais usuários.
-4. Opções inativadas globalmente ou pelo usuário não são oferecidas em novos lançamentos daquele escopo.
-5. Lançamentos existentes continuam exibindo o meio associado após inativação global ou individual. Ao editar um lançamento antigo, o vínculo original deve ser preservado mesmo que a opção esteja indisponível para novos lançamentos.
-6. Usuários comuns não podem criar opções, alterar atributos globais nem mudar a disponibilidade global.
-7. A consolidação deve verificar as opções existentes, preservar todos os vínculos de transações e impedir a exclusão física de qualquer opção referenciada.
+1. **Temas:** Suporte formal a três modos de exibição: Claro, Escuro e Automático (sincronizado com a preferência do sistema operacional do usuário). O controle deve ser acessível tanto no menu do usuário (cabeçalho superior direito) quanto nas preferências pessoais em `/configuracoes`, persistido na tabela `configuracoes_usuario`.
+2. **Harmonização de Ações:** Botões e gatilhos de ação devem seguir hierarquia estrita: estilo de perigo (vermelho/destaque) para exclusão, cancelamento irreversível e expurgo; estilo secundário/neutro para edição; links ou ícones discretos para visualização e navegação de detalhes.
+3. **Identidade e Limpeza de Legado:** O sistema adotará a nova identidade visual e logotipo desenvolvidos no Figma. Ficam removidos definitivamente campos de personalização corporativa ("Nome da Empresa") das configurações, preservando o foco estritamente individual/familiar do Symo.
+4. **Layout Mestre:** Sidebar desktop com suporte a recolhimento/colapso para o modo ícones; remoção do sufixo `" — Symo"` nos cabeçalhos internos de página; navegação mobile mantida via offcanvas sem barra inferior.
+5. **Componentes de Feedback:**
+   * Diálogos de confirmação devem utilizar exclusivamente modais estilizados com o design system do Symo, eliminando `window.confirm()` nativo do navegador;
+   * Mensagens informativas e de feedback temporário devem adotar contêiner flutuante de Toasts com auto-dismiss no canto da tela, sem deslocar verticalmente o layout da página;
+   * Botões de envio de formulários devem exibir indicador de progresso (*spinner*) e desabilitar cliques repetidos durante a submissão;
+   * Todas as listagens sem dados devem apresentar estados vazios (*empty states*) ilustrados e com botão de chamada para ação direta.
+6. **Formulários e Entradas:** Validação visual nos campos com destaque e mensagem descritiva logo abaixo do campo em caso de pendência ou erro; campos monetários e de datas com formatação e máscara automática em tempo real.
+7. **Listagens e Tabelas:** No desktop, tipografia mais leve e badges visuais modernos sem aparência de ERP contábil; no mobile, eliminação da rolagem horizontal em favor de cards compactos empilhados.
+8. **Dashboard e Gráficos:** Seletor de mês e ano unificado à navegação por setas e picker central já adotado em Investimentos; gráfico de evolução de 6 meses no mobile adaptado para visualização legível de 3 meses com navegação/paginação; tooltips customizados no Chart.js.
 
-### 27.4. Critérios Técnicos para o Catálogo Global de Meios de Pagamento
+### 27.4. Critérios Funcionais e Técnicos para a Gestão do Sistema e Atualizações (Fase 22)
 
-* O status global da opção e a preferência individual de disponibilidade devem ser armazenados separadamente.
-* A autorização para criar e alterar o status global é exclusiva do `dev` e validada no backend; a preferência individual deve ser sempre limitada ao usuário autenticado.
-* A migration deve remapear todas as referências de `transacoes.meio_pagamento_id` para opções canônicas equivalentes antes de remover duplicatas; deve validar a integridade referencial e a equivalência de nome/tipo, incluindo transações logicamente excluídas, e abortar integralmente diante de divergências. Implementar primeiro para PostgreSQL/Neon, considerando também o MySQL legado enquanto suportado.
-* Logs existentes de `auditoria_logs` são históricos e não devem ser reescritos nem apagados durante a consolidação; snapshots e IDs auditados permanecem como registrados.
-* Os dados padrão para novos usuários não devem mais clonar linhas de meios de pagamento por usuário.
-* Testes devem cobrir isolamento das preferências entre usuários, autorização do `dev`, seleção para novos lançamentos e exibição/edição de lançamentos históricos.
-
-### 27.5. Critérios Funcionais para a Aba Investimentos (Fase 19)
-
-1. A aba Investimentos fica no mesmo grupo de movimentação do menu que contém Lançamentos, Transferências e Cartão de Crédito.
-2. Uma posição representa uma aplicação ou reserva (por exemplo, uma "caixinha") e não é uma conta bancária. Campos: nome livre; conta vinculada obrigatória (ativa e que não seja do tipo legado `investimento`); custodiante opcional em texto livre; classe opcional (renda fixa, renda variável, fundos, previdência, criptoativos, outros, não informado); finalidade opcional, apenas como etiqueta.
-3. O saldo inicial pode ser zero ou maior, com data editável (padrão: hoje), e não movimenta nenhuma conta.
-4. Uma conta pode ter várias posições; cada posição tem uma única conta. A troca de conta vale só para operações futuras e cada movimento preserva a conta utilizada. Com a conta inativa, a posição e o histórico permanecem e aportes/resgates ficam bloqueados até reativar a conta ou trocá-la.
-5. Todas as movimentações têm data editável e registram operações realizadas fora do Symo, sem integração bancária:
-   * Aporte: exige saldo suficiente na conta, debita a conta e credita a posição de forma atômica.
-   * Resgate: exige saldo suficiente na posição, debita a posição e credita a conta de forma atômica.
-   * Rendimento: aumenta a posição pelo valor efetivo informado, sem afetar contas nem receitas e sem cálculo de impostos ou taxas.
-   * Atualização de valor: o usuário informa o novo total e o Symo registra a diferença como ajuste, fora do resumo de rendimentos.
-6. Movimentos podem ser editados e excluídos, com recálculo atômico e auditoria. Qualquer falha desfaz a operação inteira.
-7. Aportes e resgates aparecem apenas no histórico da posição, fora das listas de receitas, despesas e transferências.
-8. O resgate total não encerra a posição: ela permanece ativa com valor zero, e o usuário pode desativá-la manualmente somente quando o valor atual for zero. A posição desativada mantém o histórico e pode ser reativada. A lista padrão mostra as ativas; as encerradas ficam acessíveis por filtro.
-9. Lista única com filtros por conta, custodiante, classe, finalidade e status; tela própria por posição com resumo, histórico e ações; resumo mensal de rendimentos nessa aba, com navegação por mês (padrão: mês atual).
-10. O Dashboard exibe o total investido, separado do Saldo Atual, no card de Saldo Atual. O card "Investimentos" da aba Contas passa a exibir o total investido das posições ativas, com link para a aba.
-11. Contas legadas do tipo `investimento` permanecem intactas e separadas, sem migração automática; o tipo deixa de ser oferecido em novos cadastros. O card da aba Contas soma as posições ativas e os saldos das contas legadas ativas desse tipo; o Dashboard soma somente as posições.
-12. Os investimentos são privados por usuário e não herdam o compartilhamento da Fase 18.
-13. Fora da primeira versão: carência, vencimento, rentabilidade automática, metas e integração externa.
-14. A exclusão de posições de investimento é lógica (soft delete) com retenção e recuperação na Lixeira. A exclusão exige que o saldo atual seja exatamente zero (`saldo_atual == 0.00`). Ao excluir o investimento, suas movimentações ativas vinculadas são enviadas para a lixeira agrupadas sob a posição. Movimentações de investimentos excluídas individualmente contam com listagem, restauração atômica e expurgo definitivo na Lixeira.
-
-### 27.6. Critérios Técnicos para a Aba Investimentos
-
-* Criar tabelas de posições e de movimentos, ambas com `usuario_id`, índices de escopo e valores monetários em `DECIMAL`; implementar primeiro para PostgreSQL/Neon e considerar o MySQL legado.
-* Aporte e resgate executam em transação única, com bloqueio das linhas envolvidas para evitar saldo negativo em concorrência.
-* Validar no backend a propriedade da posição, da conta e do movimento (IDOR), CSRF em todas as ações mutáveis e escape HTML nas views.
-* Registrar auditoria de criação, edição, exclusão, encerramento e reativação.
-* Testes devem cobrir atomicidade, saldos insuficientes, troca de conta, conta inativa, recálculo na edição/exclusão e isolamento entre usuários.
+1. **Controle de Produção e Git:**
+   * O fluxo de desenvolvimento utiliza a branch única `main`, sem dependência de branches intermediárias;
+   * O deploy automático em produção por push na branch `main` fica desativado na Vercel;
+   * O deploy de produção na Vercel ocorre exclusivamente por Deploy Hook chamado pelo GitHub Actions após confirmação de sucesso na execução das migrations.
+2. **Módulo de Sistema (`/sistema`):**
+   * Rota dedicada e restrita exclusivamente ao perfil `dev` (`requireDev()`), integrada ao menu administrativo;
+   * As funcionalidades de disparo de migrations e visualização de logs do GitHub Actions são transferidas de `/configuracoes` para `/sistema`, restabelecendo `/configuracoes` como área de preferências do usuário;
+   * Painel unificado apresentando a versão atual, status do sistema, comparativo de commits pendentes na branch `main` com metadados (autor, data/hora, mensagem e versão derivada do `CHANGELOG.md`), além do indicador de migrations pendentes;
+   * Ação única de atualização ("Autorizar e Atualizar Sistema"), acionando workflow no GitHub Actions que executa atomicamente as migrations no PostgreSQL (Neon) e, apenas se bem-sucedidas, dispara o Deploy Hook da Vercel;
+   * Histórico consolidado de atualizações do sistema registrando versão alcançada, autor da autorização, data/hora, lista de commits e migrations executadas;
+   * Aba de Diagnóstico e Ambiente com testes de conectividade ativa do Neon (`SELECT 1` e latência), Vercel Blob, GitHub Actions API e ambiente PHP (versão, timezone, limites e extensões vitais).
+3. **Proteção em Tempo de Execução (Gatekeeper / Modo Manutenção):**
+   * O bootstrap da aplicação (`index.php`) valida se o conjunto de migrations do código é compatível com o schema do banco;
+   * Caso o código esteja à frente do banco, usuários comuns recebem página amigável HTTP 503 ("O Symo está sendo atualizado. Voltamos em alguns instantes."), impedindo erros fatais de SQL;
+   * O usuário `dev` mantém acesso ou recebe painel de contingência para execução direta das migrations.
 
 ---
 

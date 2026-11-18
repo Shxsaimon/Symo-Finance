@@ -499,13 +499,14 @@ Toda alteração futura deve ser registrada utilizando o **Filtro em 3 Níveis**
    - *Registro:* **`CHANGELOG.md`** na raiz do projeto, sob o cabeçalho da versão/data correspondente, categorizado em `Adicionado`, `Modificado`, `Descontinuado`, `Removido`, `Corrigido` ou `Segurança`. Se a regra de negócio oficial foi alterada, atualize também o `docs/FSD.md`. Se foi resolvido um erro técnico relevante, registre a análise de causa raiz em `docs/ERROS.md`.
 3. **Nível 3 (Macro / Grandes módulos estruturais e épicos de roadmap):**
    - *Exemplos:* novo módulo completo (ex: Fase 14 OAuth Google, Fase 18 Contas Compartilhadas), novas tabelas estruturais de sistema, mudanças profundas de arquitetura.
-   - *Registro:* **`CHANGELOG.md`** registrando a nova versão de marco (`MINOR` ou `MAJOR`), somado à atualização do checklist e estado da Fase correspondente em **`docs/STATUS.md`** e **`docs/PLANO.md`**. Se a alteração envolver ou alterar regras funcionais do negócio, atualizar também o **`docs/FSD.md`**.
+   - *Registro:* **`CHANGELOG.md`** registrando a nova versão de marco (`MINOR` ou `MAJOR`), somado à atualização do checklist e estado da Fase correspondente em **`docs/STATUS.md`** e **`docs/PLANO.md`**. Se a alteração envolver ou alterar regras funcionais do negócio, atualizar também o **`docs/FSD.md`** incorporando as regras consolidadas nas seções 1 a 26 e **removendo a respectiva subseção da Seção 27** (que deve conter exclusivamente itens pendentes reais).
 
 ---
 
 ## 13. O que NÃO Fazer
 
 - **NÃO crie novas Fases no `docs/PLANO.md` ou `docs/STATUS.md`** para correções de bugs, pequenas melhorias de UI, ajustes de regras existentes ou campos pontuais (use sempre o `CHANGELOG.md`).
+- **NÃO mantenha itens concluídos na Seção 27 do `docs/FSD.md`:** A Seção 27 ("Pontos Pendentes e Decisões Futuras") é um backlog exclusivo do que ainda não foi implementado. Ao concluir uma fase, incorpore suas regras nas seções 1 a 26 e elimine a pendência correspondente da Seção 27.
 - **NÃO** reescreva partes do sistema ou adote frameworks (Laravel, Symfony, etc.) sem decisão explícita e alinhada.
 - **NÃO** instale dependências desnecessárias ou utilize CDNs externas para componentes visuais.
 - **NÃO** remova verificações de CSRF, RBAC ou isolamento de `usuario_id` para "resolver rápido" um problema de permissão.

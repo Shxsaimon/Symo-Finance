@@ -166,7 +166,7 @@ Toda intervenção de IA neste repositório em modo de manutenção deve seguir 
 2. **Registrar o progresso pelo Filtro em 3 Níveis:**
    - *Nível 1 (microajustes/invisíveis):* Apenas mensagem clara e padronizada no Git commit.
    - *Nível 2 (melhorias visuais, ajustes de regras, novos campos pontuais ou correções de bugs):* Registrar no `CHANGELOG.md` sob a seção adequada (`Adicionado`, `Modificado`, `Corrigido`, etc.) e atualizar `docs/FSD.md` se envolver regra oficial. Não cria nova fase no plano ou status.
-   - *Nível 3 (grandes módulos estruturais e épicos de roadmap):* Registrar a nova versão de marco no `CHANGELOG.md`, atualizar `docs/FSD.md` se envolver ou alterar regras de negócio, e atualizar o checklist e o estado da respectiva fase em `docs/STATUS.md` e `docs/PLANO.md`.
+   - *Nível 3 (grandes módulos estruturais e épicos de roadmap):* Registrar a nova versão de marco no `CHANGELOG.md`, atualizar `docs/FSD.md` incorporando as regras definitivas nas seções 1 a 26 e removendo o item concluído da Seção 27 (que deve conter exclusivamente pendências reais), e atualizar o checklist e o estado da respectiva fase em `docs/STATUS.md` e `docs/PLANO.md`.
 3. **Registrar erro e solução em `docs/ERROS.md`:** Apenas se tiver ocorrido um erro ou incompatibilidade real que precisou de resolução técnica.
 4. **Fazer commit ou entregar os comandos:** Fornecer os comandos git formatados (`git add`, `git commit -m "..."`, `git push`) prontos para execução.
 5. **Explicar ao usuário como validar:** Indicar claramente como testar e verificar a mudança no navegador ou terminal.
@@ -280,7 +280,11 @@ Trate `docs/FSD.md`, `docs/PLANO.md`, `docs/STATUS.md` e `docs/ERROS.md` como do
 - Quando o usuário desenvolvedor trouxer ideias ou necessidades em uma conversa de alinhamento, primeiro esclarecer objetivo, escopo e critérios de aceite antes de iniciar a implementação.
 - Se for uma melhoria de manutenção ou refinamento de regra, planejar a entrega e direcionar o registro para o `CHANGELOG.md` (atualizando `docs/FSD.md` caso altere regras oficiais).
 - Se for um novo módulo estrutural ou épico de roadmap, conduzir o alinhamento de escopo antes de codificar: detalhar o plano em `docs/PLANO.md`, preparar a fase no `docs/STATUS.md` e registrar/atualizar as regras funcionais no `docs/FSD.md` caso a funcionalidade envolva ou altere regras de negócio.
-- Ao concluir a implementação do épico, garantir a conformidade final do `docs/FSD.md` (se aplicável), registrar a entrega no `CHANGELOG.md` como nova versão de marco e atualizar o estado da fase em `docs/STATUS.md` e `docs/PLANO.md`.
+- Ao concluir a implementação do épico, garantir a conformidade final do `docs/FSD.md` incorporando as regras definitivas nas seções 1 a 26 e **limpando a subseção correspondente da Seção 27 ("Pontos Pendentes e Decisões Futuras")**, registrar a entrega no `CHANGELOG.md` como nova versão de marco e atualizar o estado da fase em `docs/STATUS.md` e `docs/PLANO.md`.
+
+> [!IMPORTANT]
+> **Regra de Manutenção da Seção 27 do `docs/FSD.md`:**
+> A Seção 27 ("Pontos Pendentes e Decisões Futuras") atua estritamente como um backlog de pendências e critérios de roadmap ainda não implementados. Ao concluir qualquer fase ou funcionalidade, suas regras consolidadas devem ser integradas aos capítulos permanentes (seções 1 a 26) e sua respectiva entrada deve ser **removida da Seção 27**. Recursos já implantados nunca devem permanecer listados na Seção 27.
 
 ---
 
