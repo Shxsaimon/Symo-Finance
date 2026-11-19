@@ -86,6 +86,8 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ];
 
+            $appTimezone = (string) ($config['app']['timezone'] ?? 'America/Sao_Paulo');
+
             if ($databaseUrl !== '') {
                 $parts = parse_url($databaseUrl);
                 if ($parts === false || ($parts['scheme'] ?? '') !== 'postgresql') {
@@ -95,7 +97,8 @@ class Database
                 $dsn = 'pgsql:host=' . ($parts['host'] ?? '')
                     . ';port=' . ($parts['port'] ?? 5432)
                     . ';dbname=' . ltrim((string) ($parts['path'] ?? ''), '/')
-                    . ';sslmode=require';
+                    . ';sslmode=require'
+                    . ";options='--timezone={$appTimezone}'";
                 $username = rawurldecode((string) ($parts['user'] ?? ''));
                 $password = rawurldecode((string) ($parts['pass'] ?? ''));
 
@@ -106,13 +109,15 @@ class Database
                 $pgsqlOptions[PDO::ATTR_EMULATE_PREPARES] = true;
 
                 self::$instance = new SymoPostgresConnection($dsn, $username, $password, $pgsqlOptions);
+                self::$instance->exec("SET TIME ZONE '{$appTimezone}'");
             } else {
                 if ($driver !== 'mysql') {
                     throw new InvalidArgumentException('DB_DRIVER deve ser mysql quando DATABASE_URL não estiver definida.');
                 }
 
+                $tzOffset = date('P');
                 $mysqlOptions = $options;
-                $mysqlOptions[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES {$charset} COLLATE utf8mb4_unicode_ci";
+                $mysqlOptions[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES {$charset} COLLATE utf8mb4_unicode_ci, time_zone = '{$tzOffset}'";
 
                 if ($createDbIfNotExists) {
                     $dsnServer = "mysql:host={$host};port={$port};charset={$charset}";

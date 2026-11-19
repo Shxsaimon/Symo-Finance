@@ -56,5 +56,9 @@ return [
         'client_secret' => getenv('GOOGLE_CLIENT_SECRET') ?: '',
         'redirect_uri'  => getenv('GOOGLE_REDIRECT_URI') ?: '',
     ],
+    'resend' => [
+        'api_key'    => getenv('RESEND_API_KEY') ?: '',
+        'from_email' => getenv('RESEND_FROM_EMAIL') ?: 'Symo Finance <onboarding@resend.dev>',
+    ],
 ];
 

@@ -28,13 +28,17 @@ return new class {
             $stmtUser->execute(['email' => $devEmail]);
             if (!$stmtUser->fetch()) {
                 $hash = password_hash($devSenha, PASSWORD_BCRYPT, ['cost' => 12]);
-                $insUser = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, perfil, status) VALUES (:nome, :email, :senha, 'dev', 'ativo')");
+                $insUser = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, perfil, status, email_verificado_em) VALUES (:nome, :email, :senha, 'dev', 'ativo', NOW())");
                 $insUser->execute([
                     'nome'  => $devNome,
                     'email' => $devEmail,
                     'senha' => $hash,
                 ]);
                 echo "  [+] Usuário administrador do sistema (dev) criado: {$devEmail}\n";
+            } else {
+                // Garante que o usuário dev já existente tenha o e-mail sempre marcado como verificado
+                $updUser = $pdo->prepare("UPDATE usuarios SET email_verificado_em = COALESCE(email_verificado_em, NOW()) WHERE email = :email");
+                $updUser->execute(['email' => $devEmail]);
             }
         }
 

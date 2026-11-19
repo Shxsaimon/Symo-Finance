@@ -22,7 +22,7 @@ class User extends Model
      */
     public function findByEmail(string $email): ?array
     {
-        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em
+        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, google_id, email_verificado_em, criado_em, atualizado_em
                 FROM `{$this->tabela}`
                 WHERE email = :email AND excluido_em IS NULL
                 LIMIT 1";
@@ -43,7 +43,7 @@ class User extends Model
      */
     public function findByGoogleId(string $googleId): ?array
     {
-        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em
+        $sql = "SELECT id, nome, email, senha, perfil, status, avatar, google_id, email_verificado_em, criado_em, atualizado_em
                 FROM `{$this->tabela}`
                 WHERE google_id = :google_id AND excluido_em IS NULL
                 LIMIT 1";
@@ -72,6 +72,7 @@ class User extends Model
 
         $sql = "UPDATE `{$this->tabela}`
                 SET google_id = :google_id,
+                    email_verificado_em = COALESCE(email_verificado_em, NOW()),
                     atualizado_em = NOW()
                 WHERE id = :id AND excluido_em IS NULL";
 
@@ -253,15 +254,48 @@ class User extends Model
     }
 
     /**
+     * Verifica se o e-mail do usuário já foi validado.
+     *
+     * @param array<string, mixed> $user
+     * @return bool
+     */
+    public static function isEmailVerified(array $user): bool
+    {
+        return !empty($user['email_verificado_em']);
+    }
+
+    /**
+     * Marca o e-mail do usuário como verificado no banco de dados.
+     *
+     * @param int $userId
+     * @return bool
+     */
+    public function markEmailAsVerified(int $userId): bool
+    {
+        $sql = "UPDATE `{$this->tabela}`
+                SET email_verificado_em = NOW(), atualizado_em = NOW()
+                WHERE id = :id AND excluido_em IS NULL";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        $success = $stmt->execute();
+
+        if ($success) {
+            $this->logAudit('UPDATE', $userId, ['email_verificado_em' => null], ['email_verificado_em' => 'NOW()'], $userId);
+        }
+
+        return $success;
+    }
+
+    /**
      * Retorna todos os usuários cadastrados não excluídos com ordenação.
      *
      * @return array<int, array<string, mixed>>
      */
     public function getAllUsers(): array
     {
-        $sql = "SELECT id, nome, email, perfil, status, avatar, criado_em, atualizado_em 
-                FROM `{$this->tabela}` 
-                WHERE excluido_em IS NULL 
+        $sql = "SELECT id, nome, email, perfil, status, avatar, email_verificado_em, criado_em, atualizado_em
+                FROM `{$this->tabela}`
+                WHERE excluido_em IS NULL
                 ORDER BY perfil ASC, nome ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -328,8 +362,10 @@ class User extends Model
 
         $hash = password_hash($senha, PASSWORD_BCRYPT, ['cost' => 12]);
 
-        $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, avatar, criado_em, atualizado_em)
-                VALUES (:nome, :email, :senha, :perfil, :status, :avatar, NOW(), NOW())";
+        $isPgsql = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
+        $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, avatar, email_verificado_em, criado_em, atualizado_em)
+                VALUES (:nome, :email, :senha, :perfil, :status, :avatar, NULL, NOW(), NOW())"
+                . ($isPgsql ? " RETURNING id" : "");
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
@@ -340,7 +376,10 @@ class User extends Model
         $stmt->bindValue(':avatar', $avatar, $avatar !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
         $stmt->execute();
 
-        $newId = (int) $this->db->lastInsertId();
+        $newId = $isPgsql ? (int) $stmt->fetchColumn() : (int) $this->db->lastInsertId();
+
+        // Dados padrão (categorias e preferências) não são populados aqui;
+        // serão criados somente quando o usuário confirmar o e-mail via código de 6 dígitos.
 
         $this->logAudit('INSERT', $newId, null, [
             'nome'   => $nome,
@@ -407,7 +446,9 @@ class User extends Model
                 throw new RuntimeException('Não foi possível obter o ID do usuário recém-criado.');
             }
 
-            DefaultDataHelper::popularDadosPadrao($this->db, $newId);
+            // Nota: Os dados padrão (categorias e preferências) não são populados aqui no autocadastro;
+            // eles serão criados apenas quando o usuário confirmar seu e-mail com sucesso,
+            // evitando registros órfãos ou lixo no banco caso a conta nunca seja ativada.
 
             // Gravação de auditoria feita diretamente (sem o catch silencioso de Model::logAudit),
             // para que uma eventual falha real apareça no log em vez de aparecer mascarada
@@ -422,7 +463,7 @@ class User extends Model
             $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
             $stmtAudit->execute();
 
-            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
+            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, google_id, email_verificado_em, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
             $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
             $stmtUser->execute();
             $novoUsuario = $stmtUser->fetch();
@@ -474,8 +515,8 @@ class User extends Model
         }
         try {
             $isPgsql = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
-            $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, google_id, avatar, criado_em, atualizado_em)
-                    VALUES (:nome, :email, NULL, 'admin', 'ativo', :google_id, NULL, NOW(), NOW())"
+            $sql = "INSERT INTO `{$this->tabela}` (nome, email, senha, perfil, status, google_id, email_verificado_em, avatar, criado_em, atualizado_em)
+                    VALUES (:nome, :email, NULL, 'admin', 'ativo', :google_id, NOW(), NULL, NOW(), NOW())"
                     . ($isPgsql ? " RETURNING id" : "");
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':nome', $nome, PDO::PARAM_STR);
@@ -501,7 +542,7 @@ class User extends Model
             $stmtAudit->bindValue(':endereco_ip', $enderecoIp, PDO::PARAM_STR);
             $stmtAudit->execute();
 
-            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, google_id, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
+            $stmtUser = $this->db->prepare("SELECT id, nome, email, senha, perfil, status, avatar, google_id, email_verificado_em, criado_em, atualizado_em FROM `{$this->tabela}` WHERE id = :id LIMIT 1");
             $stmtUser->bindValue(':id', $newId, PDO::PARAM_INT);
             $stmtUser->execute();
             $novoUsuario = $stmtUser->fetch();

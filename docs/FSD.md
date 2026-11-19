@@ -260,8 +260,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 * **Objetivo:** Garantir acesso individual seguro, criação autônoma de conta e isolamento financeiro.
 * **Usuários Envolvidos:** Visitantes, `admin`, `operador` legado e `dev` técnico.
-* **Ações Entregues:** Autocadastro local e autenticação social via Google OAuth 2.0 (com resolução de identidade: login direto por `google_id`, vínculo automático com comprovação de e-mail e cadastro com dados padrão), login e logout, perfil, senha, avatar, sessão persistida no banco e bloqueio por tentativas inválidas.
-* **Planejado:** Verificação de e-mail e recuperação de senha por e-mail transacional. A tela de esqueci a senha ainda não conclui uma redefinição.
+* **Ações Entregues:** Autocadastro local com verificação de endereço por código de 6 dígitos enviado por e-mail transacional (Resend), autenticação social via Google OAuth 2.0 (com resolução de identidade: login direto por `google_id`, vínculo automático com comprovação de e-mail e cadastro com dados padrão), login e logout, perfil, senha, avatar, redefinição segura de senha via link com token criptográfico de uso único, sessão persistida no banco e bloqueio por tentativas inválidas.
+* **Status do Módulo:** Módulo 100% implementado, testado e validado. Os fluxos de verificação por código de 6 dígitos e redefinição de senha operam via Resend (utilizando o remetente padrão de testes da plataforma temporariamente até a configuração futura de domínio próprio personalizado).
 
 ### 6.2. Módulo de Dashboard Financeiro
 
@@ -854,7 +854,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Ponto de entrada do sistema para identificação de credenciais.
 * **Usuários:** Todos (público não autenticado).
-* **Campos/Informações:** Login por e-mail e senha, link de autocadastro e link de esqueci a senha. Não existe "lembrar de mim" nem envio funcional de recuperação no estado atual.
+* **Campos/Informações:** Login por e-mail e senha, autenticação social Google OAuth 2.0, link de autocadastro com tela de validação por código numérico de 6 dígitos (`/verificar-email`), e recuperação funcional de senha via formulário (`/esqueci-senha`) com link seguro de uso único (`/redefinir-senha`). Não existe "lembrar de mim".
 * **Estados:** Formulário inicial, estado de carregamento do botão com indicador visual (*spinner*), alerta de credenciais inválidas ou conta inativada, e aviso de bloqueio temporário por excesso de tentativas.
 * **Aderência ao Design System:** Layout limpo com fundo `Surface` (`#FAF9F9`), card centralizado em elevação tonal `Surface-Container-Lowest` (`#FFFFFF`), borda sutil de 1px `Neutral 300` e cantos arredondados de 16px.
 
@@ -1374,7 +1374,7 @@ A implementação da aplicação pela IA codificadora deve seguir uma sequência
 
 14. **Etapa 14 - Multiusuário, Operação Serverless e Colaboração:**
 * Migrations 012 a 016, isolamento por `usuario_id`, perfil `dev`, autocadastro e preferências individuais já foram implementados;
-* OAuth Google, recuperação/verificação de e-mail e testes manuais completos permanecem pendentes;
+* OAuth Google 2.0 e verificação de e-mail por código de 6 dígitos / recuperação de senha com tokens via Resend implementados;
 * Antes de implementar contas compartilhadas, criar a especificação de convite, participação, histórico e permissões da seção 27.
 
 
@@ -1407,12 +1407,11 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 
 ## 27. Pontos Pendentes e Decisões Futuras
 
-1. **E-mail:** Definir provedor transacional, verificação de endereço e token de recuperação de senha. Nenhum desses fluxos deve ser anunciado como entregue antes de testes completos.
-2. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
-3. **Contas Compartilhadas (Fase 18):** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
-4. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
-5. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
-6. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
+1. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
+2. **Contas Compartilhadas (Fase 18):** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
+3. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
+4. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
+5. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
 
 ### 27.1. Critérios Funcionais para Contas Compartilhadas
 

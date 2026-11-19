@@ -71,7 +71,14 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                                 </div>
                             </td>
                             <td>
-                                <span class="text-muted"><?= htmlspecialchars($u['email'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="text-muted"><?= htmlspecialchars($u['email'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <?php if (!empty($u['email_verificado_em'])): ?>
+                                        <i class="bi bi-patch-check-fill text-success" title="E-mail verificado em <?= FormatHelper::datetime($u['email_verificado_em']) ?>" style="font-size: 0.85rem;"></i>
+                                    <?php else: ?>
+                                        <i class="bi bi-exclamation-triangle-fill text-warning" title="E-mail não verificado" style="font-size: 0.85rem;"></i>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <?php if ($u['perfil'] === 'admin'): ?>

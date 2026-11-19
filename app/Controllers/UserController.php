@@ -77,7 +77,17 @@ class UserController extends Controller
         $result = $this->userModel->createUser($data, $currentUserId);
 
         if ($result['success']) {
-            FlashHelper::set('success', $result['message']);
+            $newUserId = (int) ($result['user_id'] ?? 0);
+            if ($newUserId > 0) {
+                try {
+                    $tokenModel = new AuthToken();
+                    $code = $tokenModel->createVerificationCode($newUserId);
+                    MailHelper::sendVerificationCode((string) $data['email'], (string) $data['nome'], $code);
+                } catch (Throwable $e) {
+                    LoggerHelper::error($e, ['context' => 'UserController::store - sendVerificationCode', 'usuario_id' => $newUserId]);
+                }
+            }
+            FlashHelper::set('success', $result['message'] . ' Um código de confirmação foi enviado para o e-mail informado.');
         } else {
             // Se falhou e foi feito upload, limpa a imagem
             if ($avatarFilename) {

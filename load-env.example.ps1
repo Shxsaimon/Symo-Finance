@@ -23,6 +23,13 @@ if (-not $env:APP_BASE_URL) { $env:APP_BASE_URL = 'http://localhost:8000' }
 # $env:GOOGLE_CLIENT_SECRET = 'SEU_CLIENT_SECRET'
 # $env:GOOGLE_REDIRECT_URI  = 'http://localhost:8000/auth/google/callback'
 
+# --- Resend (E-mails Transacionais / Verificação e Senha) --------------------
+# Obtenha sua API Key gratuita em https://resend.com/api-keys.
+# No modo de testes (sem domínio configurado), o Resend envia a partir de onboarding@resend.dev
+# exclusivamente para o endereço de e-mail cadastrado na sua conta Resend.
+# $env:RESEND_API_KEY       = 're_SEU_TOKEN_AQUI'
+# $env:RESEND_FROM_EMAIL    = 'Symo Finance <onboarding@resend.dev>'
+
 # Opcional: trecho do host de PRODUÇÃO do Neon para bloquear execução acidental.
 # $env:SYMO_PROD_HOST = 'ep-xxxxxxxx'
 

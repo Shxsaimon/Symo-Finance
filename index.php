@@ -180,6 +180,12 @@ Router::get('/login', [AuthController::class, 'showLogin']);
 Router::post('/login', [AuthController::class, 'authenticate']);
 Router::post('/logout', [AuthController::class, 'logout']);
 Router::get('/esqueci-senha', [AuthController::class, 'showForgotPassword']);
+Router::post('/esqueci-senha', [AuthController::class, 'sendPasswordReset']);
+Router::get('/redefinir-senha', [AuthController::class, 'showResetPassword']);
+Router::post('/redefinir-senha', [AuthController::class, 'resetPasswordWithToken']);
+Router::get('/verificar-email', [AuthController::class, 'showVerifyEmail']);
+Router::post('/verificar-email', [AuthController::class, 'verifyEmail']);
+Router::post('/verificar-email/reenviar', [AuthController::class, 'resendVerificationCode']);
 Router::get('/registrar', [AuthController::class, 'showRegister']);
 Router::post('/registrar', [AuthController::class, 'register']);
 Router::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
@@ -294,6 +300,7 @@ Router::get('/configuracoes/github-actions/logs/{id}', [SettingsController::clas
 
 // Perfil Pessoal (Qualquer Usuário Autenticado)
 Router::get('/perfil', [ProfileController::class, 'index']);
+Router::get('/perfil/verificar-email', [ProfileController::class, 'sendVerification']);
 Router::post('/perfil/salvar', [ProfileController::class, 'update']);
 Router::get('/feedbacks', [FeedbackController::class, 'index']);
 Router::post('/feedbacks/status/{id}', [FeedbackController::class, 'updateStatus']);

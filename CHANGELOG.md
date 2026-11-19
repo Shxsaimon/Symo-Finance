@@ -17,17 +17,24 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
-## [2.4.0] — 2026-11-17 — Autenticação Social Google OAuth 2.0 (Fase 14 Concluída)
+## [2.4.0] — 2026-11-17 — Autenticação Social Google OAuth 2.0 e E-mails Transacionais (Verificação e Redefinição de Senha)
 
 ### Adicionado
-- **Login Social com Google OAuth 2.0 (Fase 14):** Implementação completa da autenticação com contas Google via OAuth 2.0 com suporte a autorização, callback seguro com validação anti-CSRF por `state`, e consulta de perfil no endpoint UserInfo do Google.
+- **Verificação de E-mail com Código de 6 Dígitos:** Novos usuários cadastrados por e-mail e senha recebem um código de 6 dígitos com validade de 15 minutos via e-mail transacional (Resend), com tela de validação dedicada (`/verificar-email`), proteção contra força bruta (máximo de 5 tentativas) e reenvio com cooldown de 60 segundos.
+- **Povoamento Postergado de Dados Padrão (Otimização do Banco):** A clonagem de dados iniciais (`categorias` e `configuracoes_usuario`) agora ocorre estritamente após a confirmação efetiva do e-mail do usuário, evitando o acúmulo de dados órfãos ou lixo no PostgreSQL em cadastros não ativados ou abandonados.
+- **Envio Automático Imediato ao Tentar Login ou Confirmar no Perfil:** Usuários com e-mail pendente que tentem logar ou que cliquem em "Confirmar agora" em `/perfil` recebem automaticamente um novo código de 6 dígitos gerado e despachado na hora para sua caixa de entrada, sem a necessidade de clicar manualmente em reenviar.
+- **Indicadores Visuais de Verificação de E-mail:** Inclusão de selos de status de e-mail na tela de Meu Perfil (`/perfil`) e na listagem de usuários do sistema (`/usuarios`), permitindo auditoria visual rápida por parte do usuário e da equipe técnica (`dev`).
+- **Recuperação e Redefinição Segura de Senha:** Fluxo completo e funcional de "Esqueci minha senha" (`/esqueci-senha`) disparando e-mail transacional com link criptográfico de uso único e validade de 60 minutos, com tela protegida para cadastro de nova senha (`/redefinir-senha`), validação de força e proteção anti-enumeração de usuários.
+- **Helper de E-mails Transacionais (`MailHelper`):** Integração nativa com a API REST do Resend via cURL do PHP, sem dependências externas pesadas, com templates HTML responsivos no padrão visual do Symo e texto plano de fallback.
+- **Model `AuthToken` e Migration 022:** Adicionada a coluna `email_verificado_em` na tabela `usuarios` e criada a tabela `tokens_verificacao` com suporte a hashes seguros (SHA-256), contador de tentativas e controle de expiração.
+- **Login Social com Google OAuth 2.0 (Fase 14):** Implementação completa da autenticação com contas Google via OAuth 2.0 com suporte a autorização, callback seguro com validação anti-CSRF por `state`, e consulta de perfil no endpoint UserInfo do Google. Contas criadas via Google já nascem com e-mail verificado.
 - **Resolução Inteligente de Identidade Google:**
   - *Login Direto:* Acesso instantâneo de contas já vinculadas pelo identificador único e imutável `google_id`, garantindo o acesso contínuo aos dados financeiros mesmo diante de alterações cadastrais externas.
   - *Vínculo de Conta Existente:* Contas locais criadas anteriormente com e-mail/senha são automaticamente vinculadas ao `google_id` mediante a comprovação da titularidade do e-mail verificado pelo Google, preservando todos os dados financeiros.
   - *Novo Autocadastro com Dados Padrão:* Contas criadas a partir do Google nascem com perfil `admin` e recebem a clonagem atômica do template de categorias e preferências pessoais via `DefaultDataHelper`, mantendo o isolamento financeiro total.
 - **Helper `GoogleAuthHelper`:** Utilitário nativo em PHP para montagem de URLs de consentimento, troca de authorization code por access token e recuperação de dados de perfil com timeouts e tratamento de falhas.
 - **Botão "Continuar com o Google" nas Telas de Autenticação:** Adicionado botão estilizado com o ícone oficial do Google e divisor contextual nas telas de Login (`/login`) e Cadastro (`/registrar`), harmonizado com a identidade visual do Symo.
-- **Variáveis de Ambiente do Google OAuth:** Documentadas variáveis `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` em `load-env.example.ps1`.
+- **Variáveis de Ambiente Documentadas:** Adicionadas `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `RESEND_API_KEY` e `RESEND_FROM_EMAIL` em `load-env.example.ps1`.
 
 ## [2.3.0] — 2026-11-06 — Pacote de Usabilidade do Dashboard, Refinamento de Lançamentos e Faturas de Cartão
 

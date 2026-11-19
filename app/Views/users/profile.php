@@ -33,7 +33,7 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
             <h4 class="fw-bold mb-1" style="color: var(--symo-on-surface);"><?= htmlspecialchars($user['nome'], ENT_QUOTES, 'UTF-8') ?></h4>
             <p class="text-muted mb-3"><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></p>
             
-            <div class="d-flex justify-content-center gap-2 mb-3">
+            <div class="d-flex justify-content-center flex-wrap gap-2 mb-3">
                 <span class="<?= $user['perfil'] === 'admin' ? 'badge-role-admin' : 'badge-role-operador' ?>">
                     <i class="bi <?= $user['perfil'] === 'admin' ? 'bi-shield-lock-fill' : 'bi-person-fill' ?> me-1"></i>
                     <?= strtoupper($user['perfil']) ?>
@@ -41,7 +41,24 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
                     <i class="bi bi-check-circle-fill me-1"></i><?= ucfirst($user['status']) ?>
                 </span>
+                <?php if (!empty($user['email_verificado_em'])): ?>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill" title="E-mail verificado em <?= FormatHelper::datetime($user['email_verificado_em']) ?>">
+                        <i class="bi bi-patch-check-fill me-1"></i>E-mail Verificado
+                    </span>
+                <?php else: ?>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill" title="E-mail pendente de confirmação">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>E-mail Não Verificado
+                    </span>
+                <?php endif; ?>
             </div>
+
+            <?php if (empty($user['email_verificado_em'])): ?>
+                <div class="alert alert-warning py-2 px-3 mb-3 text-center" style="font-size: 0.825rem; border-radius: 0.5rem;">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                    Seu e-mail ainda não foi confirmado.
+                    <a href="<?= BASE_URL ?>/perfil/verificar-email" class="fw-bold text-decoration-underline text-warning-emphasis">Confirmar agora</a>.
+                </div>
+            <?php endif; ?>
 
             <hr class="my-3">
             <div class="text-start" style="font-size: 0.875rem;">
@@ -75,7 +92,7 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
                     <div class="col-md-6">
                         <label for="email" class="form-label fw-semibold">E-mail</label>
                         <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?>" required maxlength="150" autocomplete="email">
-                        <small class="text-muted">O e-mail deve ser válido e exclusivo. Não é necessária confirmação por e-mail.</small>
+                        <small class="text-muted">O e-mail deve ser válido e exclusivo na plataforma.</small>
                     </div>
                 </div>
 

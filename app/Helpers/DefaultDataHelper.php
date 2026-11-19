@@ -64,25 +64,33 @@ class DefaultDataHelper
      */
     public static function popularDadosPadrao(PDO $pdo, int $usuarioId): void
     {
-        $insCat = $pdo->prepare("INSERT INTO `categorias` (usuario_id, nome, tipo, icone, cor, status) VALUES (:usuario_id, :nome, :tipo, :icone, :cor, 'ativa')");
-        foreach (self::categoriasPadrao() as $categoria) {
-            $insCat->execute([
-                'usuario_id' => $usuarioId,
-                'nome'       => $categoria['nome'],
-                'tipo'       => $categoria['tipo'],
-                'icone'      => $categoria['icone'],
-                'cor'        => $categoria['cor'],
-            ]);
+        // Evita duplicar categorias caso o usuário já possua registros
+        $countCat = (int) $pdo->query("SELECT COUNT(*) FROM `categorias` WHERE usuario_id = " . (int) $usuarioId)->fetchColumn();
+        if ($countCat === 0) {
+            $insCat = $pdo->prepare("INSERT INTO `categorias` (usuario_id, nome, tipo, icone, cor, status) VALUES (:usuario_id, :nome, :tipo, :icone, :cor, 'ativa')");
+            foreach (self::categoriasPadrao() as $categoria) {
+                $insCat->execute([
+                    'usuario_id' => $usuarioId,
+                    'nome'       => $categoria['nome'],
+                    'tipo'       => $categoria['tipo'],
+                    'icone'      => $categoria['icone'],
+                    'cor'        => $categoria['cor'],
+                ]);
+            }
         }
 
-        $insPref = $pdo->prepare("INSERT INTO `configuracoes_usuario` (usuario_id, chave, valor, tipo) VALUES (:usuario_id, :chave, :valor, :tipo)");
-        foreach (self::preferenciasPadrao() as $preferencia) {
-            $insPref->execute([
-                'usuario_id' => $usuarioId,
-                'chave'      => $preferencia['chave'],
-                'valor'      => $preferencia['valor'],
-                'tipo'       => $preferencia['tipo'],
-            ]);
+        // Evita duplicar preferências caso o usuário já possua registros
+        $countPref = (int) $pdo->query("SELECT COUNT(*) FROM `configuracoes_usuario` WHERE usuario_id = " . (int) $usuarioId)->fetchColumn();
+        if ($countPref === 0) {
+            $insPref = $pdo->prepare("INSERT INTO `configuracoes_usuario` (usuario_id, chave, valor, tipo) VALUES (:usuario_id, :chave, :valor, :tipo)");
+            foreach (self::preferenciasPadrao() as $preferencia) {
+                $insPref->execute([
+                    'usuario_id' => $usuarioId,
+                    'chave'      => $preferencia['chave'],
+                    'valor'      => $preferencia['valor'],
+                    'tipo'       => $preferencia['tipo'],
+                ]);
+            }
         }
     }
 }

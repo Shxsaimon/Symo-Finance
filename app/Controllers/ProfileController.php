@@ -37,6 +37,46 @@ class ProfileController extends Controller
     }
 
     /**
+     * Dispara um novo código de verificação para o e-mail do usuário logado e redireciona para a tela de verificação.
+     *
+     * @return void
+     */
+    public function sendVerification(): void
+    {
+        AuthHelper::requireLogin();
+
+        $userId = (int) AuthHelper::id();
+        $user = $this->userModel->find($userId);
+
+        if (!$user) {
+            $this->redirect('/login');
+            return;
+        }
+
+        if (!empty($user['email_verificado_em'])) {
+            FlashHelper::set('info', 'Seu endereço de e-mail já está confirmado.');
+            $this->redirect('/perfil');
+            return;
+        }
+
+        $tokenModel = new AuthToken();
+        $code = $tokenModel->createVerificationCode($userId);
+        $mailResult = MailHelper::sendVerificationCode((string) $user['email'], (string) $user['nome'], $code);
+
+        $_SESSION['pending_verify_user_id'] = $userId;
+        $_SESSION['pending_verify_email'] = (string) $user['email'];
+        $_SESSION['pending_verify_nome'] = (string) $user['nome'];
+
+        if ($mailResult['success']) {
+            FlashHelper::set('success', 'Enviamos um novo código de 6 dígitos para o seu e-mail.');
+        } else {
+            FlashHelper::set('info', 'Código gerado. Caso não receba, utilize a opção de reenviar na tela de confirmação.');
+        }
+
+        $this->redirect('/verificar-email');
+    }
+
+    /**
      * Atualiza os dados de perfil do usuário autenticado.
      *
      * @return void

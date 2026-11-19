@@ -17,13 +17,16 @@ return new class {
     {
         $usuarioId = 1;
 
-        // 1. Garantir que o usuário ID 1 existe
+        // 1. Garantir que o usuário ID 1 existe e está com e-mail verificado
         $stmtUser = $pdo->prepare("SELECT id FROM usuarios WHERE id = :id");
         $stmtUser->execute(['id' => $usuarioId]);
         if (!$stmtUser->fetch()) {
             echo "  [!] Usuário ID 1 não encontrado. Seed ignorado.\n";
             return;
         }
+
+        // Garante que o usuário dev demo esteja sempre com o e-mail verificado
+        $pdo->exec("UPDATE usuarios SET email_verificado_em = COALESCE(email_verificado_em, NOW()) WHERE id = {$usuarioId}");
 
         echo "  [*] Limpando dados anteriores do usuário ID 1 para recalcular a base de teste...\n";
         
