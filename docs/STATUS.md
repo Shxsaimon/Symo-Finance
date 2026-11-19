@@ -8,7 +8,7 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 06/11/2026
+- **Data da Última Atualização:** 18/11/2026
 - **Fase Prioritária Atual:** Fase 14 (OAuth Google) e Fase 20 concluídas. Governança de documentação e `CHANGELOG.md` estruturados. Próximo foco nos épicos de roadmap: Fase 21 (Revisão Geral de UX/UI), Fase 22 (Gestão do Sistema e Atualizações) e Fase 18 (Compartilhamento por conta).
 - **Histórico de Melhorias Contínuas:** Todas as melhorias visuais, novos campos pontuais, refinamentos de regras e correções de bugs que não constituem uma nova fase estrutural são registrados cronologicamente no [CHANGELOG.md](../CHANGELOG.md) sob o versionamento SemVer.
 - **Preparação do Repositório:** Revisão de `.gitignore`, criação de `.vercelignore`, adição de `LICENSE` sob GPL-3.0, atualização do `README.md` com badges e destaques de engenharia, reescrita do protótipo estático `docs/code.html` fiel ao layout real, estruturação de `docs/screenshots/` e higienização de `.gitkeep` e fontes duplicadas.
