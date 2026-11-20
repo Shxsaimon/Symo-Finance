@@ -639,9 +639,9 @@ body.is-scrolling {
   text-transform: uppercase;
 }
 
-.badge-role-operador {
-  background-color: var(--symo-surface-container-high);
-  color: var(--symo-on-surface-variant);
+.badge-role-dev {
+  background-color: var(--symo-primary-fixed);
+  color: var(--symo-on-primary-fixed);
   font-weight: 700;
   font-size: 0.75rem;
   padding: 0.35rem 0.75rem;

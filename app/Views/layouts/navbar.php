@@ -30,10 +30,12 @@ $pageTitle   = $title ?? 'Painel Financeiro';
             Versão BETA
         </button>
 
-        <!-- Badge de Perfil -->
-        <span class="<?= AuthHelper::isAdmin() ? 'badge-role-admin' : 'badge-role-operador' ?> d-none d-md-inline-block">
-            <?= htmlspecialchars(strtoupper($currentUser['perfil'] ?? 'OPERADOR'), ENT_QUOTES, 'UTF-8') ?>
-        </span>
+        <!-- Badge de Perfil (Exclusivo DEV) -->
+        <?php if (AuthHelper::isDev()): ?>
+            <span class="badge-role-dev d-none d-md-inline-block">
+                DEV
+            </span>
+        <?php endif; ?>
 
         <!-- Dropdown de Usuário -->
         <div class="dropdown">

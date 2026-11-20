@@ -6,9 +6,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Controlador de Contas Bancárias (AccountController)
  *
- * Gerencia a exibição e operações de contas e carteiras com regras RBAC:
- * - Operador: visualiza contas e saldos.
- * - Administrador: cria, edita, inativa e exclui logicamente.
+ * Gerencia a exibição e operações de contas e carteiras financeiras do usuário autenticado.
  */
 class AccountController extends Controller
 {

@@ -340,7 +340,7 @@ class User extends Model
         $nome = trim((string) ($data['nome'] ?? ''));
         $email = trim(strtolower((string) ($data['email'] ?? '')));
         $senha = (string) ($data['senha'] ?? '');
-        $perfil = in_array($data['perfil'] ?? '', ['admin', 'operador'], true) ? $data['perfil'] : 'operador';
+        $perfil = in_array($data['perfil'] ?? '', ['admin', 'dev'], true) ? $data['perfil'] : 'admin';
         $status = in_array($data['status'] ?? '', ['ativo', 'inativo'], true) ? $data['status'] : 'ativo';
         $avatar = !empty($data['avatar']) ? (string) $data['avatar'] : null;
 
@@ -581,7 +581,7 @@ class User extends Model
 
         $nome = trim((string) ($data['nome'] ?? $usuarioAntigo['nome']));
         $email = trim(strtolower((string) ($data['email'] ?? $usuarioAntigo['email'])));
-        $perfil = in_array($data['perfil'] ?? '', ['admin', 'operador'], true) ? $data['perfil'] : $usuarioAntigo['perfil'];
+        $perfil = in_array($data['perfil'] ?? '', ['admin', 'dev'], true) ? $data['perfil'] : $usuarioAntigo['perfil'];
         $status = in_array($data['status'] ?? '', ['ativo', 'inativo'], true) ? $data['status'] : $usuarioAntigo['status'];
         $avatar = array_key_exists('avatar', $data) ? $data['avatar'] : $usuarioAntigo['avatar'];
 
@@ -597,10 +597,10 @@ class User extends Model
             return ['success' => false, 'message' => 'Este e-mail já está em uso por outro usuário.'];
         }
 
-        // Regra de segurança: Não permitir que o usuário atual inative ou altere seu próprio perfil para operador
+        // Regra de segurança: Não permitir que o usuário atual inative ou rebaixe a própria conta
         if ($id === $currentUserId) {
-            $status = 'ativo'; // Força ativo
-            $perfil = 'admin'; // Força admin
+            $status = 'ativo';
+            $perfil = $usuarioAntigo['perfil'];
         }
 
         $sql = "UPDATE `{$this->tabela}` 

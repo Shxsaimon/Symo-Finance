@@ -24,7 +24,6 @@ O **Symo Finance** é uma plataforma web de gestão financeira pessoal para pess
 - Em despesas, o meio de pagamento define a modalidade: crédito exige cartão ativo e associa a compra à fatura do ciclo; outros meios exigem conta bancária. A data informada é a data da compra; parcelas preservam seu dia mensal quando possível; faturas fecham automaticamente após a fronteira de fechamento; e seu pagamento integral debita a conta escolhida uma única vez. Exceder o limite gera alerta, mas não bloqueia a compra.
 - O cadastro público cria um usuário `admin` da própria conta, com categorias e preferências padrão clonadas; meios de pagamento vêm do catálogo global e a disponibilidade inicial é ativa.
 - O perfil `dev` é um usuário técnico criado pelo seed, responsável pela operação global da plataforma (gestão de usuários, auditoria global, status/migrations via GitHub Actions, catálogo global de meios de pagamento e feedbacks). Como usuário financeiro, mantém escopo próprio por `usuario_id`, idêntico ao `admin`.
-- O perfil `operador` permanece no código por compatibilidade legada, sem uso no produto atual.
 - A visão futura contempla compartilhar contas específicas por vínculo de permissões à conta (Fase 18 — roadmap). O participante verá apenas lançamentos posteriores ao aceite; esse recurso não existe no estado atual.
 
 O documento funcional completo e vinculante é o [docs/FSD.md](docs/FSD.md). O guia de manutenção é o [docs/MANUTENCAO.md](docs/MANUTENCAO.md). O design visual oficial está em [docs/DESIGN.md](docs/DESIGN.md).
@@ -184,7 +183,6 @@ Toda intervenção de IA neste repositório em modo de manutenção deve seguir 
 7. **Isolamento Financeiro (Anti-IDOR):** Toda leitura, alteração, exclusão e associação financeira deve validar e filtrar o `usuario_id` autenticado. Não confiar apenas na ocultação de menus ou botões na View.
 8. **RBAC no Backend:**
    - `admin` e `dev` administram somente seus próprios dados financeiros e preferências;
-   - `operador` é legado, sem uso no produto atual; o compartilhamento futuro será autorizado por conta, não por papel global;
    - `dev` é obrigatório para gestão de usuários, auditoria global, configurações globais, migrations e GitHub Actions, sem ampliar o escopo financeiro próprio.
 9. **IDOR:** Validar a propriedade de contas, categorias, meios, cartões, faturas e transações relacionadas antes de qualquer operação.
 10. **Arquivos Privados:** Mídias nunca são públicas; passam pelo proxy Vercel Blob autenticado e são entregues por rotas autenticadas do PHP com validação de MIME real (`finfo_file`).

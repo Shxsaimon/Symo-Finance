@@ -6,7 +6,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Helper de Autenticação, Gestão de Sessão e Controle de Acesso (RBAC)
  *
- * Centraliza as regras de autenticação, verificação de papéis (admin/operador),
+ * Centraliza as regras de autenticação, verificação de papéis (admin/dev),
  * expiração automática de sessão por inatividade e prevenção contra ataques de força bruta.
  */
 class AuthHelper
@@ -194,7 +194,7 @@ class AuthHelper
     }
 
     /**
-     * Retorna o perfil do usuário logado ('admin' ou 'operador').
+     * Retorna o perfil do usuário logado ('admin' ou 'dev').
      *
      * @return string|null
      */
@@ -216,16 +216,6 @@ class AuthHelper
     public static function isDev(): bool
     {
         return self::role() === 'dev';
-    }
-
-    /**
-     * Verifica se o usuário autenticado possui o perfil de Operador.
-     *
-     * @return bool
-     */
-    public static function isOperador(): bool
-    {
-        return self::role() === 'operador';
     }
 
     public static function requireDev(): void
@@ -252,7 +242,7 @@ class AuthHelper
      * Exige que o usuário autenticado possua um dos papéis informados (RBAC).
      * Caso o perfil seja insuficiente, registra evento de segurança e renderiza HTTP 403.
      *
-     * @param string ...$allowedRoles Perfis permitidos (ex: 'admin', 'operador')
+     * @param string ...$allowedRoles Perfis permitidos (ex: 'admin', 'dev')
      * @return void
      */
     public static function requireRole(string ...$allowedRoles): void

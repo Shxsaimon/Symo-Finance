@@ -19,7 +19,7 @@
 * **Contexto de Uso:** Aplicação web responsiva, otimizada para navegação em computadores, notebooks, tablets e smartphones. Os acessos ocorrem em rotinas diárias e semanais de lançamento e conferência de saldos, bem como no fecho mensal de faturas e análise de relatórios.
 * **Observações Relevantes para Implementação:**
 * A aplicação adota isolamento lógico por usuário nas entidades financeiras. Não existe orçamento global compartilhado no estado atual.
-* O perfil técnico `dev` opera funções globais da plataforma, mas mantém dados financeiros próprios; o perfil `admin` também administra somente os próprios dados. O perfil `operador` continua no código apenas por compatibilidade legada.
+* O perfil técnico `dev` opera funções globais da plataforma, mas mantém dados financeiros próprios; o perfil `admin` também administra somente os próprios dados.
 * A interface segue estritamente o tema *Symo* definido no `docs/DESIGN.md`, utilizando a tipografia *Inter* com numerais tabulares (`tabular-nums`) para perfeito alinhamento financeiro e paleta cromática corporativa moderna (Electric Violet `#6F02FF`, Deep Lavender `#793CFE`, Bright Teal `#3BD7D7` e tons neutros balanceados).
 * O código-fonte é estruturado segundo o padrão arquitetural MVC em PHP 8 nativo, com isolamento total de responsabilidades, independência de caminho de instalação e proteção estrita de arquivos internos.
 
@@ -259,7 +259,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.1. Módulo de Autenticação e Gestão de Sessão
 
 * **Objetivo:** Garantir acesso individual seguro, criação autônoma de conta e isolamento financeiro.
-* **Usuários Envolvidos:** Visitantes, `admin`, `operador` legado e `dev` técnico.
+* **Usuários Envolvidos:** Visitantes, `admin` e `dev` técnico.
 * **Ações Entregues:** Autocadastro local com verificação de endereço por código de 6 dígitos enviado por e-mail transacional (Resend), autenticação social via Google OAuth 2.0 (com resolução de identidade: login direto por `google_id`, vínculo automático com comprovação de e-mail e cadastro com dados padrão), login e logout, perfil, senha, avatar, redefinição segura de senha via link com token criptográfico de uso único, sessão persistida no banco e bloqueio por tentativas inválidas.
 * **Status do Módulo:** Módulo 100% implementado, testado e validado. Os fluxos de verificação por código de 6 dígitos e redefinição de senha operam via Resend (utilizando o remetente padrão de testes da plataforma temporariamente até a configuração futura de domínio próprio personalizado).
 
@@ -274,7 +274,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.3. Módulo de Transações Financeiras (Receitas e Despesas)
 
 * **Objetivo:** Registar, consultar, editar e gerir todas as entradas e saídas financeiras.
-* **Usuários Envolvidos:** `admin` e `dev` administram somente os próprios dados financeiros. O papel `operador` é legado e não representa compartilhamento ativo no estado atual.
+* **Usuários Envolvidos:** `admin` e `dev` administram somente os próprios dados financeiros.
 * **Ações Permitidas:**
 * Registo de Receita (à vista, com data de recebimento, conta bancária, categoria e status 'recebido' ou 'pendente');
 * Registo de Despesa com escolha da forma de pagamento. Meios de crédito exigem cartão e geram compra pendente vinculada à fatura; os demais exigem conta bancária e permitem status `pago` ou `pendente`;
@@ -312,12 +312,12 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 
 * **Ações Permitidas:** O `dev` cria, edita e altera o status global das opções. Cada usuário autenticado ativa/inativa opções para si. Contas, categorias e cartões continuam sob administração do próprio usuário; em cada conta, o usuário pode escolher se o saldo entra no Saldo Atual. Contas do tipo `investimento` ficam sempre fora desse valor.
-* **Resultado Esperado:** Padronização dos lançamentos financeiros sem risco de redundância ou criação desordenada de dados por operadores.
+* **Resultado Esperado:** Padronização dos lançamentos financeiros sem risco de redundância ou criação desordenada de dados.
 
 ### 6.7. Módulo de Relatórios e Exportação CSV
 
 * **Objetivo:** Disponibilizar extratos consolidados, relatórios analíticos de fluxo de caixa e exportação de dados para planilhas.
-* **Usuários Envolvidos:** `admin` e `dev`, cada um no próprio escopo financeiro; `operador` é legado até o compartilhamento por conta.
+* **Usuários Envolvidos:** `admin` e `dev`, cada um no próprio escopo financeiro.
 * **Ações Permitidas:** Consulta a relatórios por período, categoria, conta e status; download instantâneo de arquivo estruturado em padrão CSV estruturado com separador `;` e codificação UTF-8 com BOM.
 * **Resultado Esperado:** Extração fidedigna de relatórios com consistência total entre a tabela visualizada na tela e os dados exportados.
 
@@ -382,35 +382,28 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 
 
 
-### 8.2. Perfil Operador (`operador`)
-
-* **Descrição:** Perfil legado, sem uso previsto no produto atual e não concedido pelo autocadastro. Não será a unidade de compartilhamento futuro.
-* **Evolução acordada:** O acesso futuro de outra pessoa será uma permissão vinculada a cada conta financeira compartilhada, não um papel global no usuário. A implementação desse vínculo permanece no roadmap.
-
-
-
-### 8.3. Perfil Técnico (`dev`) e Matriz de Permissões
+### 8.2. Perfil Técnico (`dev`) e Matriz de Permissões
 
 * **Descrição:** Usuário técnico interno, criado pelo seed com `SYSTEM_DEV_*`. Além de operar a plataforma, possui seus próprios dados financeiros como qualquer usuário `admin`.
 * **Permissões Globais:** Gestão de usuários, trilha de auditoria, identidade visual, status/migrations e GitHub Actions. Essas permissões administrativas não ampliam o escopo de dados financeiros: transações, transferências, contas, dashboard, relatórios e lixeira do `dev` são próprios.
 
-| Módulo / Ação | `admin` individual | `operador` legado | `dev` |
+| Módulo / Ação | `admin` individual | `dev` |
 | --- | --- | --- |
-| Visualizar Dashboard e Saldos | Próprios | Legado; sem compartilhamento ativo | Próprios |
-| Criar Receitas / Despesas / Transferências | Próprios | Legado; sem compartilhamento ativo | Próprios |
-| Editar / Excluir Transações Próprias | Sim | Legado; sem compartilhamento ativo | Sim |
-| Editar / Excluir Transações de Outros Usuários | Não | Não | Não |
-| Cadastrar / Editar Contas e Categorias | Próprios | Legado; sem compartilhamento ativo | Próprios |
-| Ativar / Inativar Meios de Pagamento | Individual | Legado; sem compartilhamento ativo | Individual |
-| Criar / Editar / Alterar Status Global de Meios | Não | Não | Sim |
-| Gerenciar Cartões e Faturas | Próprios | Legado; sem compartilhamento ativo | Próprios |
-| Gerenciar Investimentos e Movimentações | Próprios | Legado; sem compartilhamento ativo | Próprios |
-| Emitir Relatórios e Exportar CSV | Próprios | Legado; sem compartilhamento ativo | Próprios |
-| Lixeira | Própria | Legado; sem compartilhamento ativo | Própria |
-| Triagem e Gestão de Feedbacks | Não | Não | Sim |
-| Auditoria e Gestão de Usuários | Não | Não | Sim |
-| Configurações globais, logotipo e migrations | Não | Não | Sim |
-| Alterar Própria Senha, Avatar e Preferências | Sim | Sim | Sim |
+| Visualizar Dashboard e Saldos | Próprios | Próprios |
+| Criar Receitas / Despesas / Transferências | Próprios | Próprios |
+| Editar / Excluir Transações Próprias | Sim | Sim |
+| Editar / Excluir Transações de Outros Usuários | Não | Não |
+| Cadastrar / Editar Contas e Categorias | Próprios | Próprios |
+| Ativar / Inativar Meios de Pagamento | Individual | Individual |
+| Criar / Editar / Alterar Status Global de Meios | Não | Sim |
+| Gerenciar Cartões e Faturas | Próprios | Próprios |
+| Gerenciar Investimentos e Movimentações | Próprios | Próprios |
+| Emitir Relatórios e Exportar CSV | Próprios | Próprios |
+| Lixeira | Própria | Própria |
+| Triagem e Gestão de Feedbacks | Não | Sim |
+| Auditoria e Gestão de Usuários | Não | Sim |
+| Configurações globais, logotipo e migrations | Não | Sim |
+| Alterar Própria Senha, Avatar e Preferências | Sim | Sim |
 
 ---
 
@@ -474,7 +467,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 10.1. Usuário (`User`)
 
 * **Finalidade:** Representa os membros com acesso ao sistema.
-* **Informações:** Nome, e-mail, hash de senha anulável para OAuth futuro, `google_id` único anulável, perfil (`admin`, `operador` ou `dev`), status, avatar Blob e timestamps.
+* **Informações:** Nome, e-mail, hash de senha anulável para OAuth, `google_id` único anulável, perfil (`admin` ou `dev`), status, avatar Blob e timestamps.
 * **Regras:** E-mail único; autocadastro cria `admin` ativo e dados padrão; inativação revoga acesso; o usuário não pode excluir/inativar a si próprio.
 
 ### 10.2. Conta Financeira (`Account`)
@@ -549,7 +542,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `email`: VARCHAR(150) NOT NULL UNIQUE
 * `senha`: VARCHAR(255) NULL, permitindo futura conta exclusivamente OAuth
 * `google_id`: VARCHAR(255) UNIQUE NULL
-* `perfil`: CHECK em `admin`, `operador` ou `dev`; autocadastro cria `admin`
+* `perfil`: CHECK em `admin` ou `dev`; autocadastro cria `admin`
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
 * `avatar`: VARCHAR(255) NULL
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -882,7 +875,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 12.3. Módulo de Transações (`/transacoes`)
 
 * **Objetivo:** Listagem geral, busca filtrada, auditoria e manutenção de receitas e despesas.
-* **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro. O perfil `operador` é legado até existir compartilhamento por conta.
+* **Usuários:** `admin` e `dev`, cada um no próprio escopo financeiro.
 * **Filtros e Buscas:** Período de datas (de/até), Tipo (Receita/Despesa), Categoria, Conta Financeira, Meio de Pagamento, Status (Pendente/Pago/Recebido) e Busca textual por descrição.
 * **Tabela de Dados:** Alta densidade com linhas zebradas sutis (`Surface-Container-Low`), colunas para Data, Tipo (badge semântico), Descrição (com identificação da parcela em badge separado, como `1/12`), Categoria, Conta/Cartão, Valor (numerais tabulares), Status e Botões de Ação (Visualizar Detalhes, Editar, Excluir).
 * **Modais Interativos:**
@@ -913,7 +906,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 ### 12.7. Módulo de Categorias e Meios de Pagamento (`/categorias`, `/meios-pagamento`)
 
 * **Objetivo:** Cadastro e parametrização das classificações financeiras.
-* **Estado atual:** `admin` e `dev` administram os próprios cadastros; `operador` é legado e não tem compartilhamento ativo.
+* **Estado atual:** `admin` e `dev` administram os próprios cadastros.
 * **Evolução dos meios de pagamento:** catálogo global; criação e alteração de status global exclusivas do `dev`, incluindo reativação pela listagem. Cada usuário, inclusive `dev`, controla apenas a própria disponibilidade individual. A inativação global ou individual impede novos lançamentos no escopo correspondente, preservando os históricos.
 * **Informações:** Listagens tabulares com badges de cores, ícones associados, tipo e estado de disponibilidade.
 
@@ -927,7 +920,7 @@ Antes do compartilhamento, deverá ser criada uma tabela como `conta_participant
 
 * **Objetivo:** Administração de contas de acesso ao sistema compartilhado.
 * **Usuários:** Exclusivo `dev`.
-* **Informações:** Listagem de usuários com avatar, nome, e-mail, perfil (badge roxo para Admin, badge azul para Operador), status e ações (Editar Perfil, Inativar/Reativar, Redefinir Senha).
+* **Informações:** Listagem de usuários com avatar, nome, e-mail, perfil (badges para Admin e Dev), status e ações (Editar Perfil, Inativar/Reativar, Redefinir Senha).
 
 ### 12.10. Módulo de Lixeira do Sistema (`/lixeira`)
 
@@ -1095,7 +1088,7 @@ O controle de acesso é aplicado de forma centralizada através de métodos auxi
 * `AuthHelper::requireRole(...)`: valida perfis permitidos, com `dev` herdando permissões operacionais de `admin`.
 * `AuthHelper::requireDev()`: protege usuários, auditoria, operações globais, migrations e GitHub Actions.
 
-### 16.2. Regra de Isolamento por Usuário e Edição de Operador
+### 16.2. Regra de Isolamento por Usuário
 
 * Ao tentar editar ou excluir uma transação financeira, o Controller e o Model restringem a ação ao proprietário autenticado. O perfil `dev` não é exceção para dados financeiros:
 ```php

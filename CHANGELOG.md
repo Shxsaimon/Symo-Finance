@@ -17,6 +17,21 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [2.4.1] — 2026-11-20 — Remoção Definitiva do Perfil Legado Operador e Padronização do Badge DEV
+
+### Adicionado
+- **Migration 023 (`023_remover_perfil_operador_usuarios.php`):** Atualiza a restrição (`CHECK` no PostgreSQL e `ENUM` no MySQL legado) da coluna `perfil` na tabela `usuarios` para aceitar exclusivamente `'admin'` e `'dev'`, com valor padrão `'admin'`.
+- **Classe CSS `.badge-role-dev`:** Nova classe dedicada em `public/css/custom.css` com destaque roxo (`var(--symo-primary-fixed)` / `var(--symo-on-primary-fixed)`) para o selo do perfil técnico `DEV`.
+
+### Modificado
+- **Exibição exclusiva do badge `DEV`:** Na barra de navegação superior (`navbar.php`) e no cartão de Meu Perfil (`users/profile.php`), o selo de perfil agora é exibido exclusivamente para usuários com perfil `dev`, ocultando o selo redundante de `ADMIN` para usuários padrão.
+- **Seletores de perfil na Gestão de Usuários (`users/index.php`, `UserController.php`, `User.php`):** Substituída a antiga opção `Operador` pelos perfis oficiais `admin` (Administrador padrão) e `dev` (Desenvolvedor).
+
+### Removido
+- **Perfil legado `operador`:** Eliminadas todas as referências, métodos (`AuthHelper::isOperador()`), classes CSS (`.badge-role-operador`), avisos de "Modo Consulta (Operador)" nas telas financeiras e menções na documentação ativa (`AGENTS.md`, `docs/FSD.md` e `docs/MANUTENCAO.md`).
+
+---
+
 ## [2.4.0] — 2026-11-17 — Autenticação Social Google OAuth 2.0 e E-mails Transacionais (Verificação e Redefinição de Senha)
 
 ### Adicionado

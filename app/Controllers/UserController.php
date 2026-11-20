@@ -68,7 +68,7 @@ class UserController extends Controller
             'nome'   => $_POST['nome'] ?? '',
             'email'  => $_POST['email'] ?? '',
             'senha'  => $_POST['senha'] ?? '',
-            'perfil' => $_POST['perfil'] ?? 'operador',
+            'perfil' => $_POST['perfil'] ?? 'admin',
             'status' => $_POST['status'] ?? 'ativo',
             'avatar' => $avatarFilename,
         ];

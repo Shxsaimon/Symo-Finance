@@ -15,16 +15,10 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
         </p>
     </div>
     <div>
-        <?php if ($isAdmin): ?>
-            <button type="button" class="btn-symo-primary" data-bs-toggle="modal" data-bs-target="#modalNovaConta">
-                <i class="bi bi-plus-lg"></i>
-                <span>Nova Conta</span>
-            </button>
-        <?php else: ?>
-            <span class="badge text-bg-light border px-3 py-2 text-muted">
-                <i class="bi bi-eye me-1"></i> Modo Consulta (Operador)
-            </span>
-        <?php endif; ?>
+        <button type="button" class="btn-symo-primary" data-bs-toggle="modal" data-bs-target="#modalNovaConta">
+            <i class="bi bi-plus-lg"></i>
+            <span>Nova Conta</span>
+        </button>
     </div>
 </div>
 

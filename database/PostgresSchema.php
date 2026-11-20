@@ -13,7 +13,7 @@ final class PostgresSchema
                 nome VARCHAR(120) NOT NULL,
                 email VARCHAR(150) NOT NULL UNIQUE,
                 senha VARCHAR(255) NOT NULL,
-                perfil VARCHAR(20) NOT NULL DEFAULT 'operador' CHECK (perfil IN ('admin', 'operador')),
+                perfil VARCHAR(20) NOT NULL DEFAULT 'admin' CHECK (perfil IN ('admin', 'dev')),
                 status VARCHAR(20) NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'inativo')),
                 avatar VARCHAR(255),
                 criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

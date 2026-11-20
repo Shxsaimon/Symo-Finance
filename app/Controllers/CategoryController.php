@@ -6,9 +6,7 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Controlador de Categorias de Receitas e Despesas (CategoryController)
  *
- * Gerencia o catálogo de categorias com segregação de permissões:
- * - Operador: consulta de categorias.
- * - Administrador: criação, alteração, inativação e exclusão lógica.
+ * Gerencia o catálogo de categorias financeiras do usuário autenticado.
  */
 class CategoryController extends Controller
 {

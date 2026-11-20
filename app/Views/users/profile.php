@@ -34,10 +34,11 @@ $avatarUrl = !empty($user['avatar']) ? BASE_URL . '/media/avatar/' . (int) $user
             <p class="text-muted mb-3"><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></p>
             
             <div class="d-flex justify-content-center flex-wrap gap-2 mb-3">
-                <span class="<?= $user['perfil'] === 'admin' ? 'badge-role-admin' : 'badge-role-operador' ?>">
-                    <i class="bi <?= $user['perfil'] === 'admin' ? 'bi-shield-lock-fill' : 'bi-person-fill' ?> me-1"></i>
-                    <?= strtoupper($user['perfil']) ?>
-                </span>
+                <?php if (($user['perfil'] ?? '') === 'dev'): ?>
+                    <span class="badge-role-dev">
+                        <i class="bi bi-code-slash me-1"></i>DEV
+                    </span>
+                <?php endif; ?>
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
                     <i class="bi bi-check-circle-fill me-1"></i><?= ucfirst($user['status']) ?>
                 </span>

@@ -81,17 +81,13 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                                 </div>
                             </td>
                             <td>
-                                <?php if ($u['perfil'] === 'admin'): ?>
-                                    <span class="badge-role-admin">
-                                        <i class="bi bi-shield-lock-fill me-1"></i>ADMIN
-                                    </span>
-                                <?php elseif ($u['perfil'] === 'dev'): ?>
-                                    <span class="badge-role-admin">
+                                <?php if ($u['perfil'] === 'dev'): ?>
+                                    <span class="badge-role-dev">
                                         <i class="bi bi-code-slash me-1"></i>DEV
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge-role-operador">
-                                        <i class="bi bi-person-fill me-1"></i>OPERADOR
+                                    <span class="badge-role-admin">
+                                        <i class="bi bi-shield-lock-fill me-1"></i>ADMIN
                                     </span>
                                 <?php endif; ?>
                             </td>
@@ -179,8 +175,8 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                         <div class="col-md-6">
                             <label for="novo_perfil" class="form-label fw-semibold">Perfil de Acesso (RBAC) <span class="text-danger">*</span></label>
                             <select class="form-select" id="novo_perfil" name="perfil" required>
-                                <option value="operador">Operador (Acesso restrito)</option>
-                                <option value="admin">Administrador (Total)</option>
+                                <option value="admin" selected>Administrador (Padrão)</option>
+                                <option value="dev">Desenvolvedor (DEV)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -231,8 +227,8 @@ $loggedUserId = (int) ($currentUser['id'] ?? 0);
                         <div class="col-md-6">
                             <label for="edit_perfil" class="form-label fw-semibold">Perfil de Acesso (RBAC) <span class="text-danger">*</span></label>
                             <select class="form-select" id="edit_perfil" name="perfil" required>
-                                <option value="operador">Operador (Acesso restrito)</option>
-                                <option value="admin">Administrador (Total)</option>
+                                <option value="admin">Administrador (Padrão)</option>
+                                <option value="dev">Desenvolvedor (DEV)</option>
                             </select>
                         </div>
                         <div class="col-md-6">

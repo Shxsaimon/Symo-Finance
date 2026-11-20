@@ -257,7 +257,6 @@ $pdo->exec($sql);
 ### 6.2. Perfis de usuários (RBAC)
 - **`admin`:** Perfil padrão de todo usuário que se cadastra pelo formulário público. É o administrador exclusivo dos seus próprios dados financeiros (contas, categorias, cartões, despesas, transferências, relatórios). Não tem acesso a dados de outros usuários nem a controles globais da plataforma.
 - **`dev`:** Perfil técnico operacional criado via seed inicial. Possui acesso exclusivo às telas operacionais da plataforma: Gestão de Usuários (`/usuarios`), Auditoria Global (`/auditoria`), Configurações do Sistema e Migrations (`/configuracoes`), Consulta de Feedbacks (`/feedbacks`) e Catálogo Global de Meios de Pagamento. Como usuário financeiro, seus lançamentos e contas permanecem estritamente isolados pelo seu próprio `usuario_id`, idêntico a um `admin`.
-- **`operador`:** Perfil legado mantido no código apenas por compatibilidade com versões antigas. Não é utilizado no produto atual.
 
 ### 6.3. Onde e como as permissões são verificadas
 Toda rota protegida deve conter verificação de autorização no início do método do Controller correspondente:
