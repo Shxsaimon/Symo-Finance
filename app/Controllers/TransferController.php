@@ -41,7 +41,7 @@ class TransferController extends Controller
 
         $transferencias = $this->transferModel->getFiltered($filters);
         $resumo = $this->transferModel->getMonthlySummary($filters['mes'], $filters['ano'], $filters['conta_id']);
-        $contas = $this->accountModel->getActiveAccounts();
+        $contas = $this->accountModel->getOwnedActiveAccounts();
 
         $this->render('transfers/index', [
             'title'          => 'Transferências entre Contas — Symo',

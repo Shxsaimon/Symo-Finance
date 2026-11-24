@@ -6,9 +6,11 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 /**
  * Symo — Model de Investimentos (Investment)
  *
- * Gerencia posições de investimento (aplicações e reservas) e seus movimentos.
+ * Gerencia posições de investimento (próprias e compartilhadas) e seus movimentos.
  * Aportes e resgates movimentam a conta vinculada de forma atômica; rendimentos
- * e ajustes alteram somente a posição.
+ * e ajustes alteram somente a posição. Participantes de investimentos compartilhados
+ * só podem realizar ou alterar movimentos caso possuam permissão no investimento
+ * E acesso ativo com permissão de lançamento à conta bancária vinculada.
  */
 class Investment extends Model
 {
@@ -33,19 +35,90 @@ class Investment extends Model
 
     public function find(int $id): ?array
     {
+        $userId = (int) AuthHelper::id();
+
         $stmt = $this->db->prepare(
-            'SELECT i.*, c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status
+            "SELECT i.*,
+                    c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status,
+                    u.nome AS proprietario_nome, u.email AS proprietario_email,
+                    cp.id AS compartilhamento_id,
+                    cp.permissao AS compartilhamento_permissao,
+                    cp.exibir_dashboard AS compartilhamento_exibir_dashboard,
+                    CASE WHEN i.usuario_id = :uid_owner THEN 1 ELSE 0 END AS eh_proprietario,
+                    CASE WHEN i.usuario_id = :uid_perm THEN 'proprietario' ELSE cp.permissao END AS permissao_acesso,
+                    CASE
+                        WHEN i.usuario_id = :uid_dash AND i.exibir_dashboard = TRUE THEN 1
+                        WHEN i.usuario_id <> :uid_dash_part AND cp.exibir_dashboard = TRUE THEN 1
+                        ELSE 0
+                    END AS exibir_no_meu_dashboard
              FROM investimentos i
              INNER JOIN contas c ON c.id = i.conta_id
-             WHERE i.id = :id AND i.usuario_id = :usuario_id AND i.excluido_em IS NULL
-             LIMIT 1'
+             INNER JOIN usuarios u ON u.id = i.usuario_id
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'investimento'
+                AND cp.recurso_id = i.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE i.id = :id
+               AND i.excluido_em IS NULL
+               AND (i.usuario_id = :uid_where OR cp.id IS NOT NULL)
+             LIMIT 1"
         );
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_perm', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_dash', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_dash_part', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_where', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch();
 
-        return $row !== false ? $row : null;
+        if ($row === false) {
+            return null;
+        }
+
+        $row['acesso_conta_vinculada'] = $this->hasLaunchAccessToLinkedAccount((int) $row['conta_id'], $userId);
+        $row['pode_movimentar'] = ((int) $row['eh_proprietario'] === 1)
+            || (in_array($row['permissao_acesso'], ['proprios', 'total'], true) && $row['acesso_conta_vinculada']);
+
+        if ((int) $row['eh_proprietario'] === 1) {
+            $row['participantes'] = (new Share())->getParticipantsForResource('investimento', (int) $row['id']);
+        } else {
+            $row['participantes'] = [];
+        }
+
+        return $row;
+    }
+
+    /**
+     * Verifica se o usuário é proprietário ou participante ativo com permissão 'proprios' ou 'total'
+     * na conta bancária vinculada ao investimento.
+     */
+    public function hasLaunchAccessToLinkedAccount(int $contaId, int $userId): bool
+    {
+        $stmt = $this->db->prepare(
+            "SELECT 1
+             FROM contas c
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'conta'
+                AND cp.recurso_id = c.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE c.id = :conta_id
+               AND c.excluido_em IS NULL
+               AND (
+                   c.usuario_id = :uid_owner
+                   OR cp.permissao IN ('proprios', 'total')
+               )
+             LIMIT 1"
+        );
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchColumn() !== false;
     }
 
     public function findWithTrashed(int $id): ?array
@@ -71,11 +144,33 @@ class Investment extends Model
      */
     public function getFiltered(array $filters): array
     {
-        $sql = 'SELECT i.*, c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status
+        $userId = (int) AuthHelper::id();
+
+        $sql = "SELECT i.*,
+                       c.nome AS conta_nome, c.cor AS conta_cor, c.status AS conta_status,
+                       u.nome AS proprietario_nome,
+                       cp.id AS compartilhamento_id,
+                       cp.permissao AS compartilhamento_permissao,
+                       cp.exibir_dashboard AS compartilhamento_exibir_dashboard,
+                       CASE WHEN i.usuario_id = :uid_owner THEN 1 ELSE 0 END AS eh_proprietario,
+                       CASE WHEN i.usuario_id = :uid_perm THEN 'proprietario' ELSE cp.permissao END AS permissao_acesso
                 FROM investimentos i
                 INNER JOIN contas c ON c.id = i.conta_id
-                WHERE i.usuario_id = :usuario_id AND i.excluido_em IS NULL';
-        $params = [':usuario_id' => [(int) AuthHelper::id(), PDO::PARAM_INT]];
+                INNER JOIN usuarios u ON u.id = i.usuario_id
+                LEFT JOIN compartilhamentos cp
+                    ON cp.recurso_tipo = 'investimento'
+                   AND cp.recurso_id = i.id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE i.excluido_em IS NULL
+                  AND (i.usuario_id = :uid_where OR cp.id IS NOT NULL)";
+
+        $params = [
+            ':uid_owner' => [$userId, PDO::PARAM_INT],
+            ':uid_perm'  => [$userId, PDO::PARAM_INT],
+            ':uid_join'  => [$userId, PDO::PARAM_INT],
+            ':uid_where' => [$userId, PDO::PARAM_INT],
+        ];
 
         $status = $filters['status'] ?? 'ativo';
         if (in_array($status, ['ativo', 'encerrado'], true)) {
@@ -98,19 +193,33 @@ class Investment extends Model
             $sql .= ' AND LOWER(i.finalidade) LIKE :finalidade';
             $params[':finalidade'] = ['%' . mb_strtolower(trim((string) $filters['finalidade'])) . '%', PDO::PARAM_STR];
         }
-        $sql .= ' ORDER BY i.nome ASC';
+        $sql .= ' ORDER BY eh_proprietario DESC, i.nome ASC';
 
         $stmt = $this->db->prepare($sql);
         foreach ($params as $name => [$value, $type]) {
             $stmt->bindValue($name, $value, $type);
         }
         $stmt->execute();
+        $investimentos = $stmt->fetchAll();
 
-        return $stmt->fetchAll();
+        $ownedIds = [];
+        foreach ($investimentos as $inv) {
+            if ((int) $inv['eh_proprietario'] === 1) {
+                $ownedIds[] = (int) $inv['id'];
+            }
+        }
+        $participantsByInv = (new Share())->getParticipantsByResourceIds('investimento', $ownedIds);
+        foreach ($investimentos as &$inv) {
+            $invId = (int) $inv['id'];
+            $inv['participantes'] = $participantsByInv[$invId] ?? [];
+        }
+        unset($inv);
+
+        return $investimentos;
     }
 
     /**
-     * Contas elegíveis para vínculo: ativas e que não sejam do tipo legado investimento.
+     * Contas elegíveis para vínculo ao criar/editar investimento (somente contas próprias do proprietário).
      *
      * @return array<int, array<string, mixed>>
      */
@@ -127,13 +236,45 @@ class Investment extends Model
         return $stmt->fetchAll();
     }
 
-    /** Total das posições ativas do usuário. */
-    public function getTotalInvested(): float
+    /**
+     * Total das posições ativas do usuário (próprias e compartilhadas ativas).
+     *
+     * @param bool $forDashboardOnly Se true, aplica a preferência exibir_dashboard (somente no Dashboard).
+     */
+    public function getTotalInvested(bool $forDashboardOnly = false): float
     {
-        $stmt = $this->db->prepare(
-            "SELECT COALESCE(SUM(saldo_atual), 0) FROM investimentos WHERE usuario_id = :usuario_id AND status = 'ativo' AND excluido_em IS NULL"
-        );
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
+        $userId = (int) AuthHelper::id();
+
+        if ($forDashboardOnly) {
+            $sql = "SELECT COALESCE(SUM(i.saldo_atual), 0)
+                    FROM investimentos i
+                    LEFT JOIN compartilhamentos cp
+                        ON cp.recurso_tipo = 'investimento'
+                       AND cp.recurso_id = i.id
+                       AND cp.participante_id = :uid_join
+                       AND cp.status = 'ativo'
+                    WHERE i.status = 'ativo'
+                      AND i.excluido_em IS NULL
+                      AND (
+                          (i.usuario_id = :uid_owner AND i.exibir_dashboard = TRUE)
+                          OR (cp.id IS NOT NULL AND cp.exibir_dashboard = TRUE)
+                      )";
+        } else {
+            $sql = "SELECT COALESCE(SUM(i.saldo_atual), 0)
+                    FROM investimentos i
+                    LEFT JOIN compartilhamentos cp
+                        ON cp.recurso_tipo = 'investimento'
+                       AND cp.recurso_id = i.id
+                       AND cp.participante_id = :uid_join
+                       AND cp.status = 'ativo'
+                    WHERE i.status = 'ativo'
+                      AND i.excluido_em IS NULL
+                      AND (i.usuario_id = :uid_owner OR cp.id IS NOT NULL)";
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         return (float) $stmt->fetchColumn();
@@ -141,70 +282,161 @@ class Investment extends Model
 
     public function getActiveCount(): int
     {
+        $userId = (int) AuthHelper::id();
         $stmt = $this->db->prepare(
-            "SELECT COUNT(*) FROM investimentos WHERE usuario_id = :usuario_id AND status = 'ativo' AND excluido_em IS NULL"
+            "SELECT COUNT(*)
+             FROM investimentos i
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'investimento'
+                AND cp.recurso_id = i.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE i.status = 'ativo' AND i.excluido_em IS NULL
+               AND (i.usuario_id = :uid_owner OR cp.id IS NOT NULL)"
         );
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         return (int) $stmt->fetchColumn();
     }
 
-    /** Soma dos rendimentos do mês informado (exclui aportes, resgates e ajustes). */
+    /** Soma dos rendimentos do mês informado (respeitando períodos de compartilhamento para participantes). */
     public function getMonthlyYield(int $mes, int $ano): float
     {
+        $userId = (int) AuthHelper::id();
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
         $fim = (new DateTimeImmutable($inicio))->modify('+1 month')->format('Y-m-d');
 
         $stmt = $this->db->prepare(
-            "SELECT COALESCE(SUM(valor), 0) FROM investimento_movimentos
-             WHERE usuario_id = :usuario_id AND tipo = 'rendimento' AND excluido_em IS NULL
-               AND data_movimento >= :inicio AND data_movimento < :fim"
+            "SELECT COALESCE(SUM(m.valor), 0)
+             FROM investimento_movimentos m
+             INNER JOIN investimentos i ON i.id = m.investimento_id AND i.excluido_em IS NULL
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'investimento'
+                AND cp.recurso_id = i.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE m.tipo = 'rendimento'
+               AND m.excluido_em IS NULL
+               AND m.data_movimento >= :inicio
+               AND m.data_movimento < :fim
+               AND (
+                   i.usuario_id = :uid_owner
+                   OR (
+                       cp.id IS NOT NULL
+                       AND EXISTS (
+                           SELECT 1 FROM compartilhamento_periodos p
+                           WHERE p.recurso_tipo = 'investimento'
+                             AND p.recurso_id = i.id
+                             AND p.participante_id = :uid_period
+                             AND m.criado_em >= p.aceito_em
+                             AND (p.encerrado_em IS NULL OR m.criado_em <= p.encerrado_em)
+                       )
+                   )
+               )"
         );
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':inicio', $inicio, PDO::PARAM_STR);
         $stmt->bindValue(':fim', $fim, PDO::PARAM_STR);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         return (float) $stmt->fetchColumn();
     }
 
     /**
+     * Retorna os movimentos de um investimento respeitando os períodos de visibilidade caso seja participante.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function getMovements(int $investimentoId): array
     {
+        $userId = (int) AuthHelper::id();
+
         $stmt = $this->db->prepare(
-            'SELECT m.*, c.nome AS conta_nome
+            "SELECT m.*, c.nome AS conta_nome, u.nome AS usuario_nome
              FROM investimento_movimentos m
+             INNER JOIN investimentos i ON i.id = m.investimento_id
              LEFT JOIN contas c ON c.id = m.conta_id
-             WHERE m.investimento_id = :investimento_id AND m.usuario_id = :usuario_id AND m.excluido_em IS NULL
-             ORDER BY m.data_movimento DESC, m.id DESC'
+             LEFT JOIN usuarios u ON u.id = m.usuario_id
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'investimento'
+                AND cp.recurso_id = i.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE m.investimento_id = :investimento_id
+               AND m.excluido_em IS NULL
+               AND (
+                   i.usuario_id = :uid_owner
+                   OR (
+                       cp.id IS NOT NULL
+                       AND EXISTS (
+                           SELECT 1 FROM compartilhamento_periodos p
+                           WHERE p.recurso_tipo = 'investimento'
+                             AND p.recurso_id = i.id
+                             AND p.participante_id = :uid_period
+                             AND m.criado_em >= p.aceito_em
+                             AND (p.encerrado_em IS NULL OR m.criado_em <= p.encerrado_em)
+                       )
+                   )
+               )
+             ORDER BY m.data_movimento DESC, m.id DESC"
         );
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':investimento_id', $investimentoId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll();
     }
 
     /**
-     * Resumo de rendimentos por posição no mês.
+     * Resumo de rendimentos por posição no mês (respeitando períodos de visibilidade).
      */
     public function getPositionYield(int $investimentoId, int $mes, int $ano): float
     {
+        $userId = (int) AuthHelper::id();
         $inicio = sprintf('%04d-%02d-01', $ano, $mes);
         $fim = (new DateTimeImmutable($inicio))->modify('+1 month')->format('Y-m-d');
 
         $stmt = $this->db->prepare(
-            "SELECT COALESCE(SUM(valor), 0) FROM investimento_movimentos
-             WHERE investimento_id = :investimento_id AND usuario_id = :usuario_id AND tipo = 'rendimento'
-               AND excluido_em IS NULL AND data_movimento >= :inicio AND data_movimento < :fim"
+            "SELECT COALESCE(SUM(m.valor), 0)
+             FROM investimento_movimentos m
+             INNER JOIN investimentos i ON i.id = m.investimento_id
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'investimento'
+                AND cp.recurso_id = i.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE m.investimento_id = :investimento_id
+               AND m.tipo = 'rendimento'
+               AND m.excluido_em IS NULL
+               AND m.data_movimento >= :inicio
+               AND m.data_movimento < :fim
+               AND (
+                   i.usuario_id = :uid_owner
+                   OR (
+                       cp.id IS NOT NULL
+                       AND EXISTS (
+                           SELECT 1 FROM compartilhamento_periodos p
+                           WHERE p.recurso_tipo = 'investimento'
+                             AND p.recurso_id = i.id
+                             AND p.participante_id = :uid_period
+                             AND m.criado_em >= p.aceito_em
+                             AND (p.encerrado_em IS NULL OR m.criado_em <= p.encerrado_em)
+                       )
+                   )
+               )"
         );
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':investimento_id', $investimentoId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
         $stmt->bindValue(':inicio', $inicio, PDO::PARAM_STR);
         $stmt->bindValue(':fim', $fim, PDO::PARAM_STR);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         return (float) $stmt->fetchColumn();
@@ -225,12 +457,13 @@ class Investment extends Model
             throw new InvalidArgumentException('O saldo inicial não pode ser negativo.');
         }
         $dataSaldo = $this->normalizeDate($data['data_saldo_inicial'] ?? null);
+        $exibirDashboard = (bool) ($data['exibir_dashboard'] ?? true);
 
         $stmt = $this->db->prepare(
             'INSERT INTO investimentos (usuario_id, conta_id, nome, custodiante, classe, finalidade,
-                                        saldo_inicial, data_saldo_inicial, saldo_atual, status, criado_em, atualizado_em)
+                                        saldo_inicial, data_saldo_inicial, saldo_atual, exibir_dashboard, status, criado_em, atualizado_em)
              VALUES (:usuario_id, :conta_id, :nome, :custodiante, :classe, :finalidade,
-                     :saldo_inicial, :data_saldo, :saldo_atual, :status, NOW(), NOW())'
+                     :saldo_inicial, :data_saldo, :saldo_atual, :exibir_dashboard, :status, NOW(), NOW())'
         );
         $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':conta_id', $dados['conta_id'], PDO::PARAM_INT);
@@ -241,6 +474,7 @@ class Investment extends Model
         $stmt->bindValue(':saldo_inicial', $saldoInicial);
         $stmt->bindValue(':data_saldo', $dataSaldo, PDO::PARAM_STR);
         $stmt->bindValue(':saldo_atual', $saldoInicial);
+        $stmt->bindValue(':exibir_dashboard', $exibirDashboard, PDO::PARAM_BOOL);
         $stmt->bindValue(':status', 'ativo', PDO::PARAM_STR);
         $stmt->execute();
 
@@ -248,32 +482,36 @@ class Investment extends Model
         $this->logAudit('INSERT', $id, null, $dados + [
             'saldo_inicial'      => $saldoInicial,
             'data_saldo_inicial' => $dataSaldo,
+            'exibir_dashboard'   => $exibirDashboard,
         ], $userId);
 
         return $id;
     }
 
     /**
-     * Atualiza dados cadastrais e a conta vinculada (válida apenas para operações futuras).
+     * Atualiza dados cadastrais e a conta vinculada (exclusivo do proprietário).
      *
      * @param array<string, mixed> $data
      */
     public function updatePosition(int $id, array $data, int $userId): void
     {
         $antiga = $this->find($id);
-        if (!$antiga) {
-            throw new InvalidArgumentException('Investimento não encontrado.');
+        if (!$antiga || (int) $antiga['usuario_id'] !== $userId) {
+            throw new InvalidArgumentException('Investimento não encontrado ou você não é o proprietário.');
         }
 
         $dados = $this->normalizePosition($data);
         if ($dados['conta_id'] !== (int) $antiga['conta_id']) {
             $this->assertEligibleAccount($dados['conta_id'], $userId);
         }
+        $exibirDashboard = array_key_exists('exibir_dashboard', $data)
+            ? (bool) $data['exibir_dashboard']
+            : (bool) ($antiga['exibir_dashboard'] ?? true);
 
         $stmt = $this->db->prepare(
             'UPDATE investimentos
              SET conta_id = :conta_id, nome = :nome, custodiante = :custodiante, classe = :classe,
-                 finalidade = :finalidade, atualizado_em = NOW()
+                 finalidade = :finalidade, exibir_dashboard = :exibir_dashboard, atualizado_em = NOW()
              WHERE id = :id AND usuario_id = :usuario_id'
         );
         $stmt->bindValue(':conta_id', $dados['conta_id'], PDO::PARAM_INT);
@@ -281,6 +519,7 @@ class Investment extends Model
         $stmt->bindValue(':custodiante', $dados['custodiante'], $dados['custodiante'] !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
         $stmt->bindValue(':classe', $dados['classe'], PDO::PARAM_STR);
         $stmt->bindValue(':finalidade', $dados['finalidade'], $dados['finalidade'] !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':exibir_dashboard', $exibirDashboard, PDO::PARAM_BOOL);
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
@@ -288,14 +527,15 @@ class Investment extends Model
         $this->logAudit('UPDATE', $id, [
             'conta_id' => (int) $antiga['conta_id'], 'nome' => $antiga['nome'], 'custodiante' => $antiga['custodiante'],
             'classe' => $antiga['classe'], 'finalidade' => $antiga['finalidade'],
-        ], $dados, $userId);
+            'exibir_dashboard' => (bool) ($antiga['exibir_dashboard'] ?? true),
+        ], $dados + ['exibir_dashboard' => $exibirDashboard], $userId);
     }
 
     public function reactivate(int $id, int $userId): void
     {
         $posicao = $this->find($id);
-        if (!$posicao) {
-            throw new InvalidArgumentException('Investimento não encontrado.');
+        if (!$posicao || (int) $posicao['usuario_id'] !== $userId) {
+            throw new InvalidArgumentException('Investimento não encontrado ou você não é o proprietário.');
         }
         if ($posicao['status'] === 'ativo') {
             return;
@@ -314,8 +554,8 @@ class Investment extends Model
     public function deactivate(int $id, int $userId): void
     {
         $posicao = $this->find($id);
-        if (!$posicao) {
-            throw new InvalidArgumentException('Investimento não encontrado.');
+        if (!$posicao || (int) $posicao['usuario_id'] !== $userId) {
+            throw new InvalidArgumentException('Investimento não encontrado ou você não é o proprietário.');
         }
         if ($posicao['status'] === 'encerrado') {
             return;
@@ -335,26 +575,20 @@ class Investment extends Model
     }
 
     /**
-     * Exclui logicamente uma posição de investimento (soft delete).
+     * Exclui logicamente uma posição de investimento (exclusivo do proprietário).
      * Exige que o saldo atual seja exatamente zero.
-     * Os movimentos ativos vinculados são marcados como excluídos em lote com o mesmo timestamp.
-     *
-     * @param int $id
-     * @param int $userId
-     * @return array{success: bool, message: string}
      */
     public function deletePosition(int $id, int $userId): array
     {
         $this->db->beginTransaction();
         try {
-            $posicao = $this->lockPosition($id, $userId);
+            $posicao = $this->lockOwnedPosition($id, $userId);
             if (round((float) $posicao['saldo_atual'], 2) > 0) {
                 throw new InvalidArgumentException('Para excluir o investimento, resgate ou ajuste seu saldo para R$ 0,00 primeiro.');
             }
 
             $now = date('Y-m-d H:i:s');
 
-            // Soft delete da posição de investimento
             $stmt = $this->db->prepare(
                 'UPDATE investimentos SET excluido_em = :excluido_em, excluido_por = :por, atualizado_em = NOW()
                  WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL'
@@ -365,15 +599,14 @@ class Investment extends Model
             $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
 
-            // Marca os movimentos ativos vinculados com o mesmo timestamp da exclusão do pai
+            // Marca todos os movimentos ativos vinculados com o mesmo timestamp da exclusão do pai
             $stmtMov = $this->db->prepare(
                 'UPDATE investimento_movimentos SET excluido_em = :excluido_em, excluido_por = :por, atualizado_em = NOW()
-                 WHERE investimento_id = :investimento_id AND usuario_id = :usuario_id AND excluido_em IS NULL'
+                 WHERE investimento_id = :investimento_id AND excluido_em IS NULL'
             );
             $stmtMov->bindValue(':excluido_em', $now, PDO::PARAM_STR);
             $stmtMov->bindValue(':por', $userId, PDO::PARAM_INT);
             $stmtMov->bindValue(':investimento_id', $id, PDO::PARAM_INT);
-            $stmtMov->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmtMov->execute();
 
             $this->logAudit('SOFT_DELETE', $id, $posicao, [
@@ -391,6 +624,8 @@ class Investment extends Model
 
     /**
      * Registra um movimento de forma atômica.
+     * Exige que o autor seja o proprietário OU participante ativo com permissão 'proprios'/'total'
+     * E acesso com permissão de lançamento à conta bancária vinculada.
      *
      * @param array<string, mixed> $data tipo, valor (ajuste: novo_total), data_movimento, observacoes
      */
@@ -405,7 +640,7 @@ class Investment extends Model
 
         $this->db->beginTransaction();
         try {
-            $posicao = $this->lockPosition($investimentoId, $userId);
+            $posicao = $this->lockAccessiblePositionForMovement($investimentoId, $userId);
             if ($posicao['status'] !== 'ativo') {
                 throw new InvalidArgumentException('Reative o investimento antes de registrar novos movimentos.');
             }
@@ -429,8 +664,8 @@ class Investment extends Model
             $contaId = null;
             if (in_array($tipo, ['aporte', 'resgate'], true)) {
                 $contaId = (int) $posicao['conta_id'];
-                $this->assertActiveOwnedAccount($contaId, $userId);
-                $this->moveAccount($contaId, $userId, $tipo === 'aporte' ? -$valor : $valor);
+                $this->assertActiveLinkedAccount($contaId);
+                $this->moveAccount($contaId, $tipo === 'aporte' ? -$valor : $valor);
             }
 
             $stmt = $this->db->prepare(
@@ -447,7 +682,7 @@ class Investment extends Model
             $stmt->execute();
             $movId = (int) $this->db->lastInsertId();
 
-            $this->recalculate($investimentoId, $userId);
+            $this->recalculate($investimentoId);
             $this->auditMovement('INSERT', $movId, null, [
                 'investimento_id' => $investimentoId, 'conta_id' => $contaId, 'tipo' => $tipo,
                 'valor' => $valor, 'data_movimento' => $dataMov, 'observacoes' => $obs,
@@ -471,9 +706,10 @@ class Investment extends Model
     {
         $this->db->beginTransaction();
         try {
-            $mov = $this->lockMovement($movId, $userId);
+            $mov = $this->lockMovementById($movId);
             $investimentoId = (int) $mov['investimento_id'];
-            $this->lockPosition($investimentoId, $userId);
+            $posicao = $this->lockAccessiblePositionForMovement($investimentoId, $userId);
+            $this->assertCanMutateMovement($mov, $posicao, $userId);
 
             $valor = round((float) ($data['valor'] ?? 0.0), 2);
             if ($mov['tipo'] === 'ajuste') {
@@ -488,23 +724,22 @@ class Investment extends Model
 
             if (in_array($mov['tipo'], ['aporte', 'resgate'], true)) {
                 $contaId = (int) $mov['conta_id'];
-                $this->assertActiveOwnedAccount($contaId, $userId);
+                $this->assertActiveLinkedAccount($contaId);
                 $diferenca = $valor - (float) $mov['valor'];
-                $this->moveAccount($contaId, $userId, $mov['tipo'] === 'aporte' ? -$diferenca : $diferenca);
+                $this->moveAccount($contaId, $mov['tipo'] === 'aporte' ? -$diferenca : $diferenca);
             }
 
             $stmt = $this->db->prepare(
                 'UPDATE investimento_movimentos SET valor = :valor, data_movimento = :data_mov, observacoes = :obs, atualizado_em = NOW()
-                 WHERE id = :id AND usuario_id = :usuario_id'
+                 WHERE id = :id'
             );
             $stmt->bindValue(':valor', $valor);
             $stmt->bindValue(':data_mov', $dataMov, PDO::PARAM_STR);
             $stmt->bindValue(':obs', $obs, $obs !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $stmt->bindValue(':id', $movId, PDO::PARAM_INT);
-            $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
 
-            $this->recalculate($investimentoId, $userId);
+            $this->recalculate($investimentoId);
             $this->auditMovement('UPDATE', $movId, [
                 'valor' => (float) $mov['valor'], 'data_movimento' => $mov['data_movimento'], 'observacoes' => $mov['observacoes'],
             ], ['valor' => $valor, 'data_movimento' => $dataMov, 'observacoes' => $obs], $userId);
@@ -525,25 +760,25 @@ class Investment extends Model
     {
         $this->db->beginTransaction();
         try {
-            $mov = $this->lockMovement($movId, $userId);
+            $mov = $this->lockMovementById($movId);
             $investimentoId = (int) $mov['investimento_id'];
-            $this->lockPosition($investimentoId, $userId);
+            $posicao = $this->lockAccessiblePositionForMovement($investimentoId, $userId);
+            $this->assertCanMutateMovement($mov, $posicao, $userId);
 
             if (in_array($mov['tipo'], ['aporte', 'resgate'], true)) {
                 $valor = (float) $mov['valor'];
-                $this->moveAccount((int) $mov['conta_id'], $userId, $mov['tipo'] === 'aporte' ? $valor : -$valor);
+                $this->moveAccount((int) $mov['conta_id'], $mov['tipo'] === 'aporte' ? $valor : -$valor);
             }
 
             $stmt = $this->db->prepare(
                 'UPDATE investimento_movimentos SET excluido_em = NOW(), excluido_por = :por, atualizado_em = NOW()
-                 WHERE id = :id AND usuario_id = :usuario_id'
+                 WHERE id = :id'
             );
             $stmt->bindValue(':por', $userId, PDO::PARAM_INT);
             $stmt->bindValue(':id', $movId, PDO::PARAM_INT);
-            $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
 
-            $this->recalculate($investimentoId, $userId);
+            $this->recalculate($investimentoId);
             $this->auditMovement('SOFT_DELETE', $movId, [
                 'tipo' => $mov['tipo'], 'valor' => (float) $mov['valor'], 'data_movimento' => $mov['data_movimento'],
             ], null, $userId);
@@ -560,13 +795,11 @@ class Investment extends Model
     public function hasPositionsForAccount(int $contaId): bool
     {
         $stmt = $this->db->prepare(
-            'SELECT (SELECT COUNT(*) FROM investimentos WHERE conta_id = :conta_id AND usuario_id = :usuario_id AND excluido_em IS NULL)
-                  + (SELECT COUNT(*) FROM investimento_movimentos WHERE conta_id = :conta_mov AND usuario_id = :usuario_mov AND excluido_em IS NULL)'
+            'SELECT (SELECT COUNT(*) FROM investimentos WHERE conta_id = :conta_id AND excluido_em IS NULL)
+                  + (SELECT COUNT(*) FROM investimento_movimentos WHERE conta_id = :conta_mov AND excluido_em IS NULL)'
         );
         $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', (int) AuthHelper::id(), PDO::PARAM_INT);
         $stmt->bindValue(':conta_mov', $contaId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_mov', (int) AuthHelper::id(), PDO::PARAM_INT);
         $stmt->execute();
 
         return (int) $stmt->fetchColumn() > 0;
@@ -630,17 +863,16 @@ class Investment extends Model
         $conta = $stmt->fetch();
 
         if (!$conta || $conta['status'] !== 'ativa' || $conta['tipo'] === 'investimento') {
-            throw new InvalidArgumentException('Selecione uma conta ativa que não seja do tipo Investimento.');
+            throw new InvalidArgumentException('Selecione uma conta ativa de sua propriedade que não seja do tipo Investimento.');
         }
     }
 
-    private function assertActiveOwnedAccount(int $contaId, int $userId): void
+    private function assertActiveLinkedAccount(int $contaId): void
     {
         $stmt = $this->db->prepare(
-            "SELECT status FROM contas WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL"
+            "SELECT status FROM contas WHERE id = :id AND excluido_em IS NULL"
         );
         $stmt->bindValue(':id', $contaId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $status = $stmt->fetchColumn();
 
@@ -650,7 +882,7 @@ class Investment extends Model
     }
 
     /** @return array<string, mixed> */
-    private function lockPosition(int $id, int $userId): array
+    private function lockOwnedPosition(int $id, int $userId): array
     {
         $stmt = $this->db->prepare(
             'SELECT * FROM investimentos WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL FOR UPDATE'
@@ -666,14 +898,78 @@ class Investment extends Model
         return $row;
     }
 
-    /** @return array<string, mixed> */
-    private function lockMovement(int $id, int $userId): array
+    /**
+     * Bloqueia a posição de investimento e valida se o usuário é o proprietário
+     * OU participante ativo com permissão de lançamento ('proprios' ou 'total')
+     * E acesso com permissão de lançamento à conta bancária vinculada.
+     *
+     * @return array<string, mixed>
+     */
+    private function lockAccessiblePositionForMovement(int $id, int $userId): array
     {
         $stmt = $this->db->prepare(
-            'SELECT * FROM investimento_movimentos WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL FOR UPDATE'
+            'SELECT * FROM investimentos WHERE id = :id AND excluido_em IS NULL FOR UPDATE'
         );
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if (!$row) {
+            throw new InvalidArgumentException('Investimento não encontrado.');
+        }
+
+        if ((int) $row['usuario_id'] === $userId) {
+            $row['permissao_acesso'] = 'proprietario';
+            return $row;
+        }
+
+        $share = (new Share())->getActiveShare('investimento', $id, $userId);
+        if (!$share || !in_array($share['permissao'], ['proprios', 'total'], true)) {
+            throw new InvalidArgumentException('Você não possui permissão para registrar ou alterar movimentos neste investimento.');
+        }
+
+        if (!$this->hasLaunchAccessToLinkedAccount((int) $row['conta_id'], $userId)) {
+            throw new InvalidArgumentException('Para realizar ajustes ou movimentos neste investimento, você também precisa ter acesso com permissão de lançamento à conta bancária vinculada.');
+        }
+
+        $row['permissao_acesso'] = (string) $share['permissao'];
+        return $row;
+    }
+
+    /**
+     * Valida se o usuário pode editar ou excluir um movimento específico do investimento.
+     *
+     * @param array<string, mixed> $mov
+     * @param array<string, mixed> $posicao
+     */
+    private function assertCanMutateMovement(array $mov, array $posicao, int $userId): void
+    {
+        if ((int) $posicao['usuario_id'] === $userId) {
+            return;
+        }
+
+        $shareModel = new Share();
+        if (!$shareModel->isTimestampWithinParticipantPeriods('investimento', (int) $posicao['id'], $userId, (string) $mov['criado_em'])) {
+            throw new InvalidArgumentException('Este movimento pertence a um período fora da sua participação no investimento.');
+        }
+
+        $permissao = (string) ($posicao['permissao_acesso'] ?? 'visualizar');
+        if ($permissao === 'total') {
+            return;
+        }
+        if ($permissao === 'proprios' && (int) $mov['usuario_id'] === $userId) {
+            return;
+        }
+
+        throw new InvalidArgumentException('Sua permissão neste investimento permite alterar apenas movimentos criados por você.');
+    }
+
+    /** @return array<string, mixed> */
+    private function lockMovementById(int $id): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM investimento_movimentos WHERE id = :id AND excluido_em IS NULL FOR UPDATE'
+        );
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch();
         if (!$row) {
@@ -683,8 +979,8 @@ class Investment extends Model
         return $row;
     }
 
-    /** Aplica variação ao saldo da conta; débitos nunca deixam o saldo negativo. */
-    private function moveAccount(int $contaId, int $userId, float $delta): void
+    /** Aplica variação ao saldo da conta vinculada; débitos nunca deixam o saldo negativo. */
+    private function moveAccount(int $contaId, float $delta): void
     {
         if ($delta == 0.0) {
             return;
@@ -692,12 +988,11 @@ class Investment extends Model
 
         $stmt = $this->db->prepare(
             'UPDATE contas SET saldo_atual = saldo_atual + :delta, atualizado_em = NOW()
-             WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL AND saldo_atual + :delta_minimo >= 0'
+             WHERE id = :id AND excluido_em IS NULL AND saldo_atual + :delta_minimo >= 0'
         );
         $stmt->bindValue(':delta', $delta);
         $stmt->bindValue(':delta_minimo', $delta < 0 ? $delta : 0.0);
         $stmt->bindValue(':id', $contaId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         if ($stmt->rowCount() !== 1) {
@@ -705,18 +1000,17 @@ class Investment extends Model
         }
     }
 
-    /** Recalcula o saldo da posição a partir do saldo inicial e dos movimentos ativos. */
-    public function recalculate(int $investimentoId, int $userId): void
+    /** Recalcula o saldo da posição a partir do saldo inicial e de todos os movimentos ativos da posição. */
+    public function recalculate(int $investimentoId, ?int $userId = null): void
     {
         $stmt = $this->db->prepare(
             "SELECT i.saldo_inicial + COALESCE(SUM(CASE WHEN m.tipo = 'resgate' THEN -m.valor ELSE m.valor END), 0)
              FROM investimentos i
              LEFT JOIN investimento_movimentos m ON m.investimento_id = i.id AND m.excluido_em IS NULL
-             WHERE i.id = :id AND i.usuario_id = :usuario_id
+             WHERE i.id = :id
              GROUP BY i.id, i.saldo_inicial"
         );
         $stmt->bindValue(':id', $investimentoId, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $saldo = round((float) $stmt->fetchColumn(), 2);
 
@@ -725,11 +1019,10 @@ class Investment extends Model
         }
 
         $upd = $this->db->prepare(
-            'UPDATE investimentos SET saldo_atual = :saldo, atualizado_em = NOW() WHERE id = :id AND usuario_id = :usuario_id'
+            'UPDATE investimentos SET saldo_atual = :saldo, atualizado_em = NOW() WHERE id = :id'
         );
         $upd->bindValue(':saldo', $saldo);
         $upd->bindValue(':id', $investimentoId, PDO::PARAM_INT);
-        $upd->bindValue(':usuario_id', $userId, PDO::PARAM_INT);
         $upd->execute();
     }
 

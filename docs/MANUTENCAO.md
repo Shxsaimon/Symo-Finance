@@ -11,7 +11,7 @@ O **Symo Finance** é uma aplicação web completa de gestão financeira pessoal
 
 ### 1.2. Para quem foi criado
 - **Pessoas Físicas:** Organização de contas, controle de despesas do dia a dia e reservas de emergência.
-- **Famílias e Casais:** Acompanhamento do orçamento familiar individual (com previsão futura de compartilhamento seletivo de contas específicas).
+- **Famílias e Casais:** Acompanhamento do orçamento individual e colaboração seletiva em contas bancárias e posições de investimentos compartilhadas por convite e nível de permissão.
 - **Freelancers e MEIs:** Separação entre contas pessoais e operacionais, acompanhamento de recebíveis e fluxo de caixa simplificado, sem jargões contábeis complexos.
 
 ### 1.3. Problemas que resolve

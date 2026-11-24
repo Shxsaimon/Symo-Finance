@@ -31,7 +31,7 @@ class CreditCardController extends Controller
         AuthHelper::requireLogin();
 
         $cartoes = $this->cardModel->getAllWithSummary();
-        $contas = $this->accountModel->getActiveAccounts();
+        $contas = $this->accountModel->getOwnedActiveAccounts();
 
         $this->render('credit-cards/index', [
             'title'   => 'Cartões de Crédito — Symo',
@@ -60,7 +60,7 @@ class CreditCardController extends Controller
         }
 
         $faturas = $this->invoiceModel->getInvoicesByCard($id);
-        $contas = $this->accountModel->getActiveAccounts();
+        $contas = $this->accountModel->getOwnedActiveAccounts();
 
         $this->render('credit-cards/show', [
             'title'   => "Cartão {$cartao['nome']} — Symo",
@@ -89,7 +89,7 @@ class CreditCardController extends Controller
             exit;
         }
 
-        $contas = $this->accountModel->getActiveAccounts();
+        $contas = $this->accountModel->getOwnedActiveAccounts();
 
         $this->render('credit-cards/invoice', [
             'title'   => "Fatura " . sprintf('%02d/%04d', $fatura['mes_referencia'], $fatura['ano_referencia']) . " — {$fatura['cartao_nome']}",

@@ -282,4 +282,95 @@ HTML;
 
         return self::send($toEmail, $subject, $html, $text);
     }
+
+    /**
+     * Envia um aviso por e-mail sobre um novo convite de compartilhamento de Conta ou Investimento.
+     *
+     * @param string $toEmail E-mail do destinatário convidado
+     * @param string $toName Nome do destinatário convidado
+     * @param string $ownerName Nome do proprietário que convidou
+     * @param string $resourceType 'conta' ou 'investimento'
+     * @param string $resourceName Nome da conta bancária ou investimento
+     * @param string $permissionLabel Descrição legível da permissão concedida
+     * @return array{success: bool, message: string}
+     */
+    public static function sendShareInvite(
+        string $toEmail,
+        string $toName,
+        string $ownerName,
+        string $resourceType,
+        string $resourceName,
+        string $permissionLabel
+    ): array {
+        $safeToName = htmlspecialchars($toName, ENT_QUOTES, 'UTF-8');
+        $safeOwnerName = htmlspecialchars($ownerName, ENT_QUOTES, 'UTF-8');
+        $safeResourceName = htmlspecialchars($resourceName, ENT_QUOTES, 'UTF-8');
+        $safePermission = htmlspecialchars($permissionLabel, ENT_QUOTES, 'UTF-8');
+        $tipoLabel = $resourceType === 'investimento' ? 'o investimento' : 'a conta bancária';
+        $tipoTitulo = $resourceType === 'investimento' ? 'Investimento Compartilhado' : 'Conta Compartilhada';
+        $appUrl = htmlspecialchars(defined('BASE_URL') ? BASE_URL . '/dashboard' : '', ENT_QUOTES, 'UTF-8');
+
+        $subject = "Convite de {$tipoTitulo}: {$resourceName} — Symo Finance";
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Convite de Compartilhamento</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f7f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1a1c1c;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f7f9fa; padding: 40px 15px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e3e2e2; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+          <tr>
+            <td style="padding: 28px 32px; background: linear-gradient(135deg, #6f02ff 0%, #5300c4 100%); text-align: center;">
+              <span style="font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">Symo Finance</span>
+              <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255,255,255,0.85);">Colaboração e Gestão Financeira</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px;">
+              <h2 style="margin: 0 0 16px 0; font-size: 20px; font-weight: 700; color: #1a1c1c;">Você recebeu um convite!</h2>
+              <p style="margin: 0 0 18px 0; font-size: 15px; line-height: 1.5; color: #4a4457;">
+                Olá, <strong>{$safeToName}</strong>! <strong>{$safeOwnerName}</strong> convidou você para colaborar com {$tipoLabel} <strong>"{$safeResourceName}"</strong> no Symo Finance.
+              </p>
+              <div style="background-color: #f5efff; border-left: 4px solid #6f02ff; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                <p style="margin: 0 0 6px 0; font-size: 13px; color: #7b7489; text-transform: uppercase; font-weight: 700;">Nível de Permissão</p>
+                <p style="margin: 0; font-size: 15px; font-weight: 700; color: #5300c4;">{$safePermission}</p>
+              </div>
+              <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.5; color: #4a4457;">
+                Para aceitar ou recusar este convite, acesse sua conta no Symo Finance, clique na sua foto de perfil no canto superior direito e abra a opção <strong>Notificações</strong>.
+              </p>
+              <div style="text-align: center; margin: 24px 0;">
+                <a href="{$appUrl}" style="background-color: #6f02ff; color: #ffffff; text-decoration: none; padding: 13px 26px; font-size: 15px; font-weight: 700; border-radius: 8px; display: inline-block;">
+                  Acessar o Symo Finance
+                </a>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 32px; background-color: #faf9fb; border-top: 1px solid #f0edf4; text-align: center;">
+              <p style="margin: 0; font-size: 12px; color: #9c94a8;">
+                © Symo Finance — Gestão Financeira Segura e Privada.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+HTML;
+
+        $text = "Olá, {$toName}!\n\n"
+            . "{$ownerName} convidou você para compartilhar {$tipoLabel} \"{$resourceName}\" no Symo Finance.\n"
+            . "Permissão concedida: {$permissionLabel}\n\n"
+            . "Para aceitar ou recusar o convite, acesse o Symo Finance e abra suas Notificações no menu do perfil:\n"
+            . (defined('BASE_URL') ? BASE_URL . '/dashboard' : '');
+
+        return self::send($toEmail, $subject, $html, $text);
+    }
 }

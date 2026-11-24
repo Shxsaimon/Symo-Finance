@@ -83,6 +83,7 @@ class InvestmentController extends Controller
                 'finalidade'         => $_POST['finalidade'] ?? '',
                 'saldo_inicial'      => FormatHelper::parseCurrency($_POST['saldo_inicial'] ?? '0'),
                 'data_saldo_inicial' => $_POST['data_saldo_inicial'] ?? '',
+                'exibir_dashboard'   => isset($_POST['exibir_dashboard']) && $_POST['exibir_dashboard'] === '1',
             ], (int) AuthHelper::id());
             FlashHelper::set('success', 'Investimento cadastrado com sucesso.');
         } catch (InvalidArgumentException $e) {
@@ -102,11 +103,12 @@ class InvestmentController extends Controller
 
         try {
             $this->investmentModel->updatePosition($id, [
-                'nome'        => $_POST['nome'] ?? '',
-                'conta_id'    => $_POST['conta_id'] ?? 0,
-                'custodiante' => $_POST['custodiante'] ?? '',
-                'classe'      => $_POST['classe'] ?? 'nao_informado',
-                'finalidade'  => $_POST['finalidade'] ?? '',
+                'nome'             => $_POST['nome'] ?? '',
+                'conta_id'         => $_POST['conta_id'] ?? 0,
+                'custodiante'      => $_POST['custodiante'] ?? '',
+                'classe'           => $_POST['classe'] ?? 'nao_informado',
+                'finalidade'       => $_POST['finalidade'] ?? '',
+                'exibir_dashboard' => isset($_POST['exibir_dashboard']) && $_POST['exibir_dashboard'] === '1',
             ], (int) AuthHelper::id());
             FlashHelper::set('success', 'Investimento atualizado com sucesso.');
         } catch (InvalidArgumentException $e) {

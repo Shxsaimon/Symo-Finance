@@ -2,24 +2,24 @@
 
 ---
 
-> **Versão 2.3 — 01/10/2026.** Este documento preserva a estrutura integral de 28 seções do FSD original e distingue o estado implantado das evoluções em rollout. Os dados financeiros permanecem isolados por usuário; a Fase 17 migra os meios de pagamento para catálogo global com ativação individual.
+> **Versão 2.5 — 23/11/2026.** Este documento preserva a estrutura integral de 28 seções do FSD original e distingue o estado implantado das evoluções em rollout. Os dados financeiros permanecem isolados por usuário por padrão, com suporte a compartilhamento seletivo de contas bancárias e posições de investimentos por convite e vínculo de permissão (Fase 18), além do catálogo global de meios de pagamento com ativação individual (Fase 17).
 
 ## 1. Visão Geral
 
 * **Nome do Sistema:** Symo Finance — Gestão Financeira Pessoal e Compartilhada.
-* **Objetivo Principal:** Fornecer uma plataforma web intuitiva para pessoas, casais, famílias, freelancers e MEIs registrarem receitas, despesas, transferências e faturas, com clareza entre saldos realizados e compromissos futuros.
-* **Resumo do Funcionamento Atual:** Cada pessoa cria sua própria conta Symo. Contas financeiras, categorias, cartões, transações, transferências, relatórios e lixeira são isolados pelo usuário autenticado. A Fase 17 migra os meios de pagamento para catálogo global, mantendo a ativação/inativação como preferência individual. O sistema oferece lançamentos à vista ou parcelados, acompanhamento de faturas, dashboard, auditoria, exclusão lógica e exportação CSV.
-* **Visão de Colaboração:** A evolução planejada permitirá compartilhar seletivamente uma conta financeira por convite e permissões vinculadas à conta, nunca por papel global. Após o aceite, o participante verá somente lançamentos posteriores e do escopo compartilhado; não receberá acesso ao perfil financeiro inteiro.
+* **Objetivo Principal:** Fornecer uma plataforma web intuitiva para pessoas, casais, famílias, freelancers e MEIs registrarem receitas, despesas, transferências, investimentos e faturas, com clareza entre saldos realizados e compromissos futuros.
+* **Resumo do Funcionamento Atual:** Cada pessoa cria sua própria conta Symo. Contas financeiras, categorias, cartões, transações, transferências, investimentos, relatórios e lixeira são isolados pelo usuário autenticado por padrão. Os meios de pagamento operam sob catálogo global com ativação/inativação individual. O sistema oferece lançamentos à vista ou parcelados, acompanhamento de faturas, gestão de posições de investimentos, compartilhamento seletivo de contas bancárias e investimentos entre usuários Symo, central de notificações de convites no menu de perfil, controle individual de exibição no Dashboard, auditoria, exclusão lógica e exportação CSV.
+* **Visão de Colaboração (Compartilhamento Seletivo):** O proprietário pode compartilhar seletivamente uma conta bancária ou uma posição de investimento com outros usuários ativos do Symo por convite (com notificação interna no menu do perfil e aviso por e-mail) e níveis de permissão vinculados ao recurso (`visualizar`, `proprios` ou `total`), nunca por papel global. O participante vê o saldo atual do recurso compartilhado, mas no histórico de lançamentos/movimentações enxerga estritamente os registros ocorridos dentro dos seus períodos ativos de participação (`[aceito_em, encerrado_em]`), preservando o histórico de janelas anteriores caso saia e seja reconvidado futuramente, sem acessar períodos em que esteve fora nem o restante do perfil financeiro do proprietário.
 * **Público Usuário:**
 * Pessoas físicas que buscam organizar o orçamento pessoal e planeamento financeiro;
-* Casais e famílias que desejam colaborar futuramente apenas em contas selecionadas, como reserva ou investimento;
+* Casais, sócios e famílias que colaboram seletivamente em contas bancárias ou posições de investimentos compartilhadas;
 * Freelancers e MEIs que demandam um controlo de fluxo de caixa operacional simples, sem complexidades burocráticas ou termos contábeis avançados.
 
 
 * **Contexto de Uso:** Aplicação web responsiva, otimizada para navegação em computadores, notebooks, tablets e smartphones. Os acessos ocorrem em rotinas diárias e semanais de lançamento e conferência de saldos, bem como no fecho mensal de faturas e análise de relatórios.
 * **Observações Relevantes para Implementação:**
-* A aplicação adota isolamento lógico por usuário nas entidades financeiras. Não existe orçamento global compartilhado no estado atual.
-* O perfil técnico `dev` opera funções globais da plataforma, mas mantém dados financeiros próprios; o perfil `admin` também administra somente os próprios dados.
+* A aplicação adota isolamento lógico por usuário nas entidades financeiras, expandido apenas quando há vínculo ativo na tabela `compartilhamentos` e respeitando o corte temporal de `compartilhamento_periodos`.
+* O perfil técnico `dev` opera funções globais da plataforma, mas mantém dados financeiros próprios; o perfil `admin` também administra somente os próprios dados e os recursos que compartilhar ou receber por convite.
 * A interface segue estritamente o tema *Symo* definido no `docs/DESIGN.md`, utilizando a tipografia *Inter* com numerais tabulares (`tabular-nums`) para perfeito alinhamento financeiro e paleta cromática corporativa moderna (Electric Violet `#6F02FF`, Deep Lavender `#793CFE`, Bright Teal `#3BD7D7` e tons neutros balanceados).
 * O código-fonte é estruturado segundo o padrão arquitetural MVC em PHP 8 nativo, com isolamento total de responsabilidades, independência de caminho de instalação e proteção estrita de arquivos internos.
 
@@ -267,58 +267,64 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 
 * **Objetivo:** Apresentar a saúde financeira do escopo permitido ao usuário autenticado, sem expor dados de terceiros.
 * **Usuários Envolvidos:** Todos os usuários autenticados.
-* **Ações Permitidas:** Filtragem por mês/ano corrente e seleção de contas financeiras; visualização rápida de cards de indicadores (Saldo Atual, Total de Receitas do Mês, Total de Despesas do Mês, Balanço Mensal Líquido); gráficos interativos de evolução mensal e distribuição de gastos por categoria; widgets de contas pendentes e faturas de cartão próximas do vencimento.
-* **Saldo Atual:** Soma os saldos das contas ativas marcadas pelo usuário para inclusão; contas do tipo `investimento` são sempre excluídas, mesmo que vinculadas a uma instituição bancária comum. A quantidade exibida junto ao saldo conta somente essas contas elegíveis. A preferência não altera o saldo individual nem o uso da conta em lançamentos e transferências.
-* **Resultado Esperado:** Resposta instantânea sobre saldos realizados e compromissos futuros com atualização em tempo real.
+* **Ações Permitidas:** Filtragem por mês/ano corrente e seleção de contas financeiras (próprias e compartilhadas ativas marcadas para exibição no Dashboard); visualização rápida de cards de indicadores (Saldo Atual + Investimentos, Total de Receitas do Mês, Total de Despesas do Mês, Balanço Mensal Líquido); gráficos interativos de evolução mensal e distribuição de gastos por categoria; widgets de contas pendentes e faturas de cartão próximas do vencimento.
+* **Controle "Exibir no Dashboard":**
+  * **Para Contas Bancárias:** A preferência `exibir_dashboard` na conta (para o proprietário) e `compartilhamentos.exibir_dashboard` (para o participante) define se a conta aparece no Dashboard. Quando desmarcada, a conta fica oculta de **todo o Dashboard**: seu saldo não entra no `Saldo Atual`, suas receitas e despesas não entram nos indicadores do mês nem nos gráficos de Evolução Financeira e Despesas por Categoria, e seus lançamentos não aparecem nos Compromissos Pendentes (7 dias). Contas do tipo legado `investimento` permanecem sempre fora do `Saldo Atual`. Para contas compartilhadas exibidas no Dashboard, os indicadores mensais, gráficos e pendências consideram apenas lançamentos ocorridos dentro dos períodos ativos de participação do usuário (`compartilhamento_periodos`).
+  * **Para Investimentos:** A preferência `exibir_dashboard` na posição de investimento (para o proprietário) e `compartilhamentos.exibir_dashboard` (para o participante) define exclusivamente se o valor atual da posição é somado na linha `"Investimentos: R$ ..."` do card de Saldo Atual no Dashboard. Mesmo desmarcada para o Dashboard, a posição continua somando normalmente nos resumos das telas `/investimentos` e `/contas`.
+* **Resultado Esperado:** Resposta instantânea sobre saldos realizados, investimentos e compromissos futuros com atualização em tempo real e controle individual de visibilidade no painel.
 
 ### 6.3. Módulo de Transações Financeiras (Receitas e Despesas)
 
-* **Objetivo:** Registar, consultar, editar e gerir todas as entradas e saídas financeiras.
-* **Usuários Envolvidos:** `admin` e `dev` administram somente os próprios dados financeiros.
+* **Objetivo:** Registar, consultar, editar e gerir todas as entradas e saídas financeiras em contas próprias e contas compartilhadas autorizadas.
+* **Usuários Envolvidos:** `admin` e `dev` no próprio escopo financeiro e nos recursos compartilhados ativos em que participam.
 * **Ações Permitidas:**
-* Registo de Receita (à vista, com data de recebimento, conta bancária, categoria e status 'recebido' ou 'pendente');
-* Registo de Despesa com escolha da forma de pagamento. Meios de crédito exigem cartão e geram compra pendente vinculada à fatura; os demais exigem conta bancária e permitem status `pago` ou `pendente`;
+* Registo de Receita (à vista, com data de recebimento, conta bancária própria ou compartilhada com permissão `proprios`/`total`, categoria e status `recebido` ou `pendente`);
+* Registo de Despesa com escolha da forma de pagamento. Meios de crédito exigem cartão próprio ativo e geram compra pendente vinculada à fatura; os demais exigem conta bancária (própria ou compartilhada com permissão `proprios`/`total`) e permitem status `pago` ou `pendente`;
+* Em lançamentos realizados sobre uma conta compartilhada, o seletor de categorias carrega dinamicamente as **categorias ativas do proprietário da conta selecionada**, garantindo padronização classificatória; o lançamento preserva o `usuario_id` real do autor que o criou;
+* Na listagem de `/transacoes` e nos extratos de `/relatorios`, a coluna Descrição exibe a identificação do autor (`Por: [Nome do Usuário]`) e a categoria real do lançamento, mesmo que a categoria pertença a outro usuário em conta compartilhada;
 * O campo do modal de despesa é **Data da Compra**. Em despesas fora do crédito, `data_transacao` e `data_vencimento` usam essa data; no crédito, `data_transacao` registra a compra e `data_vencimento` acompanha o vencimento da fatura vinculada. Em compras no crédito, o sistema calcula e sugere automaticamente a fatura de destino com base na data da compra, exibindo sua referência, status e valor acumulado; o usuário pode selecionar manualmente outra fatura não paga caso o processamento do banco tenha postergado o ciclo. Faturas com status `paga` são blindadas e não aceitam lançamentos; caso a data da compra recaia em uma fatura já paga, o sistema aplica fallback automático alocando a despesa na próxima fatura aberta;
 * Registo de Compras Parceladas (geração automática de $N$ lançamentos vinculados, com a descrição original sem sufixo de parcela; o número da parcela é exibido separadamente e sufixos legados correspondentes são omitidos na exibição; em cartão de crédito, a primeira parcela preserva a data da compra original e as parcelas posteriores são registradas na data de abertura da sua respectiva fatura mensal; fora do cartão, as datas mensais permanecem ancoradas na data informada com ajuste ao último dia de meses sem o dia original; valores mantêm tratamento de resíduo de centavos na primeira parcela);
-* Filtros por período, tipo, conta, categoria, meio de pagamento, cartão, status, texto e autor quando permitido;
-* Alteração e exclusão lógica de transações.
+* Filtros por período, tipo, conta (próprias e compartilhadas ativas), categoria (categorias próprias ativas mais categorias utilizadas em lançamentos visíveis de contas compartilhadas), meio de pagamento, cartão, status e texto;
+* Alteração, alternância de status e exclusão lógica de transações respeitando a permissão na conta: proprietário tem acesso total; participante com `total` pode editar/excluir lançamentos próprios e de terceiros ocorridos dentro de seus períodos ativos; participante com `proprios` pode editar/excluir apenas lançamentos de própria autoria dentro de seus períodos ativos; participante com `visualizar` possui acesso estritamente de leitura.
 * A edição de lançamentos fora do cartão atualiza simultaneamente a data da transação (`data_transacao`) e o vencimento (`data_vencimento`) com base no campo informado ("Data da Compra" para despesas e "Data de Recebimento" para receitas). Na tabela de extrato e relatórios, lançamentos fora do cartão exibem apenas uma data (`data_transacao`); a indicação secundária de vencimento (`Venc: DD/MM/AAAA`) é exclusiva para compras no cartão de crédito vinculadas a uma fatura. Para compras no crédito (enquanto a fatura não estiver paga), a edição da "Data da Compra" atualiza `data_transacao` e recalcula automaticamente a fatura do ciclo conforme o dia de fechamento do cartão, movendo a compra entre faturas quando necessário e recalculando o total das faturas afetadas; em compras parceladas, a alteração da data de uma parcela propaga o novo dia mensal para as parcelas subsequentes do mesmo grupo, reenquadrando suas faturas e vencimentos.
 
 
-* **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa individual, preservando a autoria necessária à futura colaboração por conta.
+* **Resultado Esperado:** Manutenção fidedigna do fluxo de caixa individual e colaborativo, preservando a autoria real e o corte temporal por períodos de participação.
 
 ### 6.4. Módulo de Transferências entre Contas
 
 * **Objetivo:** Registar movimentações entre contas do mesmo usuário sem distorcer receitas e despesas operacionais.
-* **Usuários Envolvidos:** Proprietário das duas contas. Transferências só podem ocorrer entre contas do mesmo proprietário; o compartilhamento futuro não permitirá transferências entre proprietários diferentes.
+* **Usuários Envolvidos:** Exclusivamente o proprietário das duas contas (`Account::getOwnedActiveAccounts()`). Transferências só podem ocorrer entre contas do mesmo proprietário; contas compartilhadas de terceiros não são exibidas nos seletores de origem ou destino de transferências.
 * **Ações Permitidas:** Seleção de conta de origem, conta de destino, valor, data e observação.
 * **Resultado Esperado:** Criação de transação pareada em banco de dados com dedução no saldo da conta de origem e crédito correspondente na conta de destino sob transação atômica (`DB Transaction`).
 
 ### 6.5. Módulo de Cartões de Crédito e Fechamento de Faturas
 
 * **Objetivo:** Controlar os limites de crédito, despesas agrupadas por fatura e pagamento consolidado mensal.
-* **Usuários Envolvidos:** Proprietário do cartão; cartões não são compartilhados na primeira fase colaborativa.
+* **Usuários Envolvidos:** Exclusivamente o proprietário do cartão e da conta de débito (`Account::getOwnedActiveAccounts()`); cartões de crédito e faturas são estritamente pessoais e não são compartilhados.
 * **Ciclo da compra:** A forma de pagamento de crédito exige cartão ativo. Compras antes do dia de fechamento entram no ciclo corrente; compras no dia do fechamento ou depois entram no ciclo seguinte. Parcelas seguem ciclos mensais consecutivos: a primeira parcela preserva a data da compra original e as parcelas posteriores são lançadas na data de abertura da sua respectiva fatura (dia do fechamento anterior). Nos cards de resumo do cartão de crédito, a exibição prioritária privilegia faturas fechadas pendentes de pagamento antes de exibir a fatura do ciclo aberto.
 * **Faturas:** O status passa de aberta para fechada automaticamente após a data de fechamento quando possuir saldo devedor acumulado (`valor_total > 0`). Caso a fatura atinja a data de fechamento sem nenhum lançamento ativo (`valor_total <= 0`), ela é automaticamente quitada com status `paga` sem gerar débito em conta bancária, impedindo que faturas zeradas fiquem retidas como pendências impagáveis. Da mesma forma, se lançamentos vinculados a uma fatura fechada forem cancelados ou excluídos reduzindo seu total a zero, o status da fatura transita imediatamente para `paga`. O vencimento ocorre no mesmo mês quando seu dia é posterior ao fechamento e no mês seguinte quando é igual ou anterior; vencimentos em fins de semana ou feriados bancários nacionais avançam para o próximo dia útil, segundo calendário interno versionado.
 * **Limite:** Exceder o limite disponível gera alerta informativo, sem bloquear o lançamento. Cartões inativos não aceitam novas compras; histórico e faturas permanecem acessíveis.
-* **Pagamento:** A fatura fechada é quitada integralmente por débito em conta bancária ativa. A operação é atômica e recusada se a conta não possuir saldo suficiente. A compra no crédito não debita conta bancária individualmente; a conta é afetada somente pelo pagamento consolidado da fatura.
+* **Pagamento:** A fatura fechada é quitada integralmente por débito em conta bancária própria ativa. A operação é atômica e recusada se a conta não possuir saldo suficiente. A compra no crédito não debita conta bancária individualmente; a conta é afetada somente pelo pagamento consolidado da fatura.
 * **Alocação de faturas e blindagem:** Toda compra no cartão é alocada a uma fatura específica informada ou sugerida no lançamento. Faturas com status `paga` são blindadas e nunca aceitam inclusão, alteração ou exclusão de compras; quando a data de compra pertencer a um ciclo já quitado, o sistema aplica fallback automático direcionando a compra para a próxima fatura aberta.
 * **Resultado Esperado:** Previsibilidade do montante da fatura sem duplicar débitos em conta corrente antes do pagamento efetivo.
 
-### 6.6. Módulo de Cadastros Básicos (Contas, Categorias e Meios de Pagamento)
+### 6.6. Módulo de Cadastros Básicos (Contas, Categorias, Investimentos e Meios de Pagamento)
 
-* **Objetivo:** Estruturar a base cadastral de suporte aos lançamentos financeiros.
-* **Usuários Envolvidos:** Contas, categorias e cartões pertencem ao usuário autenticado; `admin` e `dev` administram os próprios itens. Meios de pagamento seguem o catálogo global, com disponibilidade individual.
-
-
-* **Ações Permitidas:** O `dev` cria, edita e altera o status global das opções. Cada usuário autenticado ativa/inativa opções para si. Contas, categorias e cartões continuam sob administração do próprio usuário; em cada conta, o usuário pode escolher se o saldo entra no Saldo Atual. Contas do tipo `investimento` ficam sempre fora desse valor.
-* **Resultado Esperado:** Padronização dos lançamentos financeiros sem risco de redundância ou criação desordenada de dados.
+* **Objetivo:** Estruturar a base cadastral de suporte aos lançamentos financeiros e posições patrimoniais.
+* **Usuários Envolvidos:** Contas, categorias, investimentos e cartões pertencem ao usuário criador (`usuario_id`); contas bancárias e posições de investimentos podem ser compartilhadas seletivamente com outros usuários do Symo. Meios de pagamento seguem o catálogo global, com disponibilidade individual.
+* **Ações Permitidas:**
+  * O `dev` cria, edita e altera o status global dos meios de pagamento; cada usuário autenticado ativa/inativa opções para si.
+  * Edições estruturais de contas bancárias e investimentos (nome, instituição/custodiante, cor, saldo inicial, conta vinculada, ativação/inativação, exclusão e gestão de convites/permissões de compartilhamento) são **exclusivas do proprietário**.
+  * Tanto o proprietário quanto o participante ativo podem marcar individualmente a opção **"Exibir no Dashboard"** para cada conta bancária ou investimento a que tenham acesso.
+  * **Trava de Conta Vinculada em Investimentos Compartilhados:** Um investimento pode ser compartilhado individualmente sem compartilhar a conta bancária vinculada (`conta_id`). Contudo, o participante só pode realizar movimentações ou ajustes no investimento (aporte, resgate, rendimento, atualização de valor, edição ou exclusão de movimentos) se possuir permissão `proprios` ou `total` no investimento **E** também possuir acesso ativo de lançamento (proprietário ou participante ativo com `proprios`/`total`) na conta bancária vinculada (`conta_id`). Caso não possua acesso de lançamento na conta bancária vinculada, os botões de movimentação em `/investimentos/{id}` ficam desabilitados (`disabled`) com *tooltip* explicativo no desktop e alerta informativo visível na página (mobile e desktop).
+* **Resultado Esperado:** Padronização dos lançamentos financeiros e colaboração segura por recurso sem perda de governança pelo proprietário.
 
 ### 6.7. Módulo de Relatórios e Exportação CSV
 
 * **Objetivo:** Disponibilizar extratos consolidados, relatórios analíticos de fluxo de caixa e exportação de dados para planilhas.
-* **Usuários Envolvidos:** `admin` e `dev`, cada um no próprio escopo financeiro.
-* **Ações Permitidas:** Consulta a relatórios por período, categoria, conta e status; download instantâneo de arquivo estruturado em padrão CSV estruturado com separador `;` e codificação UTF-8 com BOM.
+* **Usuários Envolvidos:** `admin` e `dev`, abrangendo lançamentos próprios e lançamentos de contas compartilhadas ativas dentro dos períodos válidos de participação (`compartilhamento_periodos`).
+* **Ações Permitidas:** Consulta a relatórios por período, categoria (próprias e utilizadas em contas compartilhadas visíveis), conta (próprias e compartilhadas ativas, independentemente da marcação de exibição no Dashboard) e status, exibindo `Por: [Nome do Usuário]` na descrição; download instantâneo de arquivo estruturado em padrão CSV com separador `;` e codificação UTF-8 com BOM.
 * **Resultado Esperado:** Extração fidedigna de relatórios com consistência total entre a tabela visualizada na tela e os dados exportados.
 
 ### 6.8. Módulo de Gestão de Usuários (Administrativo)
@@ -331,9 +337,14 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
 ### 6.9. Módulo de Lixeira e Recuperação (*Soft Delete*)
 
 * **Objetivo:** Proteger os dados contra exclusões acidentais e permitir restauração controlada.
-* **Usuários Envolvidos:** Cada usuário autenticado consulta, restaura e expurga apenas os próprios registros, inclusive o perfil `dev`.
-* **Ações Permitidas:** Consulta de itens excluídos logicamente (transações, categorias, contas), restauração individual com restauração de saldos, e expurgo/exclusão definitiva.
-* **Resultado Esperado:** Segurança operacional e recuperação de dados sem necessidade de intervenção direta no banco de dados.
+* **Usuários Envolvidos:** Cada usuário autenticado consulta seus próprios registros excluídos e, enquanto for participante ativo (`compartilhamentos.status = 'ativo'`), também visualiza lançamentos (`transacoes`) e movimentações de investimento (`investimento_movimentos`) excluídos pertencentes a recursos compartilhados cujo registro ocorreu dentro dos seus períodos ativos de participação (`compartilhamento_periodos`). Se o usuário sair ou tiver o acesso revogado, registros daquela conta/investimento deixam imediatamente de aparecer na sua lixeira.
+* **Ações Permitidas:**
+  * **Proprietário do recurso:** pode restaurar e expurgar definitivamente qualquer item próprio ou vinculado à sua conta/investimento;
+  * **Participante ativo com permissão `total`:** pode restaurar e expurgar definitivamente lançamentos/movimentações próprios e de outros usuários naquele recurso compartilhado (dentro de seus períodos ativos);
+  * **Participante ativo com permissão `proprios`:** pode restaurar e expurgar definitivamente apenas lançamentos/movimentações de sua própria autoria; para itens de terceiros, os botões de ação ficam indisponíveis ("Somente leitura");
+  * **Participante ativo com permissão `visualizar`:** apenas visualiza os itens excluídos dentro do período válido, sem permissão para restaurar ou expurgar;
+  * Para movimentações de investimento compartilhado, a restauração e o expurgo exigem adicionalmente acesso ativo de lançamento na conta bancária vinculada (`conta_id`).
+* **Resultado Esperado:** Segurança operacional e recuperação de dados respeitando rigorosamente o nível de permissão e o vínculo ativo de compartilhamento.
 
 ### 6.10. Módulo de Auditoria e Histórico
 
@@ -373,37 +384,37 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 8.1. Perfil Administrador (`admin`)
 
 * **Descrição:** Proprietário da própria conta financeira individual.
-* **Permissões:** Acesso integral apenas aos seus dados financeiros e preferências pessoais. Não é administrador global da plataforma.
+* **Permissões:** Acesso integral aos seus dados financeiros e preferências pessoais, além de participação nos recursos (`conta` ou `investimento`) que lhe forem compartilhados conforme o nível concedido (`visualizar`, `proprios` ou `total`). Não é administrador global da plataforma.
 * **Ações Exclusivas:**
-* Gestão de contas, categorias, cartões, transações, transferências, relatórios e lixeira próprios; ativação/inativação individual de meios de pagamento;
+* Gestão de contas, categorias, cartões, investimentos, transações, transferências, relatórios e lixeira próprios; ativação/inativação individual de meios de pagamento;
 * Atualização do próprio perfil, senha e avatar;
-* Alteração de preferências individuais de moeda, separadores e paginação;
-* Futuramente, gestão de convites e permissões das contas financeiras de sua propriedade.
+* Alteração de preferências individuais de moeda, separadores, paginação e visibilidade de recursos no próprio Dashboard;
+* Gestão de convites, níveis de permissão e revogação de participantes nas contas bancárias e posições de investimento de sua propriedade, bem como aceite, recusa ou saída de recursos compartilhados por terceiros.
 
 
 
 ### 8.2. Perfil Técnico (`dev`) e Matriz de Permissões
 
 * **Descrição:** Usuário técnico interno, criado pelo seed com `SYSTEM_DEV_*`. Além de operar a plataforma, possui seus próprios dados financeiros como qualquer usuário `admin`.
-* **Permissões Globais:** Gestão de usuários, trilha de auditoria, identidade visual, status/migrations e GitHub Actions. Essas permissões administrativas não ampliam o escopo de dados financeiros: transações, transferências, contas, dashboard, relatórios e lixeira do `dev` são próprios.
+* **Permissões Globais:** Gestão de usuários, trilha de auditoria, identidade visual, status/migrations e GitHub Actions. Essas permissões administrativas não ampliam o escopo de dados financeiros: transações, transferências, contas, dashboard, relatórios e lixeira do `dev` seguem as mesmas regras de propriedade e compartilhamento explícito aplicáveis ao `admin`.
 
-| Módulo / Ação | `admin` individual | `dev` |
-| --- | --- | --- |
-| Visualizar Dashboard e Saldos | Próprios | Próprios |
-| Criar Receitas / Despesas / Transferências | Próprios | Próprios |
-| Editar / Excluir Transações Próprias | Sim | Sim |
-| Editar / Excluir Transações de Outros Usuários | Não | Não |
-| Cadastrar / Editar Contas e Categorias | Próprios | Próprios |
-| Ativar / Inativar Meios de Pagamento | Individual | Individual |
-| Criar / Editar / Alterar Status Global de Meios | Não | Sim |
-| Gerenciar Cartões e Faturas | Próprios | Próprios |
-| Gerenciar Investimentos e Movimentações | Próprios | Próprios |
-| Emitir Relatórios e Exportar CSV | Próprios | Próprios |
-| Lixeira | Própria | Própria |
-| Triagem e Gestão de Feedbacks | Não | Sim |
-| Auditoria e Gestão de Usuários | Não | Sim |
-| Configurações globais, logotipo e migrations | Não | Sim |
-| Alterar Própria Senha, Avatar e Preferências | Sim | Sim |
+| Módulo / Ação | `admin` individual | `dev` | Participante (`visualizar`) | Participante (`proprios`) | Participante (`total`) |
+| --- | --- | --- | --- | --- | --- |
+| Visualizar Saldo Atual e Histórico (períodos ativos) | Próprios | Próprios | Sim (recurso compartilhado) | Sim (recurso compartilhado) | Sim (recurso compartilhado) |
+| Controlar "Exibir no Dashboard" | Sim | Sim | Sim (para si) | Sim (para si) | Sim (para si) |
+| Criar Receitas / Despesas na Conta | Próprias | Próprias | Não | Sim | Sim |
+| Criar Movimentos no Investimento | Próprios | Próprios | Não | Sim (exige acesso de lançamento na conta vinculada) | Sim (exige acesso de lançamento na conta vinculada) |
+| Editar / Excluir / Restaurar / Expurgar Lançamentos Próprios | Sim | Sim | Não | Sim (dentro de períodos ativos) | Sim (dentro de períodos ativos) |
+| Editar / Excluir / Restaurar / Expurgar Lançamentos de Outros | Sim (em conta própria) | Sim (em conta própria) | Não | Não | Sim (dentro de períodos ativos) |
+| Editar Dados Estruturais / Excluir Conta ou Investimento | Sim (próprios) | Sim (próprios) | Não | Não | Não |
+| Gerenciar Convites e Permissões de Compartilhamento | Sim (próprios) | Sim (próprios) | Não (apenas Sair) | Não (apenas Sair) | Não (apenas Sair) |
+| Transferências entre Contas | Contas próprias | Contas próprias | Não | Não | Não |
+| Gerenciar Cartões e Faturas | Próprios | Próprios | Não | Não | Não |
+| Ativar / Inativar Meios de Pagamento | Individual | Individual | — | — | — |
+| Criar / Editar / Alterar Status Global de Meios | Não | Sim | — | — | — |
+| Triagem e Gestão de Feedbacks | Não | Sim | — | — | — |
+| Auditoria Global e Gestão de Usuários | Não | Sim | — | — | — |
+| Configurações globais, logotipo e migrations | Não | Sim | — | — | — |
 
 ---
 
@@ -473,8 +484,8 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 ### 10.2. Conta Financeira (`Account`)
 
 * **Finalidade:** Representa contas correntes, poupanças, contas de investimento ou carteiras de dinheiro físico.
-* **Informações:** `usuario_id` proprietário, nome, instituição, tipo, saldos, preferência `incluir_saldo_atual`, cor, status, timestamps e soft delete.
-* **Regras:** Saldo individual é atualizado por transação confirmada. A preferência `incluir_saldo_atual` controla somente a inclusão no Saldo Atual; contas do tipo `investimento` são sempre excluídas desse valor, sem perder saldo próprio nem poder ser usadas em lançamentos e transferências. No roadmap a conta poderá ter participantes e permissões sem alterar o proprietário.
+* **Informações:** `usuario_id` proprietário, nome, instituição, tipo, saldos, preferência `exibir_dashboard`, cor, status, timestamps e soft delete.
+* **Regras:** Saldo individual é atualizado por transação confirmada. A preferência `exibir_dashboard` controla a presença da conta em todo o Dashboard (Saldo Atual, Receitas, Despesas, Balanço, Gráficos e Compromissos Pendentes); contas legadas do tipo `investimento` são sempre excluídas do Saldo Atual, sem perder saldo próprio nem poder ser usadas em lançamentos e transferências. A conta pode ter participantes convidados e níveis de permissão (`compartilhamentos`) sem alterar o proprietário.
 
 ### 10.3. Categoria (`Category`)
 
@@ -560,7 +571,7 @@ Os seguintes itens estão expressamente confirmados como **fora de escopo** dest
 * `type`: ENUM('corrente', 'poupanca', 'investimento', 'dinheiro', 'outros') NOT NULL DEFAULT 'corrente'
 * `initial_balance`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
 * `current_balance`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
-* `incluir_saldo_atual`: BOOLEAN NOT NULL DEFAULT TRUE; preferência para incluir a conta no Saldo Atual, ignorada para contas do tipo `investimento`
+* `exibir_dashboard`: BOOLEAN NOT NULL DEFAULT TRUE; preferência para exibir a conta no Dashboard (Saldo Atual, Receitas, Despesas, Balanço, Gráficos e Compromissos Pendentes), ignorada no Saldo Atual para contas legadas do tipo `investimento`
 * `color`: VARCHAR(7) NOT NULL DEFAULT '#6F02FF'
 * `status`: ENUM('ativa', 'inativa') NOT NULL DEFAULT 'ativa'
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -798,6 +809,7 @@ Sem preferência registrada, a opção é considerada ativa para o usuário.
 * `valor_atual`: DECIMAL(15,2) NOT NULL DEFAULT 0.00
 * `data_inicio`: DATE NOT NULL
 * `status`: ENUM('ativo', 'inativo') NOT NULL DEFAULT 'ativo'
+* `exibir_dashboard`: BOOLEAN NOT NULL DEFAULT TRUE; controla se o valor atual da posição é somado na linha "Investimentos" do card de Saldo Atual no Dashboard do proprietário
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 * `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 * `excluido_em`: DATETIME NULL
@@ -816,11 +828,34 @@ Sem preferência registrada, a opção é considerada ativa para o usuário.
 * `observacao`: TEXT NULL
 * `created_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 * `updated_at`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* `excluido_em`: DATETIME NULL
+* `excluido_por`: INT UNSIGNED NULL, FK para `usuarios`
 * *Índices:* `idx_invest_mov_user_invest (usuario_id, investimento_id)`, `idx_invest_mov_date (data_movimento)`
 
-#### Evolução Planejada: Tabela de Participantes de Conta
+#### Tabela `compartilhamentos`
 
-Antes do compartilhamento, deverá ser criada uma tabela como `conta_participantes`, sem remover `contas.usuario_id`. Ela deverá vincular conta e usuário, registrar permissão de visualização, lançamento e alcance de edição, além dos timestamps de convite, aceite e revogação. A visibilidade começa no aceite; não haverá opção para liberar histórico anterior. Consultas e validações contra IDOR deverão aceitar proprietário ou participante ativo com permissão para aquela conta.
+* `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `recurso_tipo`: CHECK / ENUM('conta', 'investimento') NOT NULL
+* `recurso_id`: INT UNSIGNED NOT NULL (ID em `contas` ou `investimentos`)
+* `proprietario_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
+* `participante_id`: INT UNSIGNED NOT NULL, FK para `usuarios`
+* `permissao`: CHECK / ENUM('visualizar', 'proprios', 'total') NOT NULL DEFAULT 'visualizar'
+* `status`: CHECK / ENUM('pendente', 'ativo', 'recusado', 'revogado', 'saiu') NOT NULL DEFAULT 'pendente'
+* `exibir_dashboard`: BOOLEAN NOT NULL DEFAULT TRUE; preferência individual do participante para exibição no seu próprio Dashboard
+* `criado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `atualizado_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+* *Restrição única:* `uq_compartilhamento_recurso_participante (recurso_tipo, recurso_id, participante_id)`
+* *Índices:* `idx_compartilhamentos_participante_status (participante_id, status, recurso_tipo)`, `idx_compartilhamentos_recurso_status (recurso_tipo, recurso_id, status)`, `idx_compartilhamentos_proprietario (proprietario_id)`
+
+#### Tabela `compartilhamento_periodos`
+
+* `id`: INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+* `compartilhamento_id`: INT UNSIGNED NOT NULL, FK para `compartilhamentos` (`ON DELETE CASCADE`)
+* `aceito_em`: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+* `encerrado_em`: DATETIME NULL (preenchido ao revogar ou sair; `NULL` enquanto o ciclo atual estiver ativo)
+* *Índices:* `idx_comp_periodos_compartilhamento (compartilhamento_id)`, `idx_comp_periodos_janela (compartilhamento_id, aceito_em, encerrado_em)`
+
+A tabela `compartilhamento_periodos` registra cada janela `[aceito_em, encerrado_em]` em que o participante esteve ativo no recurso. Se o participante sair ou for revogado e posteriormente for reconvidado e aceitar novamente, uma nova janela é aberta, preservando a visibilidade dos lançamentos/movimentações ocorridos durante o primeiro período e durante o novo período, mantendo invisível o intervalo em que esteve fora.
 
 ---
 
@@ -1366,9 +1401,9 @@ A implementação da aplicação pela IA codificadora deve seguir uma sequência
 * Verificação de proteção de rotas, injeção de parâmetros, validações CSRF/XSS e contingência de logs.
 
 14. **Etapa 14 - Multiusuário, Operação Serverless e Colaboração:**
-* Migrations 012 a 016, isolamento por `usuario_id`, perfil `dev`, autocadastro e preferências individuais já foram implementados;
+* Migrations 012 a 024, isolamento por `usuario_id`, perfil `dev`, autocadastro e preferências individuais implementados;
 * OAuth Google 2.0 e verificação de e-mail por código de 6 dígitos / recuperação de senha com tokens via Resend implementados;
-* Antes de implementar contas compartilhadas, criar a especificação de convite, participação, histórico e permissões da seção 27.
+* Compartilhamento seletivo de contas bancárias e investimentos (Fase 18), controle multi-período (`compartilhamento_periodos`), central de notificações de convites no menu de perfil e controle individual "Exibir no Dashboard" implementados.
 
 
 
@@ -1386,7 +1421,7 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 * [ ] **Padrão MVC Desacoplado:** Separação estrita entre Models (PDO), Views (HTML/CSS/JS) e Controllers, com roteamento centralizado.
 * [ ] **Design System Fiel:** A interface adere rigorosamente aos componentes, cores e tipografia do tema *Symo* definido no `docs/DESIGN.md`.
 * [ ] **Autenticação e Segurança de Senhas:** Senhas criptografadas com BCRYPT, proteção de sessão com expiração em 60 minutos, e bloqueio de tentativas de força bruta.
-* [ ] **Isolamento e RBAC:** `admin` e `dev` não leem ou mutam dados financeiros de terceiros; `dev` é obrigatório em usuários, auditoria e configurações globais; a futura colaboração será vinculada a uma conta e suas permissões.
+* [ ] **Isolamento, Compartilhamento Seletivo e RBAC:** `admin` e `dev` não leem ou mutam dados financeiros de terceiros sem vínculo ativo de compartilhamento; `dev` é obrigatório em usuários, auditoria e configurações globais; a colaboração respeita os níveis `visualizar`, `proprios` e `total`, o corte temporal por períodos de participação e a trava da conta bancária vinculada em investimentos compartilhados.
 * [ ] **Integridade nos Lançamentos e Parcelamentos:** Compras parceladas geram $N$ lançamentos consistentes, com centavos residuais ajustados na primeira parcela.
 * [ ] **Atomicidade nas Transferências e Pagamentos:** Transferências entre contas e liquidações de fatura executam sob transações atômicas de banco (`BEGIN ... COMMIT/ROLLBACK`).
 * [ ] **Soft Delete e Lixeira Operacional:** Exclusões lógicas alimentam a lixeira; restaurações reprocessam os saldos financeiros corretamente.
@@ -1401,34 +1436,10 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 ## 27. Pontos Pendentes e Decisões Futuras
 
 1. **Compatibilidade MySQL:** Manter somente enquanto houver ambientes legados; toda nova funcionalidade deve ser testada primeiro no PostgreSQL/Neon.
-2. **Contas Compartilhadas (Fase 18):** Criar convite por e-mail, aceite/recusa e revogação. O vínculo e as permissões serão por conta, não por papel global do usuário.
-3. **Regras de Colaboração (Fase 18):** Categorias, cartões, faturas e preferências permanecem pessoais. Transferências permanecem restritas a contas do mesmo proprietário, inclusive após o compartilhamento.
-4. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
-5. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
+2. **Revisão Geral de UX/UI (Fase 21):** Reformulação visual e ergonômica da interface, com suporte a tema Claro/Escuro/Automático, substituição de caixas de diálogo nativas por modais próprios do Symo, sistema de Toasts flutuantes, tabelas mobile em cards empilhados, seletor de mês/ano unificado e gráficos adaptados para telas pequenas.
+3. **Gestão do Sistema e Atualizações (Fase 22):** Controle de versão e ciclo seguro de releases pelo perfil `dev` em nova tela `/sistema`, desativação do auto-deploy de produção na `main`, orquestração atômica de migrations via GitHub Actions antes de chamar o Deploy Hook da Vercel, histórico de atualizações e tela de contingência 503 no PHP.
 
-### 27.1. Critérios Funcionais para Contas Compartilhadas
-
-1. **Convite:** O proprietário informa o e-mail do participante e seleciona as permissões antes de enviar. O convite não pode conceder acesso a uma conta inexistente, inativa ou excluída. O acesso será um vínculo com a conta, nunca um papel global do usuário.
-2. **Identidade do Participante:** O convite deverá vincular um usuário existente ou permanecer pendente até que a pessoa se cadastre com o mesmo e-mail. A aceitação jamais poderá criar acesso para e-mail diferente do convidado.
-3. **Aceite e Recusa:** O participante deve aceitar ou recusar explicitamente. Enquanto pendente, não pode visualizar saldo, histórico ou metadados financeiros da conta.
-4. **Leitura:** A permissão `visualizar` concede acesso ao saldo, aos lançamentos autorizados e às informações mínimas da conta. Sem ela, nenhuma rota, JSON ou agregação poderá revelar a existência da conta.
-5. **Histórico:** O participante verá somente lançamentos criados após o aceite do compartilhamento, sempre no escopo da conta compartilhada. Lançamentos anteriores não ficam visíveis.
-6. **Lançamento:** A permissão de lançamento permite criar movimentações na conta compartilhada. O registro conserva o `usuario_id` de quem o criou.
-7. **Permissões de escrita:** O proprietário poderá conceder visualização, lançamento com edição/exclusão dos registros da conta, ou lançamento com edição/exclusão somente dos registros criados pelo participante.
-8. **Administração:** Somente o proprietário convida, altera permissões e revoga acesso. Participantes não podem delegar acesso nem habilitar leitura de lançamentos anteriores ao aceite.
-9. **Revogação:** Ao revogar, o sistema deve encerrar o acesso imediatamente em consultas, dashboard, relatórios e ações mutáveis. Os lançamentos anteriores permanecem com autoria e auditoria preservadas.
-10. **Lixeira e Auditoria:** A restauração ou o expurgo de um lançamento compartilhado deve respeitar o proprietário e a autoria. A auditoria deve registrar conta, ator, ação e contexto de participação.
-
-### 27.2. Critérios Técnicos para Contas Compartilhadas
-
-* Toda query que hoje usa `usuario_id = :usuario_id` deverá aceitar o proprietário ou participante ativo somente quando houver vínculo e permissão para a conta específica.
-* A política de autorização precisa residir no backend. Ocultar botões na View não substitui a validação em controller/model.
-* Consultas agregadas de dashboard, relatórios, faturas, pendências e lixeira devem receber o escopo de visibilidade de forma consistente, para não produzir totais que revelem dados indevidos.
-* A migração da tabela de participantes deve possuir índices por `conta_id`, `usuario_id`, estado do convite e `revogado_em`; deve impedir duas participações ativas duplicadas para o mesmo usuário e conta.
-* A implementação deve incluir testes de IDOR para leitura, criação, atualização, exclusão, transferência, exportação CSV e restauração de dados compartilhados.
-* Cartões de crédito, faturas, categorias e preferências não ganham compartilhamento implícito.
-
-### 27.3. Critérios Funcionais e Visuais para a Revisão de UX/UI (Fase 21)
+### 27.1. Critérios Funcionais e Visuais para a Revisão de UX/UI (Fase 21)
 
 1. **Temas:** Suporte formal a três modos de exibição: Claro, Escuro e Automático (sincronizado com a preferência do sistema operacional do usuário). O controle deve ser acessível tanto no menu do usuário (cabeçalho superior direito) quanto nas preferências pessoais em `/configuracoes`, persistido na tabela `configuracoes_usuario`.
 2. **Harmonização de Ações:** Botões e gatilhos de ação devem seguir hierarquia estrita: estilo de perigo (vermelho/destaque) para exclusão, cancelamento irreversível e expurgo; estilo secundário/neutro para edição; links ou ícones discretos para visualização e navegação de detalhes.
@@ -1443,7 +1454,7 @@ Para que o sistema seja considerado homologado e pronto para entrega, os seguint
 7. **Listagens e Tabelas:** No desktop, tipografia mais leve e badges visuais modernos sem aparência de ERP contábil; no mobile, eliminação da rolagem horizontal em favor de cards compactos empilhados.
 8. **Dashboard e Gráficos:** Seletor de mês e ano unificado à navegação por setas e picker central já adotado em Investimentos; gráfico de evolução de 6 meses no mobile adaptado para visualização legível de 3 meses com navegação/paginação; tooltips customizados no Chart.js.
 
-### 27.4. Critérios Funcionais e Técnicos para a Gestão do Sistema e Atualizações (Fase 22)
+### 27.2. Critérios Funcionais e Técnicos para a Gestão do Sistema e Atualizações (Fase 22)
 
 1. **Controle de Produção e Git:**
    * O fluxo de desenvolvimento utiliza a branch única `main`, sem dependência de branches intermediárias;

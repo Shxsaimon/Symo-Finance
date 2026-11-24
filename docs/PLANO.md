@@ -343,20 +343,24 @@ Este documento detalha o planejamento de implementação fase a fase dos grandes
 - **Estado:** Concluída.
 - **Critérios de aceite:** A inativação individual não altera as opções dos demais; inativar globalmente impede novos usos para todos e reativar restaura a disponibilidade sem mudar preferências pessoais; nenhum vínculo histórico é perdido; somente o `dev` altera o status global.
 
-### Fase 18 — Compartilhamento por conta
-- **Estado:** Roadmap; implementação posterior à Fase 17 e sujeita à especificação técnica detalhada.
-- **Regras já alinhadas:**
-  - Compartilhamento será concedido por vínculo de permissão à conta, nunca por papel global `operador`.
-  - Participantes verão somente lançamentos da conta compartilhada criados após o aceite.
-  - Transferências continuarão restritas a contas do mesmo proprietário.
-  - Categorias, cartões, faturas e preferências permanecerão pessoais.
+### Fase 18 — Compartilhamento por conta e investimento
+- **Estado:** Concluída.
+- **Regras alinhadas e implementadas:**
+  - Compartilhamento seletivo de Contas Bancárias (`/contas`) e Posições de Investimentos (`/investimentos/{id}`) por vínculo de permissão ao recurso (`compartilhamentos`), nunca por papel global.
+  - Convites aceitam usuários ativos já cadastrados no Symo; notificações são exibidas dentro do menu suspenso do perfil (`Notificações` com ícone de sino e indicador visual em bolinha roxa sem contador numérico) abrindo modal para Aceitar/Recusar 100% dentro do Symo, acompanhadas de disparo não bloqueante de e-mail informativo via Resend (`MailHelper::sendShareInvite`).
+  - Três níveis de permissão determinados pelo proprietário: `visualizar` (somente leitura), `proprios` (lançar + editar/excluir/restaurar/expurgar apenas registros próprios) e `total` (lançar + editar/excluir/restaurar/expurgar registros próprios e de outros usuários no recurso compartilhado). Edições estruturais do recurso permanecem exclusivas do proprietário.
+  - Em investimentos compartilhados individualmente, qualquer movimentação ou ajuste (aporte, resgate, rendimento, atualização de valor, edição/exclusão ou restauração/expurgo na lixeira) exige permissão `proprios`/`total` no investimento **E** acesso ativo de lançamento na conta bancária vinculada (`conta_id`), exibindo botões desabilitados com tooltip no desktop e aviso claro na página (mobile e desktop) quando bloqueado.
+  - Corte temporal multi-período (`compartilhamento_periodos`): participantes enxergam o saldo atual do recurso e os lançamentos/movimentações criados dentro das suas janelas ativas `[aceito_em, encerrado_em]`, preservando períodos anteriores em caso de saída/revogação seguida de novo convite e ocultando o intervalo em que estiveram fora.
+  - Controle "Exibir no Dashboard": em contas bancárias (`contas.exibir_dashboard` para proprietário e `compartilhamentos.exibir_dashboard` para participante), desmarcar oculta a conta de todo o Dashboard (Saldo Atual, Receitas, Despesas, Balanço, Gráficos e Compromissos Pendentes); em investimentos (`investimentos.exibir_dashboard` e `compartilhamentos.exibir_dashboard`), desmarcar oculta o valor apenas do card de Investimentos do Dashboard.
+  - Em lançamentos de conta compartilhada, o seletor carrega dinamicamente as categorias ativas do proprietário da conta; no extrato e relatórios, exibe-se a categoria real e `Por: [Nome do Usuário]` na coluna Descrição.
+  - Transferências e Cartões de Crédito/Faturas permanecem estritamente restritos às contas próprias (`Account::getOwnedActiveAccounts()`).
 - **Checklist de detalhamento e implementação:**
-  - [ ] Definir ciclo do convite, aceite/recusa, identidade do participante, expiração e revogação.
-  - [ ] Definir níveis de visualização, lançamento, edição e exclusão, incluindo o alcance por autoria.
-  - [ ] Criar vínculo de permissão por conta sem remover `contas.usuario_id`.
-  - [ ] Aplicar o escopo autorizado a consultas, saldos, dashboard, relatórios, exportação, lixeira e auditoria.
-  - [ ] Testar IDOR, revogação imediata, autoria, permissões e isolamento em todos os fluxos afetados.
-- **Critérios de aceite:** Convites pendentes não concedem acesso; o participante vê apenas lançamentos posteriores ao aceite e da conta autorizada; revogação encerra o acesso; e transferências nunca cruzam proprietários.
+  - [x] Definir ciclo do convite, aceite/recusa interno no Symo (com aviso por e-mail), identidade do participante e revogação/saída.
+  - [x] Definir níveis de visualização (`visualizar`), lançamento próprio (`proprios`) e acesso completo (`total`), incluindo o alcance por autoria e trava de conta vinculada em investimentos.
+  - [x] Criar tabelas `compartilhamentos` e `compartilhamento_periodos` e coluna `investimentos.exibir_dashboard` (Migration 024 para PostgreSQL e MySQL).
+  - [x] Aplicar o escopo autorizado e corte temporal multi-período a consultas, saldos, dashboard, transações, investimentos, relatórios, exportação CSV, lixeira e auditoria.
+  - [x] Validar proteção contra IDOR, revogação/saída imediata, autoria, permissões e isolamento em todos os fluxos afetados.
+- **Critérios de aceite:** Convites pendentes não concedem acesso; o participante vê o saldo atual e apenas lançamentos ocorridos dentro de seus períodos ativos de participação; revogação ou saída encerra imediatamente o acesso (inclusive na lixeira); transferências e cartões nunca cruzam proprietários.
 
 ### Fase 19 — Investimentos
 - **Estado:** Concluída.

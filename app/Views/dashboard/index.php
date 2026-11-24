@@ -297,7 +297,7 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
                                             <a href="<?= BASE_URL ?>/faturas/<?= (int) $item['fatura_id'] ?>" class="btn btn-sm btn-outline-primary py-0 px-2 text-nowrap" style="font-size: 0.75rem;" title="Ver fatura do cartão">
                                                 <i class="bi bi-receipt"></i> Fatura
                                             </a>
-                                        <?php else: ?>
+                                        <?php elseif (!isset($item['pode_alterar_status']) || $item['pode_alterar_status']): ?>
                                             <form action="<?= BASE_URL ?>/transacoes/status/<?= $item['id'] ?>" method="POST" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
                                                 <input type="hidden" name="redirect_to" value="<?= BASE_URL ?>/dashboard">
@@ -305,6 +305,8 @@ $balancoPositivo = ((float)$resumoMes['saldo_periodo'] >= 0);
                                                     <i class="bi bi-check-lg"></i> <?= $isReceita ? 'Receber' : 'Pagar' ?>
                                                 </button>
                                             </form>
+                                        <?php else: ?>
+                                            <span class="text-muted small">—</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -533,6 +535,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const valorDespDash = document.getElementById('dash_desp_valor');
     const checkParceladoDash = document.getElementById('dash_check_parcelado');
     const wrapParcelasDash = document.getElementById('dash_wrapper_parcelas');
+    const selectCatDespDash = document.getElementById('dash_desp_categoria');
+    const selectContaRecDash = document.getElementById('dash_rec_conta');
+    const selectCatRecDash = document.getElementById('dash_rec_categoria');
+
+    const categoriasPorProprietarioDash = <?= json_encode($categoriasPorProprietario ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const currentLoggedUserIdDash = <?= (int) ($user['id'] ?? 0) ?>;
+
+    function popularCategoriasDash(selectCatEl, ownerId, tipo) {
+        if (!selectCatEl) return;
+        const ownerData = categoriasPorProprietarioDash[String(ownerId)] || categoriasPorProprietarioDash[String(currentLoggedUserIdDash)] || { receita: [], despesa: [] };
+        const lista = tipo === 'receita' ? (ownerData.receita || []) : (ownerData.despesa || []);
+        const valAtual = selectCatEl.value;
+        selectCatEl.innerHTML = '';
+        lista.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.nome;
+            if (String(cat.id) === String(valAtual)) opt.selected = true;
+            selectCatEl.appendChild(opt);
+        });
+    }
+
+    selectContaDash?.addEventListener('change', () => {
+        const ownerId = selectContaDash.selectedOptions[0]?.dataset.ownerId || currentLoggedUserIdDash;
+        popularCategoriasDash(selectCatDespDash, ownerId, 'despesa');
+    });
+
+    selectContaRecDash?.addEventListener('change', () => {
+        const ownerId = selectContaRecDash.selectedOptions[0]?.dataset.ownerId || currentLoggedUserIdDash;
+        popularCategoriasDash(selectCatRecDash, ownerId, 'receita');
+    });
+    if (selectContaRecDash && selectContaRecDash.selectedOptions[0]) {
+        popularCategoriasDash(selectCatRecDash, selectContaRecDash.selectedOptions[0].dataset.ownerId || currentLoggedUserIdDash, 'receita');
+    }
 
     async function carregarFaturasDash() {
         if (!selectCartaoDash || !selectCartaoDash.value || !dataCompraDash) return;
@@ -619,9 +655,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (isCredit && selectCartaoDash?.value) {
+            popularCategoriasDash(selectCatDespDash, currentLoggedUserIdDash, 'despesa');
             carregarFaturasDash();
-        } else if (alertaFallbackDash) {
-            alertaFallbackDash.classList.add('d-none');
+        } else {
+            const ownerId = selectContaDash?.selectedOptions[0]?.dataset.ownerId || currentLoggedUserIdDash;
+            popularCategoriasDash(selectCatDespDash, ownerId, 'despesa');
+            if (alertaFallbackDash) {
+                alertaFallbackDash.classList.add('d-none');
+            }
         }
     }
 
@@ -725,7 +766,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <select class="form-select" id="dash_desp_conta" name="conta_id">
                                     <option value="" selected disabled>Selecione uma conta</option>
                                     <?php foreach ($contas as $acc): ?>
-                                        <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <option value="<?= $acc['id'] ?>" data-owner-id="<?= (int) $acc['usuario_id'] ?>">
+                                            <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -836,7 +879,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <label for="dash_rec_conta" class="form-label fw-semibold">Conta de Destino</label>
                                     <select class="form-select" id="dash_rec_conta" name="conta_id" required>
                                         <?php foreach ($contas as $acc): ?>
-                                            <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <option value="<?= $acc['id'] ?>" data-owner-id="<?= (int) $acc['usuario_id'] ?>">
+                                                <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
+                                            </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>

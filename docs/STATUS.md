@@ -8,13 +8,13 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 
 ## 1. Informações Gerais
 
-- **Data da Última Atualização:** 18/11/2026
-- **Fase Prioritária Atual:** Fase 14 (OAuth Google) e Fase 20 concluídas. Governança de documentação e `CHANGELOG.md` estruturados. Próximo foco nos épicos de roadmap: Fase 21 (Revisão Geral de UX/UI), Fase 22 (Gestão do Sistema e Atualizações) e Fase 18 (Compartilhamento por conta).
+- **Data da Última Atualização:** 23/11/2026
+- **Fase Prioritária Atual:** Fase 18 (Compartilhamento de Contas Bancárias e Investimentos) concluída (`v2.5.0`). Próximo foco nos épicos planejados de roadmap: Fase 21 (Revisão Geral de UX/UI) e Fase 22 (Gestão do Sistema e Atualizações).
 - **Histórico de Melhorias Contínuas:** Todas as melhorias visuais, novos campos pontuais, refinamentos de regras e correções de bugs que não constituem uma nova fase estrutural são registrados cronologicamente no [CHANGELOG.md](../CHANGELOG.md) sob o versionamento SemVer.
 - **Preparação do Repositório:** Revisão de `.gitignore`, criação de `.vercelignore`, adição de `LICENSE` sob GPL-3.0, atualização do `README.md` com badges e destaques de engenharia, reescrita do protótipo estático `docs/code.html` fiel ao layout real, estruturação de `docs/screenshots/` e higienização de `.gitkeep` e fontes duplicadas.
 - **Documentação de Manutenção:** Criados `docs/MANUTENCAO.md` (guia técnico para devs e IA), `docs/COMO-PEDIR-MUDANCAS.md` (guia para usuários leigos interagirem com IAs) e `CHANGELOG.md` (histórico cronológico no padrão Keep a Changelog). Arquivo `AGENTS.md` atualizado para Modo Manutenção com protocolo estrito de trabalho antes e depois de alterações.
 - **Revisão Técnica do FSD:** Escopo de Configurações e Perfil alinhado: preferências e operação do sistema ficam em `/configuracoes`; perfil permanece em `/perfil`, dentro da seção Administração e logo abaixo de Configurações, com edição própria de e-mail sem verificação.
-- **Próximo Passo Recomendado:** Fases planejadas de roadmap: Fase 21 (Revisão Geral de UX/UI e Design Tokens), Fase 22 (Gestão do Sistema e Pipeline Seguro de Migrations) e Fase 18 (Compartilhamento por conta — roadmap).
+- **Próximo Passo Recomendado:** Fases planejadas de roadmap: Fase 21 (Revisão Geral de UX/UI e Design Tokens) e Fase 22 (Gestão do Sistema e Pipeline Seguro de Migrations).
 - **Iniciativa Multiusuário:** O Symo deixa de ser single-tenant colaborativo e passa a isolar dados por usuário (autocadastro aberto + login social via Google). Alinhamento de regras de negócio concluído; plano técnico em 6 etapas incrementais em execução.
 - **Ambiente local de testes:** `load-env.ps1` (ignorado pelo Git, modelo em `load-env.example.ps1`) centraliza as variáveis e sobe o PHP embutido com `-Run`, usando uma branch do Neon e o proxy Blob já implantado, sem XAMPP. O `index.php` serve `public/` no servidor embutido (`cli-server`) para que CSS/JS carreguem localmente.
 - **Deploy Vercel:** Configuração inicial adicionada em `vercel.json` usando o runtime comunitário `vercel-php`, com adaptador em `api/index.php`; persistência externa de banco, sessões, uploads e logs ainda deve ser configurada antes da produção.
@@ -61,8 +61,8 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 | **Fase 15** | Consulta administrativa de feedbacks recebidos | Concluída; upload e visualização de imagens validados manualmente |
 | **Fase 16** | Correção dos achados prioritários de isolamento e integridade | Concluída; isolamento e concorrência end-to-end aprovados |
 | **Fase 17** | Catálogo global de meios de pagamento | Concluída |
-| **Fase 18** | Compartilhamento por conta | Roadmap; detalhamento técnico pendente |
-| **Fase 19** | Investimentos | Concluída; |
+| **Fase 18** | Compartilhamento por conta e investimento | Concluída |
+| **Fase 19** | Investimentos | Concluída |
 | **Fase 20** | Perfil do usuário e acesso pela navegação | Concluída |
 | **Fase 21** | Revisão Geral de UX/UI, Design Tokens e Padronização de Componentes Frontend | Planejada (Roadmap) |
 | **Fase 22** | Gestão do Sistema, Histórico de Atualizações e Pipeline Seguro de Migrations | Planejada (Roadmap) |
@@ -259,13 +259,13 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 - [x] Publicar a correção e validar o fluxo integrado de inativação/reativação pela tela.
 - **Estado:** Concluída; migration aplicada, catálogo global e ciclo de ativação/inativação validados em produção.
 
-### Fase 18 — Compartilhamento por conta
-- [x] Alinhar que permissões serão vínculos por conta, não papel global de usuário.
-- [x] Alinhar que participantes verão somente lançamentos posteriores ao aceite e da conta compartilhada.
-- [x] Alinhar que transferências só podem envolver contas do mesmo proprietário.
-- [ ] Definir ciclo do convite, aceite/recusa, identidade do participante e revogação.
-- [ ] Definir permissões e implementar o escopo nas telas e operações autorizadas.
-- **Estado:** Roadmap; detalhamento técnico e implementação pendentes.
+### Fase 18 — Compartilhamento por conta e investimento
+- [x] Alinhar que permissões serão vínculos por recurso (`conta` ou `investimento`), nunca papel global de usuário.
+- [x] Alinhar que participantes verão o saldo atual e somente lançamentos/movimentações ocorridos dentro dos seus períodos ativos de participação (`compartilhamento_periodos`), preservando períodos anteriores em caso de reconvite e ocultando o intervalo em que estiveram fora.
+- [x] Alinhar que transferências e cartões de crédito só podem envolver contas próprias do usuário (`Account::getOwnedActiveAccounts()`).
+- [x] Implementar ciclo do convite para usuários Symo ativos, modal de Notificações no menu suspenso do perfil com indicador em bolinha roxa, aceite/recusa 100% interno no Symo + e-mail informativo via Resend, alteração de permissão, revogação e saída.
+- [x] Implementar os 3 níveis de permissão (`visualizar`, `proprios`, `total`), trava de acesso à conta bancária vinculada para movimentar investimentos compartilhados, carregamento dinâmico das categorias do proprietário da conta, identificação `Por: [Nome]` no extrato/relatórios, permissões proporcionais na Lixeira e controle individual "Exibir no Dashboard" para contas e investimentos.
+- **Estado:** Concluída (`v2.5.0`).
 
 ### Fase 19 — Investimentos
 - [x] Alinhar escopo, regras de movimentação e localização no menu Movimentações; registrar FSD e plano.
@@ -295,8 +295,8 @@ Este documento é o arquivo vivo de acompanhamento exclusivo dos **grandes marco
 - [x] Padronizar o tratamento de exceções em fluxos financeiros para exibir apenas validações de domínio ao usuário e registrar falhas técnicas nos logs internos, mantendo o diagnóstico detalhado da página 500 disponível para o perfil `dev` mesmo com `APP_DEBUG=false`.
 - [x] Reforçar cabeçalhos de segurança na entrega de arquivos privados (`Content-Security-Policy` e `X-Content-Type-Options`), validação em tempo constante e restrição de domínio no proxy do Blob (`api/blob.js`), e proteção contra injeção de fórmulas na exportação CSV.
 - [x] Completar as diretivas de bloqueio em arquivos `.htaccess` das pastas internas para compatibilidade com ambientes Apache legados.
-- [ ] Revisar especificamente OAuth Google (Fase 14) e Compartilhamento por conta (Fase 18) quando esses itens de roadmap forem implementados.
-- **Estado:** Concluída para todos os módulos ativos; pendências restritas às fases futuras de roadmap (Fases 14 e 18).
+- [x] Revisar especificamente OAuth Google (Fase 14) e Compartilhamento por conta e investimento (Fase 18).
+- **Estado:** Concluída para todos os módulos ativos.
 
 ### Documentação Final de Manutenção e Modo Manutenção
 - [x] Criação de `docs/MANUTENCAO.md` com guia técnico completo (visão geral, stack e ambientes, como rodar localmente com `load-env.ps1`, mapa de pastas, banco de dados e migrations, autenticação/RBAC, guias passo a passo para novas telas, novos campos e novas regras, comandos de teste, cuidados de segurança, progressos e o que não fazer).

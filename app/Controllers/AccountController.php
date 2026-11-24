@@ -59,7 +59,7 @@ class AccountController extends Controller
         $instituicao = trim((string) ($_POST['instituicao'] ?? ''));
         $tipo = trim((string) ($_POST['tipo'] ?? 'corrente'));
         $saldoInicialRaw = trim((string) ($_POST['saldo_inicial'] ?? '0,00'));
-        $incluirSaldoAtual = isset($_POST['incluir_saldo_atual']) && $_POST['incluir_saldo_atual'] === '1';
+        $exibirDashboard = isset($_POST['exibir_dashboard']) && $_POST['exibir_dashboard'] === '1';
         $cor = trim((string) ($_POST['cor'] ?? '#6F02FF'));
         $status = trim((string) ($_POST['status'] ?? 'ativa'));
 
@@ -74,13 +74,13 @@ class AccountController extends Controller
 
         $userId = (int) AuthHelper::id();
         $this->accountModel->createAccount([
-            'nome'          => $nome,
-            'instituicao'   => $instituicao,
-            'tipo'          => $tipo,
-            'saldo_inicial' => $saldoInicial,
-            'incluir_saldo_atual' => $incluirSaldoAtual,
-            'cor'           => $cor,
-            'status'        => $status,
+            'nome'             => $nome,
+            'instituicao'      => $instituicao,
+            'tipo'             => $tipo,
+            'saldo_inicial'    => $saldoInicial,
+            'exibir_dashboard' => $exibirDashboard,
+            'cor'              => $cor,
+            'status'           => $status,
         ], $userId);
 
         FlashHelper::set('success', "Conta '{$nome}' cadastrada com sucesso!");
@@ -109,7 +109,7 @@ class AccountController extends Controller
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $instituicao = trim((string) ($_POST['instituicao'] ?? ''));
         $tipo = trim((string) ($_POST['tipo'] ?? 'corrente'));
-        $incluirSaldoAtual = isset($_POST['incluir_saldo_atual']) && $_POST['incluir_saldo_atual'] === '1';
+        $exibirDashboard = isset($_POST['exibir_dashboard']) && $_POST['exibir_dashboard'] === '1';
         $cor = trim((string) ($_POST['cor'] ?? '#6F02FF'));
         $status = trim((string) ($_POST['status'] ?? 'ativa'));
 
@@ -121,12 +121,12 @@ class AccountController extends Controller
 
         $userId = (int) AuthHelper::id();
         $updated = $this->accountModel->updateAccount($id, [
-            'nome'        => $nome,
-            'instituicao' => $instituicao,
-            'tipo'        => $tipo,
-            'incluir_saldo_atual' => $incluirSaldoAtual,
-            'cor'         => $cor,
-            'status'      => $status,
+            'nome'             => $nome,
+            'instituicao'      => $instituicao,
+            'tipo'             => $tipo,
+            'exibir_dashboard' => $exibirDashboard,
+            'cor'              => $cor,
+            'status'           => $status,
         ], $userId);
 
         if ($updated) {

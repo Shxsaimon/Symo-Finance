@@ -135,9 +135,34 @@ $qs = $qsFiltros($filters);
                     </tr>
                 <?php else: ?>
                     <?php foreach ($investimentos as $inv): ?>
+                        <?php
+                            $ehProprietario = ((int) ($inv['eh_proprietario'] ?? 1) === 1);
+                            $participantes = $inv['participantes'] ?? [];
+                            $qtdAtivos = count(array_filter($participantes, static fn ($p) => ($p['status'] ?? '') === 'ativo'));
+                            $qtdPendentes = count(array_filter($participantes, static fn ($p) => ($p['status'] ?? '') === 'pendente'));
+                            $exibirDash = $ehProprietario
+                                ? in_array($inv['exibir_dashboard'] ?? true, [true, 1, '1', 't', 'true'], true)
+                                : in_array($inv['compartilhamento_exibir_dashboard'] ?? true, [true, 1, '1', 't', 'true'], true);
+                        ?>
                         <tr>
                             <td style="padding-left: 1.5rem;">
-                                <a href="<?= BASE_URL ?>/investimentos/<?= (int) $inv['id'] ?>" class="fw-semibold text-decoration-none" style="color: var(--symo-primary-brand);"><?= $e($inv['nome']) ?></a>
+                                <div class="d-flex align-items-center flex-wrap gap-1">
+                                    <a href="<?= BASE_URL ?>/investimentos/<?= (int) $inv['id'] ?>" class="fw-semibold text-decoration-none" style="color: var(--symo-primary-brand);"><?= $e($inv['nome']) ?></a>
+                                    <?php if (!$ehProprietario): ?>
+                                        <span class="badge rounded-pill" style="background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); font-size: 0.7rem;">
+                                            <i class="bi bi-people-fill me-1"></i>Compartilhado por <?= $e($inv['proprietario_nome'] ?? 'Titular') ?>
+                                        </span>
+                                    <?php elseif ($qtdAtivos > 0 || $qtdPendentes > 0): ?>
+                                        <span class="badge rounded-pill" style="background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); font-size: 0.7rem;">
+                                            <i class="bi bi-people-fill me-1"></i>Compartilhado (<?= $qtdAtivos ?><?= $qtdPendentes > 0 ? " + {$qtdPendentes} pend." : '' ?>)
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if (!$exibirDash): ?>
+                                        <span class="badge bg-light text-muted border fw-normal" style="font-size: 0.68rem;" title="Oculto do card de Investimentos no Dashboard">
+                                            <i class="bi bi-eye-slash me-1"></i>Fora do Dashboard
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                                 <?php if (!empty($inv['custodiante'])): ?>
                                     <div class="text-muted small"><?= $e($inv['custodiante']) ?></div>
                                 <?php endif; ?>
@@ -204,7 +229,7 @@ $qs = $qsFiltros($filters);
                         <label for="inv_fin" class="form-label fw-semibold">Finalidade</label>
                         <input type="text" class="form-control" id="inv_fin" name="finalidade" maxlength="120" placeholder="Ex: Reserva, Viagem">
                     </div>
-                    <div class="row g-2">
+                    <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="inv_saldo" class="form-label fw-semibold">Valor atual</label>
                             <input type="text" class="form-control money-mask tabular-nums text-end" id="inv_saldo" name="saldo_inicial" placeholder="R$ 0,00">
@@ -214,6 +239,10 @@ $qs = $qsFiltros($filters);
                             <input type="date" class="form-control" id="inv_data" name="data_saldo_inicial" value="<?= date('Y-m-d') ?>">
                         </div>
                         <div class="form-text">O valor inicial não movimenta nenhuma conta.</div>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="inv_exibir_dashboard" name="exibir_dashboard" value="1" checked>
+                        <label class="form-check-label fw-semibold" for="inv_exibir_dashboard">Exibir no Dashboard</label>
                     </div>
                 </div>
                 <div class="modal-footer border-top bg-light">

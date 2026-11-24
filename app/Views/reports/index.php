@@ -194,7 +194,7 @@ $exportUrl = BASE_URL . '/relatorios/exportar-csv?' . $queryParams;
                     <option value="">Todas as categorias</option>
                     <?php foreach ($categorias as $cat): ?>
                         <option value="<?= $cat['id'] ?>" <?= (int)$filters['categoria_id'] === (int)$cat['id'] ? 'selected' : '' ?>>
-                            <?= ucfirst($cat['tipo']) ?>: <?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?>
+                            <?= ucfirst($cat['tipo']) ?>: <?= htmlspecialchars($cat['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($cat['eh_propria'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($cat['proprietario_nome'] ?? ''), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -207,7 +207,7 @@ $exportUrl = BASE_URL . '/relatorios/exportar-csv?' . $queryParams;
                     <option value="">Todas as contas</option>
                     <?php foreach ($contas as $acc): ?>
                         <option value="<?= $acc['id'] ?>" <?= (int)$filters['conta_id'] === (int)$acc['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?>
+                            <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
                         </option>
                     <?php endforeach; ?>
                 </select>

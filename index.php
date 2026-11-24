@@ -251,20 +251,6 @@ Router::post('/transferencias/salvar', [TransferController::class, 'store']);
 Router::post('/transferencias/excluir/{id}', [TransferController::class, 'delete']);
 
 // -------------------------------------------------------------
-// FASE 19: INVESTIMENTOS
-// -------------------------------------------------------------
-Router::get('/investimentos', [InvestmentController::class, 'index']);
-Router::get('/investimentos/{id}', [InvestmentController::class, 'show']);
-Router::post('/investimentos/salvar', [InvestmentController::class, 'store']);
-Router::post('/investimentos/atualizar/{id}', [InvestmentController::class, 'update']);
-Router::post('/investimentos/reativar/{id}', [InvestmentController::class, 'reactivate']);
-Router::post('/investimentos/desativar/{id}', [InvestmentController::class, 'deactivate']);
-Router::post('/investimentos/excluir/{id}', [InvestmentController::class, 'delete']);
-Router::post('/investimentos/movimentos/salvar/{id}', [InvestmentController::class, 'storeMovement']);
-Router::post('/investimentos/movimentos/atualizar/{id}', [InvestmentController::class, 'updateMovement']);
-Router::post('/investimentos/movimentos/excluir/{id}', [InvestmentController::class, 'deleteMovement']);
-
-// -------------------------------------------------------------
 // FASE 11: RELATÓRIOS ANALÍTICOS E EXPORTAÇÃO CSV
 // -------------------------------------------------------------
 Router::get('/relatorios', [ReportController::class, 'index']);
@@ -279,6 +265,31 @@ Router::post('/usuarios/salvar', [UserController::class, 'store']);
 Router::post('/usuarios/atualizar/{id}', [UserController::class, 'update']);
 Router::post('/usuarios/toggle-status/{id}', [UserController::class, 'toggleStatus']);
 Router::post('/usuarios/redefinir-senha/{id}', [UserController::class, 'resetPassword']);
+
+// -------------------------------------------------------------
+// FASE 18: COMPARTILHAMENTO DE CONTAS E INVESTIMENTOS / NOTIFICAÇÕES
+// -------------------------------------------------------------
+Router::post('/compartilhamentos/convidar', [ShareController::class, 'invite']);
+Router::post('/compartilhamentos/aceitar/{id}', [ShareController::class, 'accept']);
+Router::post('/compartilhamentos/recusar/{id}', [ShareController::class, 'decline']);
+Router::post('/compartilhamentos/permissao/{id}', [ShareController::class, 'updatePermission']);
+Router::post('/compartilhamentos/revogar/{id}', [ShareController::class, 'revoke']);
+Router::post('/compartilhamentos/sair/{id}', [ShareController::class, 'leave']);
+Router::post('/compartilhamentos/dashboard/{id}', [ShareController::class, 'updateDashboardVisibility']);
+
+// -------------------------------------------------------------
+// FASE 19: INVESTIMENTOS
+// -------------------------------------------------------------
+Router::get('/investimentos', [InvestmentController::class, 'index']);
+Router::get('/investimentos/{id}', [InvestmentController::class, 'show']);
+Router::post('/investimentos/salvar', [InvestmentController::class, 'store']);
+Router::post('/investimentos/atualizar/{id}', [InvestmentController::class, 'update']);
+Router::post('/investimentos/reativar/{id}', [InvestmentController::class, 'reactivate']);
+Router::post('/investimentos/desativar/{id}', [InvestmentController::class, 'deactivate']);
+Router::post('/investimentos/excluir/{id}', [InvestmentController::class, 'delete']);
+Router::post('/investimentos/movimentos/salvar/{id}', [InvestmentController::class, 'storeMovement']);
+Router::post('/investimentos/movimentos/atualizar/{id}', [InvestmentController::class, 'updateMovement']);
+Router::post('/investimentos/movimentos/excluir/{id}', [InvestmentController::class, 'deleteMovement']);
 Router::post('/usuarios/excluir/{id}', [UserController::class, 'delete']);
 
 // Trilha de Auditoria (Exclusivo dev)
@@ -311,7 +322,7 @@ Router::get('/admin/teste-rbac', function (): void {
     ?>
     <!DOCTYPE html>
     <html lang="pt-BR">
-    <head>
+        <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Área Restrita do Administrador — Symo</title>

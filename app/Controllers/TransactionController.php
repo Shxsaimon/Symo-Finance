@@ -52,24 +52,35 @@ class TransactionController extends Controller
         $transacoes = $this->transactionModel->getFiltered($filters);
         $resumo = $this->transactionModel->getMonthlySummary($filters['mes'], $filters['ano'], $filters['conta_id']);
 
-        $contas = $this->accountModel->getActiveAccounts();
+        $contas = $this->accountModel->getActiveAccounts(false);
+        $contasLancamento = $this->accountModel->getActiveAccounts(true);
+        $ownerIds = [(int) AuthHelper::id()];
+        foreach ($contasLancamento as $c) {
+            $ownerIds[] = (int) $c['usuario_id'];
+        }
+        $categoriasPorProprietario = $this->categoryModel->getActiveCategoriesByOwners($ownerIds);
+        $categoriasFiltro = $this->categoryModel->getFilterCategoriesForUser();
+
         $categoriasReceita = $this->categoryModel->getByType('receita');
         $categoriasDespesa = $this->categoryModel->getByType('despesa');
         $meiosPagamento = $this->paymentMethodModel->getActive();
         $cartoes = $this->creditCardModel->getAllWithSummary();
 
         $this->render('transactions/index', [
-            'title'             => 'Lançamentos Financeiros — Symo',
-            'transacoes'        => $transacoes,
-            'resumo'            => $resumo,
-            'filters'           => $filters,
-            'contas'            => $contas,
-            'categoriasReceita' => $categoriasReceita,
-            'categoriasDespesa' => $categoriasDespesa,
-            'meiosPagamento'    => $meiosPagamento,
-            'cartoes'           => $cartoes,
-            'currentUserId'     => (int) AuthHelper::id(),
-            'isAdmin'           => AuthHelper::isAdmin(),
+            'title'                     => 'Lançamentos Financeiros — Symo',
+            'transacoes'                => $transacoes,
+            'resumo'                    => $resumo,
+            'filters'                   => $filters,
+            'contas'                    => $contas,
+            'contasLancamento'          => $contasLancamento,
+            'categoriasPorProprietario' => $categoriasPorProprietario,
+            'categoriasFiltro'          => $categoriasFiltro,
+            'categoriasReceita'         => $categoriasReceita,
+            'categoriasDespesa'         => $categoriasDespesa,
+            'meiosPagamento'            => $meiosPagamento,
+            'cartoes'                   => $cartoes,
+            'currentUserId'             => (int) AuthHelper::id(),
+            'isAdmin'                   => AuthHelper::isAdmin(),
         ], 'layouts/main');
     }
 
@@ -203,10 +214,9 @@ class TransactionController extends Controller
         }
 
         $userId = (int) AuthHelper::id();
-        // A consulta por ID já está limitada ao proprietário autenticado.
-        if ((int) $transacao['usuario_id'] !== $userId) {
+        if (!$this->transactionModel->canUserMutateTransaction($transacao, $userId)) {
             http_response_code(403);
-            echo json_encode(['error' => 'Sem permissão para acessar este registro.']);
+            echo json_encode(['error' => 'Sem permissão para editar este registro.']);
             exit;
         }
 
@@ -237,6 +247,7 @@ class TransactionController extends Controller
             'data_vencimento'   => $transacao['data_vencimento'],
             'status'            => $transacao['status'],
             'conta_id'          => $transacao['conta_id'],
+            'conta_proprietario_id' => $transacao['conta_proprietario_id'] ?? $transacao['usuario_id'],
             'categoria_id'      => $transacao['categoria_id'],
             'meio_pagamento_id' => $transacao['meio_pagamento_id'],
             'meio_pagamento_nome' => $meioPagamento['nome'],

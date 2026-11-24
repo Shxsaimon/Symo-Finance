@@ -122,13 +122,24 @@ $anoAtual = (int) date('Y');
                 <option value="recebido" <?= $filters['status'] === 'recebido' ? 'selected' : '' ?>>Recebido</option>
             </select>
         </div>
-        <div class="col-12 col-md-2">
+        <div class="col-6 col-md-2">
             <label for="filter_conta" class="form-label small fw-semibold mb-1">Conta Bancária</label>
             <select class="form-select form-select-sm" id="filter_conta" name="conta_id">
                 <option value="">Todas as contas</option>
                 <?php foreach ($contas as $acc): ?>
                     <option value="<?= $acc['id'] ?>" <?= (int)$filters['conta_id'] === (int)$acc['id'] ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?>
+                        <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="filter_categoria" class="form-label small fw-semibold mb-1">Categoria</label>
+            <select class="form-select form-select-sm" id="filter_categoria" name="categoria_id">
+                <option value="">Todas as categorias</option>
+                <?php foreach (($categoriasFiltro ?? []) as $catF): ?>
+                    <option value="<?= (int) $catF['id'] ?>" <?= (int) ($filters['categoria_id'] ?? 0) === (int) $catF['id'] ? 'selected' : '' ?>>
+                        <?= ucfirst((string) $catF['tipo']) ?>: <?= htmlspecialchars($catF['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($catF['eh_propria'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($catF['proprietario_nome'] ?? ''), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -178,7 +189,9 @@ $anoAtual = (int) date('Y');
                     <?php foreach ($transacoes as $t): ?>
                         <?php
                             $isReceita = $t['tipo'] === 'receita';
-                            $podeEditar = $isAdmin || ((int)$t['usuario_id'] === $currentUserId);
+                            $podeEditar = isset($t['pode_editar'])
+                                ? (bool) $t['pode_editar']
+                                : ((int)$t['usuario_id'] === $currentUserId);
                             $catCor = !empty($t['categoria_cor']) ? htmlspecialchars($t['categoria_cor'], ENT_QUOTES, 'UTF-8') : '#793CFE';
                             $catIcone = !empty($t['categoria_icone']) ? htmlspecialchars($t['categoria_icone'], ENT_QUOTES, 'UTF-8') : 'bi-tag';
                         ?>
@@ -257,7 +270,7 @@ $anoAtual = (int) date('Y');
                             <!-- Ações -->
                             <td class="text-end" style="padding-right: 1.5rem;">
                                 <div class="btn-group btn-group-sm">
-                                    <?php if (empty($t['fatura_id'])): ?>
+                                    <?php if ($podeEditar && empty($t['fatura_id'])): ?>
                                         <!-- Alternar Status Rápido -->
                                         <form action="<?= BASE_URL ?>/transacoes/status/<?= $t['id'] ?>" method="POST" class="d-inline">
                                             <input type="hidden" name="csrf_token" value="<?= CsrfHelper::getToken() ?>">
@@ -335,8 +348,10 @@ $anoAtual = (int) date('Y');
                         <div class="col-6">
                             <label for="rec_conta" class="form-label fw-semibold">Conta de Destino</label>
                             <select class="form-select" id="rec_conta" name="conta_id" required>
-                                <?php foreach ($contas as $acc): ?>
-                                    <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                <?php foreach (($contasLancamento ?? $contas) as $acc): ?>
+                                    <option value="<?= $acc['id'] ?>" data-owner-id="<?= (int) $acc['usuario_id'] ?>">
+                                        <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -431,8 +446,10 @@ $anoAtual = (int) date('Y');
                         <label for="desp_conta" class="form-label fw-semibold">Conta Bancária</label>
                         <select class="form-select" id="desp_conta" name="conta_id">
                             <option value="" selected disabled>Selecione uma conta</option>
-                            <?php foreach ($contas as $acc): ?>
-                                <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                            <?php foreach (($contasLancamento ?? $contas) as $acc): ?>
+                                <option value="<?= $acc['id'] ?>" data-owner-id="<?= (int) $acc['usuario_id'] ?>">
+                                    <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
+                                </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -573,9 +590,11 @@ $anoAtual = (int) date('Y');
                         <div class="col-6" id="edit_wrapper_conta">
                             <label for="edit_conta_id" class="form-label fw-semibold">Conta Bancária</label>
                             <select class="form-select" id="edit_conta_id" name="conta_id">
-                                <option value="">Nenhuma / Cartão</option>
-                                <?php foreach ($contas as $acc): ?>
-                                    <option value="<?= $acc['id'] ?>"><?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="" data-owner-id="<?= (int) $currentUserId ?>">Nenhuma / Cartão</option>
+                                <?php foreach (($contasLancamento ?? $contas) as $acc): ?>
+                                    <option value="<?= $acc['id'] ?>" data-owner-id="<?= (int) $acc['usuario_id'] ?>">
+                                        <?= htmlspecialchars($acc['nome'], ENT_QUOTES, 'UTF-8') ?><?= ((int) ($acc['eh_proprietario'] ?? 1) === 0) ? ' (' . htmlspecialchars((string) ($acc['proprietario_nome'] ?? 'Compartilhada'), ENT_QUOTES, 'UTF-8') . ')' : '' ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -622,6 +641,78 @@ $anoAtual = (int) date('Y');
         const valorDespesa = document.getElementById('desp_valor');
         const checkParcelado = document.getElementById('check_parcelado');
         const wrapParcelas = document.getElementById('wrapper_parcelas');
+
+        // Mapa de categorias ativas por proprietário (para contas próprias e compartilhadas)
+        const categoriasPorProprietario = <?= json_encode($categoriasPorProprietario ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+        const currentLoggedUserId = <?= (int) $currentUserId ?>;
+
+        function popularCategoriasPorProprietario(selectCatEl, ownerId, tipo, selectedCatId = null) {
+            if (!selectCatEl) return;
+            const ownerData = categoriasPorProprietario[String(ownerId)] || categoriasPorProprietario[String(currentLoggedUserId)] || { receita: [], despesa: [] };
+
+            if (tipo === 'ambos') {
+                selectCatEl.innerHTML = '';
+                const grpDesp = document.createElement('optgroup');
+                grpDesp.label = 'Despesas';
+                (ownerData.despesa || []).forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.textContent = cat.nome;
+                    opt.dataset.tipo = 'despesa';
+                    if (selectedCatId !== null && Number(cat.id) === Number(selectedCatId)) opt.selected = true;
+                    grpDesp.appendChild(opt);
+                });
+                const grpRec = document.createElement('optgroup');
+                grpRec.label = 'Receitas';
+                (ownerData.receita || []).forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.textContent = cat.nome;
+                    opt.dataset.tipo = 'receita';
+                    if (selectedCatId !== null && Number(cat.id) === Number(selectedCatId)) opt.selected = true;
+                    grpRec.appendChild(opt);
+                });
+                selectCatEl.appendChild(grpDesp);
+                selectCatEl.appendChild(grpRec);
+                return;
+            }
+
+            const lista = tipo === 'receita' ? (ownerData.receita || []) : (ownerData.despesa || []);
+            const valorAtual = selectedCatId !== null ? String(selectedCatId) : selectCatEl.value;
+            selectCatEl.innerHTML = '';
+            lista.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.nome;
+                if (String(cat.id) === String(valorAtual)) {
+                    opt.selected = true;
+                }
+                selectCatEl.appendChild(opt);
+            });
+        }
+
+        const selectContaReceita = document.getElementById('rec_conta');
+        const selectCatReceita = document.getElementById('rec_categoria');
+        selectContaReceita?.addEventListener('change', () => {
+            const ownerId = selectContaReceita.selectedOptions[0]?.dataset.ownerId || currentLoggedUserId;
+            popularCategoriasPorProprietario(selectCatReceita, ownerId, 'receita');
+        });
+        if (selectContaReceita && selectContaReceita.selectedOptions[0]) {
+            popularCategoriasPorProprietario(selectCatReceita, selectContaReceita.selectedOptions[0].dataset.ownerId || currentLoggedUserId, 'receita');
+        }
+
+        const selectCatDespesa = document.getElementById('desp_categoria');
+        selectContaDespesa?.addEventListener('change', () => {
+            const ownerId = selectContaDespesa.selectedOptions[0]?.dataset.ownerId || currentLoggedUserId;
+            popularCategoriasPorProprietario(selectCatDespesa, ownerId, 'despesa');
+        });
+
+        const selectContaEdit = document.getElementById('edit_conta_id');
+        const selectCatEdit = document.getElementById('edit_categoria_id');
+        selectContaEdit?.addEventListener('change', () => {
+            const ownerId = selectContaEdit.selectedOptions[0]?.dataset.ownerId || currentLoggedUserId;
+            popularCategoriasPorProprietario(selectCatEdit, ownerId, 'ambos');
+        });
 
         async function carregarFaturasTransacoes() {
             if (!selectCartaoDespesa || !selectCartaoDespesa.value || !dataCompraDespesa) return;
@@ -698,9 +789,14 @@ $anoAtual = (int) date('Y');
             }
 
             if (isCredit && selectCartaoDespesa?.value) {
+                popularCategoriasPorProprietario(selectCatDespesa, currentLoggedUserId, 'despesa');
                 carregarFaturasTransacoes();
-            } else if (alertaFallback) {
-                alertaFallback.classList.add('d-none');
+            } else {
+                const ownerId = selectContaDespesa?.selectedOptions[0]?.dataset.ownerId || currentLoggedUserId;
+                popularCategoriasPorProprietario(selectCatDespesa, ownerId, 'despesa');
+                if (alertaFallback) {
+                    alertaFallback.classList.add('d-none');
+                }
             }
         }
 
@@ -747,6 +843,8 @@ $anoAtual = (int) date('Y');
                     document.getElementById('edit_data_vencimento').value = data.data_transacao || data.data_vencimento;
 
                     const selectCategoria = document.getElementById('edit_categoria_id');
+                    const ownerForEdit = data.conta_proprietario_id || currentLoggedUserId;
+                    popularCategoriasPorProprietario(selectCategoria, ownerForEdit, 'ambos', data.categoria_id);
                     selectCategoria.value = data.categoria_id;
                     const labelData = document.getElementById('edit_label_data');
                     function updateEditDateLabel(tipo) {

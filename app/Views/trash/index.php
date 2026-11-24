@@ -81,6 +81,7 @@ $csrfToken = CsrfHelper::generateToken();
                                         <div class="fw-bold" style="color: var(--symo-on-surface);">
                                             <?= htmlspecialchars($t['descricao'], ENT_QUOTES, 'UTF-8') ?>
                                         </div>
+                                        <small class="text-muted">Por: <?= htmlspecialchars((string) ($t['usuario_nome'] ?? 'Sistema'), ENT_QUOTES, 'UTF-8') ?></small>
                                     </td>
                                     <td>
                                         <div style="font-size: 0.85rem;">
@@ -103,25 +104,29 @@ $csrfToken = CsrfHelper::generateToken();
                                         </div>
                                     </td>
                                     <td class="text-end">
-                                        <!-- Restaurar Transação -->
-                                        <form action="<?= BASE_URL ?>/lixeira/restaurar" method="POST" class="d-inline" onsubmit="return confirm('Deseja restaurar esta transação? O saldo da conta será recalculado.');">
-                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                            <input type="hidden" name="entidade" value="transacoes">
-                                            <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
-                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Restaurar Transação">
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
-                                            </button>
-                                        </form>
+                                        <?php if (!isset($t['pode_operar']) || $t['pode_operar']): ?>
+                                            <!-- Restaurar Transação -->
+                                            <form action="<?= BASE_URL ?>/lixeira/restaurar" method="POST" class="d-inline" onsubmit="return confirm('Deseja restaurar esta transação? O saldo da conta será recalculado.');">
+                                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                                <input type="hidden" name="entidade" value="transacoes">
+                                                <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Restaurar Transação">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
+                                                </button>
+                                            </form>
 
-                                        <!-- Excluir Definitivo -->
-                                        <form action="<?= BASE_URL ?>/lixeira/expurgar" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: A exclusão definitiva não pode ser desfeita. Continuar?');">
-                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                            <input type="hidden" name="entidade" value="transacoes">
-                                            <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
-                                        </form>
+                                            <!-- Excluir Definitivo -->
+                                            <form action="<?= BASE_URL ?>/lixeira/expurgar" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: A exclusão definitiva não pode ser desfeita. Continuar?');">
+                                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                                <input type="hidden" name="entidade" value="transacoes">
+                                                <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-muted small" title="Sem permissão para restaurar ou expurgar este lançamento">Somente leitura</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -418,25 +423,29 @@ $csrfToken = CsrfHelper::generateToken();
                                         </div>
                                     </td>
                                     <td class="text-end">
-                                        <!-- Restaurar Movimento -->
-                                        <form action="<?= BASE_URL ?>/lixeira/restaurar" method="POST" class="d-inline" onsubmit="return confirm('Deseja restaurar esta movimentação? Os saldos serão recalculados.');">
-                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                            <input type="hidden" name="entidade" value="investimento_movimentos">
-                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
-                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Restaurar Movimento">
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
-                                            </button>
-                                        </form>
+                                        <?php if (!isset($m['pode_operar']) || $m['pode_operar']): ?>
+                                            <!-- Restaurar Movimento -->
+                                            <form action="<?= BASE_URL ?>/lixeira/restaurar" method="POST" class="d-inline" onsubmit="return confirm('Deseja restaurar esta movimentação? Os saldos serão recalculados.');">
+                                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                                <input type="hidden" name="entidade" value="investimento_movimentos">
+                                                <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="Restaurar Movimento">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
+                                                </button>
+                                            </form>
 
-                                        <!-- Expurgar Definitivo -->
-                                        <form action="<?= BASE_URL ?>/lixeira/expurgar" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: A exclusão definitiva não pode ser desfeita. Continuar?');">
-                                            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                            <input type="hidden" name="entidade" value="investimento_movimentos">
-                                            <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
-                                        </form>
+                                            <!-- Expurgar Definitivo -->
+                                            <form action="<?= BASE_URL ?>/lixeira/expurgar" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: A exclusão definitiva não pode ser desfeita. Continuar?');">
+                                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                                <input type="hidden" name="entidade" value="investimento_movimentos">
+                                                <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Expurgar Definitivamente">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-muted small" title="Sem permissão para restaurar ou expurgar esta movimentação">Somente leitura</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

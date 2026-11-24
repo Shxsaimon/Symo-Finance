@@ -7,7 +7,8 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  * Symo — Model de Relatórios Analíticos (Report)
  *
  * Executa consultas consolidadas, filtros combinados e agregação de dados
- * para relatórios analíticos e exportação estruturada em CSV.
+ * para relatórios analíticos e exportação estruturada em CSV, incluindo
+ * lançamentos próprios e de contas compartilhadas dentro dos períodos de participação.
  */
 class Report extends Model
 {
@@ -19,6 +20,8 @@ class Report extends Model
      */
     public function getDetailedReport(array $filters): array
     {
+        $userId = (int) AuthHelper::id();
+
         $sql = "SELECT t.*, 
                        c.nome as conta_nome, c.cor as conta_cor,
                        cat.nome as categoria_nome, cat.icone as categoria_icone, cat.cor as categoria_cor,
@@ -33,9 +36,34 @@ class Report extends Model
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
                 LEFT JOIN `usuarios` u ON t.usuario_id = u.id
-                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR c.usuario_id = :uid_owner
+                      OR (
+                          cp.id IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )";
 
-        $params = [':usuario_id' => AuthHelper::id()];
+        $params = [
+            ':uid_join'   => $userId,
+            ':uid_card'   => $userId,
+            ':uid_owner'  => $userId,
+            ':uid_period' => $userId,
+        ];
         $this->applyFilters($sql, $params, $filters);
 
         $sql .= " ORDER BY t.data_transacao DESC, t.data_vencimento DESC, t.id DESC";
@@ -61,6 +89,8 @@ class Report extends Model
      */
     public function getSummary(array $filters): array
     {
+        $userId = (int) AuthHelper::id();
+
         $sql = "SELECT 
                     COUNT(t.id) as total_registros,
                     SUM(CASE WHEN t.tipo = 'receita' THEN t.valor ELSE 0 END) as total_receitas,
@@ -75,9 +105,34 @@ class Report extends Model
                 LEFT JOIN `meios_pagamento` mp ON t.meio_pagamento_id = mp.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
-                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR c.usuario_id = :uid_owner
+                      OR (
+                          cp.id IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )";
 
-        $params = [':usuario_id' => AuthHelper::id()];
+        $params = [
+            ':uid_join'   => $userId,
+            ':uid_card'   => $userId,
+            ':uid_owner'  => $userId,
+            ':uid_period' => $userId,
+        ];
         $this->applyFilters($sql, $params, $filters);
 
         $stmt = $this->db->prepare($sql);
@@ -124,6 +179,8 @@ class Report extends Model
      */
     public function getGroupedByCategory(array $filters): array
     {
+        $userId = (int) AuthHelper::id();
+
         $sql = "SELECT cat.id, cat.nome, cat.tipo, cat.cor, cat.icone,
                        COUNT(t.id) as total_operacoes,
                        SUM(t.valor) as total_valor
@@ -133,9 +190,34 @@ class Report extends Model
                 LEFT JOIN `meios_pagamento` mp ON t.meio_pagamento_id = mp.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
-                WHERE t.usuario_id = :usuario_id AND t.excluido_em IS NULL";
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR c.usuario_id = :uid_owner
+                      OR (
+                          cp.id IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )";
 
-        $params = [':usuario_id' => AuthHelper::id()];
+        $params = [
+            ':uid_join'   => $userId,
+            ':uid_card'   => $userId,
+            ':uid_owner'  => $userId,
+            ':uid_period' => $userId,
+        ];
         $this->applyFilters($sql, $params, $filters);
 
         $sql .= " GROUP BY cat.id, cat.nome, cat.tipo, cat.cor, cat.icone
@@ -173,7 +255,6 @@ class Report extends Model
      */
     private function applyFilters(string &$sql, array &$params, array $filters): void
     {
-        // 1. Filtro de Período
         $tipoPeriodo = $filters['tipo_periodo'] ?? 'mes';
         if ($tipoPeriodo === 'custom' && !empty($filters['data_inicio']) && !empty($filters['data_fim'])) {
             $sql .= " AND t.data_transacao BETWEEN :data_inicio AND :data_fim";
@@ -190,43 +271,36 @@ class Report extends Model
             }
         }
 
-        // 2. Tipo de Movimentação (receita / despesa)
         if (!empty($filters['tipo']) && in_array($filters['tipo'], ['receita', 'despesa'], true)) {
             $sql .= " AND t.tipo = :tipo";
             $params[':tipo'] = (string) $filters['tipo'];
         }
 
-        // 3. Status (pendente, pago, recebido)
         if (!empty($filters['status']) && in_array($filters['status'], ['pendente', 'pago', 'recebido'], true)) {
             $sql .= " AND t.status = :status";
             $params[':status'] = (string) $filters['status'];
         }
 
-        // 4. Categoria
         if (!empty($filters['categoria_id'])) {
             $sql .= " AND t.categoria_id = :categoria_id";
             $params[':categoria_id'] = (int) $filters['categoria_id'];
         }
 
-        // 5. Conta Bancária
         if (!empty($filters['conta_id'])) {
             $sql .= " AND t.conta_id = :conta_id";
             $params[':conta_id'] = (int) $filters['conta_id'];
         }
 
-        // 6. Cartão de Crédito
         if (!empty($filters['cartao_credito_id'])) {
             $sql .= " AND t.cartao_credito_id = :cartao_id";
             $params[':cartao_id'] = (int) $filters['cartao_credito_id'];
         }
 
-        // 7. Meio de Pagamento
         if (!empty($filters['meio_pagamento_id'])) {
             $sql .= " AND t.meio_pagamento_id = :meio_id";
             $params[':meio_id'] = (int) $filters['meio_pagamento_id'];
         }
 
-        // 8. Busca Textual na Descrição ou Observações
         if (!empty($filters['busca'])) {
             $sql .= " AND (t.descricao LIKE :busca_desc OR t.observacoes LIKE :busca_obs)";
             $buscaTerm = '%' . trim((string) $filters['busca']) . '%';

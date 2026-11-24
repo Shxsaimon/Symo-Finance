@@ -41,8 +41,8 @@ class ReportController extends Controller
         $resumo = $this->reportModel->getSummary($filters);
         $dadosAgrupados = $this->reportModel->getGroupedByCategory($filters);
 
-        $contas = $this->accountModel->getActiveAccounts();
-        $categorias = $this->categoryModel->getActiveCategories();
+        $contas = $this->accountModel->getActiveAccounts(false);
+        $categorias = $this->categoryModel->getFilterCategoriesForUser();
         $meiosPagamento = $this->paymentMethodModel->getActivePaymentMethods();
         $cartoes = $this->creditCardModel->getAllWithSummary();
 

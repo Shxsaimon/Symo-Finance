@@ -17,6 +17,32 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [2.5.0] — 2026-11-23 — Compartilhamento de Contas Bancárias e Investimentos, Notificações de Convites e Controle de Exibição no Dashboard (Fase 18)
+
+### Adicionado
+- **Migration 024 (`024_criar_tabelas_compartilhamento.php`):** Renomeia a coluna `incluir_saldo_atual` da tabela `contas` para `exibir_dashboard`, adiciona a coluna `exibir_dashboard` (`BOOLEAN DEFAULT TRUE`) na tabela `investimentos` e cria as tabelas `compartilhamentos` (vínculo por recurso `conta` ou `investimento`, proprietário, participante, nível de permissão `visualizar`/`proprios`/`total`, status e preferência individual `exibir_dashboard`) e `compartilhamento_periodos` (janelas temporais `[aceito_em, encerrado_em]`), compatíveis com PostgreSQL e MySQL legado.
+- **Compartilhamento Seletivo de Contas Bancárias e Investimentos (`Share`, `ShareController`):**
+  - Convite por e-mail restrito a usuários ativos do Symo, com validação contra auto-convite e duplicidade.
+  - Três níveis de permissão determinados pelo proprietário: **Apenas visualizar (`visualizar`)**, **Lançar e alterar apenas os próprios (`proprios`)** e **Acesso completo aos lançamentos (`total`)**.
+  - Modais dedicados de gestão de compartilhamento em `/contas` (`#modalCompartilharConta_{id}`) e em `/investimentos/{id}` (`#modalCompartilharInvestimento`), permitindo ao proprietário convidar, alterar permissões e revogar acessos, e ao participante visualizar o proprietário, seu nível de permissão, alternar **"Exibir no Dashboard"** e sair do compartilhamento.
+- **Central de Notificações no Menu do Perfil (`navbar.php`, `MailHelper::sendShareInvite`):**
+  - Item **"Notificações"** com ícone de sino (`bi-bell`) integrado dentro do menu suspenso do perfil do usuário (canto superior direito).
+  - Indicador visual em bolinha roxa (`var(--symo-primary-brand)`, sem contador numérico) exibido no canto superior direito da foto/avatar e ao lado do ícone de sino quando houver convites pendentes.
+  - Modal `#modalNotificacoes` permitindo **Aceitar** ou **Recusar** convites 100% dentro do Symo, acompanhado de envio não bloqueante de e-mail informativo via Resend (`MailHelper::sendShareInvite`).
+- **Histórico Multi-Período (`compartilhamento_periodos`):** Participantes enxergam o saldo atual do recurso compartilhado e, nos extratos, gráficos, relatórios e lixeira, visualizam estritamente os lançamentos/movimentações ocorridos dentro das janelas `[aceito_em, encerrado_em]` em que estiveram ativos, preservando períodos anteriores em caso de saída/revogação seguida de reconvite e ocultando o período em que estiveram fora.
+- **Trava de Conta Bancária Vinculada em Investimentos Compartilhados:** Ao compartilhar um investimento sem compartilhar a conta bancária vinculada (`conta_id`), o participante visualiza a posição, mas os botões de movimentação/ajuste (aporte, resgate, rendimento, atualização de valor, edição e exclusão) ficam desabilitados (`disabled`) com *tooltip* explicativo no desktop e alerta visível na página (mobile e desktop) até que também possua acesso ativo de lançamento na conta vinculada.
+- **Switch "Exibir no Dashboard" para Contas e Investimentos:** Controle padronizado em formato de pílula (`form-switch`) na criação/edição de contas e investimentos (para o proprietário) e no modal de compartilhamento (para o participante). Em investimentos, define se o valor atual da posição compõe a linha `"Investimentos"` no card do Dashboard, mantendo a soma intacta nas telas `/investimentos` e `/contas`.
+
+### Modificado
+- **Escopo e padronização de `exibir_dashboard` em Contas Bancárias:** A antiga coluna `incluir_saldo_atual` em `contas` foi renomeada para `exibir_dashboard` (unificando a nomenclatura com `investimentos.exibir_dashboard` e `compartilhamentos.exibir_dashboard`) e agora controla a presença da conta em **todo o Dashboard** (`Saldo Atual`, `Receitas do Mês`, `Despesas do Mês`, `Balanço Líquido`, `Evolução Financeira (6 meses)`, `Despesas por Categoria` e `Compromissos Pendentes (7 dias)`).
+- **Categorias Dinâmicas e Identificação de Autoria em Lançamentos e Relatórios:**
+  - Ao selecionar uma conta compartilhada nos modais de Receita, Despesa ou Edição, o seletor de categorias carrega dinamicamente as categorias ativas do proprietário da conta selecionada.
+  - Em `/transacoes` e `/relatorios`, a coluna Descrição passa a exibir `Por: [Nome do Usuário]` identificando o autor real de cada lançamento, e os filtros de categoria listam as categorias próprias ativas somadas às categorias utilizadas em lançamentos visíveis de contas compartilhadas.
+- **Lixeira Compartilhada proporcional à permissão (`Trash`, `trash/index.php`):** Participantes ativos visualizam lançamentos e movimentações de investimento excluídos ocorridos dentro de seus períodos válidos de participação; usuários com permissão `total` podem restaurar e expurgar itens próprios e de terceiros, usuários com `proprios` restauram/expurgam apenas os de sua autoria, e registros de contas/investimentos cujo compartilhamento foi encerrado deixam imediatamente de aparecer na lixeira do ex-participante.
+- **Blindagem de Transferências e Cartões de Crédito (`TransferController`, `CreditCardController`):** Seletores e validações utilizam `Account::getOwnedActiveAccounts()`, garantindo que transferências entre contas e débitos de faturas de cartão permaneçam estritamente restritos às contas próprias do titular.
+
+---
+
 ## [2.4.1] — 2026-11-20 — Remoção Definitiva do Perfil Legado Operador e Padronização do Badge DEV
 
 ### Adicionado

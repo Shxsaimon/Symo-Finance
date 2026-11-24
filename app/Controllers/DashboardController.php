@@ -41,11 +41,11 @@ class DashboardController extends Controller
         $mes = !empty($_GET['mes']) ? max(1, min(12, (int) $_GET['mes'])) : $mesAtual;
         $ano = !empty($_GET['ano']) ? (int) $_GET['ano'] : $anoAtual;
 
-        // 1. Saldo Atual das contas ativas marcadas para inclusão
+        // 1. Saldo Atual das contas ativas marcadas para inclusão no Dashboard
         $saldoAtual = $this->accountModel->getCurrentBalance();
 
-        // 2. Resumo financeiro do mês (receitas, despesas, balanço líquido)
-        $resumoMes = $this->transactionModel->getMonthlySummary($mes, $ano);
+        // 2. Resumo financeiro do mês (receitas, despesas, balanço líquido) apenas de contas exibidas no Dashboard
+        $resumoMes = $this->transactionModel->getMonthlySummary($mes, $ano, null, true);
 
         // 3. Evolução financeira dos últimos 6 meses para o gráfico de barras/linhas
         $evolucaoMensal = $this->transactionModel->getMonthlyEvolution($mes, $ano, 6);
@@ -59,27 +59,34 @@ class DashboardController extends Controller
         // 6. Visão consolidada de cartões de crédito e limites
         $cartoes = $this->creditCardModel->getAllWithSummary();
 
-        // 7. Lista de contas bancárias ativas
-        $contas = $this->accountModel->getActiveAccounts();
+        // 7. Lista de contas bancárias ativas elegíveis para lançamento
+        $contas = $this->accountModel->getActiveAccounts(true);
         $contasNoSaldoAtual = $this->accountModel->getCurrentBalanceAccountsCount();
 
+        $ownerIds = [(int) AuthHelper::id()];
+        foreach ($contas as $c) {
+            $ownerIds[] = (int) $c['usuario_id'];
+        }
+        $categoriasPorProprietario = $this->categoryModel->getActiveCategoriesByOwners($ownerIds);
+
         $this->render('dashboard/index', [
-            'title'               => 'Dashboard Financeiro — Symo',
-            'user'                => AuthHelper::user(),
-            'mes'                 => $mes,
-            'ano'                 => $ano,
-            'saldoAtual'          => $saldoAtual,
-            'resumoMes'           => $resumoMes,
-            'evolucaoMensal'      => $evolucaoMensal,
-            'despesasCategoria'   => $despesasCategoria,
-            'proximosVencimentos' => $proximosVencimentos,
-            'cartoes'             => $cartoes,
-            'contas'              => $contas,
-            'contasNoSaldoAtual'  => $contasNoSaldoAtual,
-            'totalInvestido'      => (new Investment())->getTotalInvested(),
-            'categoriasReceita'   => $this->categoryModel->getByType('receita'),
-            'categoriasDespesa'   => $this->categoryModel->getByType('despesa'),
-            'meiosPagamento'      => $this->paymentMethodModel->getActive(),
+            'title'                     => 'Dashboard Financeiro — Symo',
+            'user'                      => AuthHelper::user(),
+            'mes'                       => $mes,
+            'ano'                       => $ano,
+            'saldoAtual'                => $saldoAtual,
+            'resumoMes'                 => $resumoMes,
+            'evolucaoMensal'            => $evolucaoMensal,
+            'despesasCategoria'         => $despesasCategoria,
+            'proximosVencimentos'       => $proximosVencimentos,
+            'cartoes'                   => $cartoes,
+            'contas'                    => $contas,
+            'contasNoSaldoAtual'        => $contasNoSaldoAtual,
+            'totalInvestido'            => (new Investment())->getTotalInvested(true),
+            'categoriasPorProprietario' => $categoriasPorProprietario,
+            'categoriasReceita'         => $this->categoryModel->getByType('receita'),
+            'categoriasDespesa'         => $this->categoryModel->getByType('despesa'),
+            'meiosPagamento'            => $this->paymentMethodModel->getActive(),
         ], 'layouts/main');
     }
 }

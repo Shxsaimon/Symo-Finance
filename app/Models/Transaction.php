@@ -16,32 +16,107 @@ class Transaction extends Model
 
     public function find(int $id): ?array
     {
-        $sql = 'SELECT * FROM transacoes WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1';
+        $userId = (int) AuthHelper::id();
+
+        $sql = "SELECT t.*,
+                       c.usuario_id AS conta_proprietario_id,
+                       CASE
+                           WHEN t.usuario_id = :uid_self AND t.conta_id IS NULL THEN 'proprietario'
+                           WHEN c.usuario_id = :uid_owner THEN 'proprietario'
+                           ELSE cp.permissao
+                       END AS permissao_conta
+                FROM transacoes t
+                LEFT JOIN contas c ON c.id = t.conta_id
+                LEFT JOIN compartilhamentos cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.id = :id
+                  AND t.excluido_em IS NULL
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR c.usuario_id = :uid_acc_owner
+                      OR (
+                          cp.id IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1 FROM compartilhamento_periodos p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )
+                LIMIT 1";
 
         $statement = $this->db->prepare($sql);
+        $statement->bindValue(':uid_self', $userId, PDO::PARAM_INT);
+        $statement->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $statement->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $statement->bindValue(':id', $id, PDO::PARAM_INT);
-        $statement->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $statement->bindValue(':uid_card', $userId, PDO::PARAM_INT);
+        $statement->bindValue(':uid_acc_owner', $userId, PDO::PARAM_INT);
+        $statement->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $statement->execute();
         $result = $statement->fetch();
 
         return $result !== false ? $result : null;
     }
 
+    /**
+     * Verifica se o usuário autenticado pode editar, alternar status ou excluir uma transação.
+     *
+     * @param array<string, mixed> $transacao
+     */
+    public function canUserMutateTransaction(array $transacao, int $userId): bool
+    {
+        if (empty($transacao['conta_id'])) {
+            return (int) $transacao['usuario_id'] === $userId;
+        }
+
+        $contaOwnerId = isset($transacao['conta_proprietario_id'])
+            ? (int) $transacao['conta_proprietario_id']
+            : $this->accountOwnerId((int) $transacao['conta_id'], $userId);
+
+        if ($contaOwnerId === $userId) {
+            return true;
+        }
+
+        $share = (new Share())->getActiveShare('conta', (int) $transacao['conta_id'], $userId);
+        if (!$share) {
+            return false;
+        }
+
+        if (!(new Share())->isTimestampWithinParticipantPeriods('conta', (int) $transacao['conta_id'], $userId, (string) $transacao['criado_em'])) {
+            return false;
+        }
+
+        if ($share['permissao'] === 'total') {
+            return true;
+        }
+        if ($share['permissao'] === 'proprios' && (int) $transacao['usuario_id'] === $userId) {
+            return true;
+        }
+
+        return false;
+    }
+
     public function softDelete(int $id, int $usuarioId): bool
     {
         $registroAntigo = $this->find($id);
-        if (!$registroAntigo) {
+        if (!$registroAntigo || !$this->canUserMutateTransaction($registroAntigo, $usuarioId)) {
             return false;
         }
 
         $sql = 'UPDATE transacoes
                 SET excluido_em = NOW(), excluido_por = :excluido_por, atualizado_em = NOW()
-            WHERE id = :id AND usuario_id = :usuario_escopo AND excluido_em IS NULL';
+            WHERE id = :id AND excluido_em IS NULL';
 
         $statement = $this->db->prepare($sql);
         $statement->bindValue(':excluido_por', $usuarioId, PDO::PARAM_INT);
         $statement->bindValue(':id', $id, PDO::PARAM_INT);
-        $statement->bindValue(':usuario_escopo', $usuarioId, PDO::PARAM_INT);
         $statement->execute();
 
         if ($statement->rowCount() === 0) {
@@ -376,9 +451,8 @@ class Transaction extends Model
             return false;
         }
 
-        // Edição financeira é limitada ao usuário proprietário do lançamento.
-        if ((int) $old['usuario_id'] !== $userId) {
-            throw new RuntimeException('Você não possui autorização para editar lançamentos de outros usuários.');
+        if (!$this->canUserMutateTransaction($old, $userId)) {
+            throw new RuntimeException('Você não possui autorização para editar este lançamento.');
         }
 
         $isCreditCharge = !empty($old['fatura_id']);
@@ -420,6 +494,14 @@ class Transaction extends Model
             ? $meioPagamentoId
             : null;
         $this->validateRelatedOwnership($userId, $categoriaId, $meioPagamentoId, $contaId, null, $historicalPaymentMethodId);
+        if (!$isCreditCharge) {
+            $stmtCatTipo = $this->db->prepare('SELECT tipo FROM categorias WHERE id = :id AND excluido_em IS NULL LIMIT 1');
+            $stmtCatTipo->execute(['id' => $categoriaId]);
+            $catTipo = $stmtCatTipo->fetchColumn();
+            if (is_string($catTipo) && in_array($catTipo, ['receita', 'despesa'], true)) {
+                $tipo = $catTipo;
+            }
+        }
         $contaOwnerId = !$isCreditCharge && $contaId !== null
             ? $this->accountOwnerId($contaId, $userId)
             : null;
@@ -490,11 +572,14 @@ class Transaction extends Model
             // 1. Reverte o saldo antigo da conta anterior (se estava liquidado)
             if (!$isCreditCharge && !empty($old['conta_id'])) {
                 $oldContaId = (int) $old['conta_id'];
+                $oldContaOwnerId = isset($old['conta_proprietario_id'])
+                    ? (int) $old['conta_proprietario_id']
+                    : $this->accountOwnerId($oldContaId, $userId);
                 $oldValor = (float) $old['valor'];
                 if ($old['tipo'] === 'receita' && $old['status'] === 'recebido') {
-                    $this->adjustAccountBalance($oldContaId, -$oldValor, (int) $old['usuario_id']);
+                    $this->adjustAccountBalance($oldContaId, -$oldValor, $oldContaOwnerId);
                 } elseif ($old['tipo'] === 'despesa' && $old['status'] === 'pago') {
-                    $this->adjustAccountBalance($oldContaId, $oldValor, (int) $old['usuario_id']);
+                    $this->adjustAccountBalance($oldContaId, $oldValor, $oldContaOwnerId);
                 }
             }
 
@@ -516,7 +601,7 @@ class Transaction extends Model
                         categoria_id = :categoria_id, meio_pagamento_id = :meio_pagamento_id,
                         fatura_id = :fatura_id,
                         observacoes = :observacoes, atualizado_em = NOW()
-                    WHERE id = :id AND usuario_id = :usuario_escopo AND excluido_em IS NULL";
+                    WHERE id = :id AND excluido_em IS NULL";
 
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':tipo', $tipo, PDO::PARAM_STR);
@@ -532,7 +617,6 @@ class Transaction extends Model
             $stmt->bindValue(':fatura_id', $faturaId, $faturaId !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
             $stmt->bindValue(':observacoes', $observacoes, $observacoes !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $stmt->bindValue(':usuario_escopo', $userId, PDO::PARAM_INT);
             $success = $stmt->execute();
 
             // 4. Se for compra parcelada e a data foi alterada, propaga para as próximas parcelas do grupo
@@ -683,8 +767,8 @@ class Transaction extends Model
             return ['success' => false, 'message' => 'Lançamento não encontrado.'];
         }
 
-        if ((int) $trans['usuario_id'] !== $userId) {
-            return ['success' => false, 'message' => 'Você não possui permissão para alterar lançamentos de terceiros.'];
+        if (!$this->canUserMutateTransaction($trans, $userId)) {
+            return ['success' => false, 'message' => 'Você não possui permissão para alterar este lançamento.'];
         }
 
         // Não permite alternar individualmente se for despesa de cartão de crédito vinculado a fatura
@@ -725,8 +809,8 @@ class Transaction extends Model
             return ['success' => false, 'message' => 'Lançamento não encontrado.'];
         }
 
-        if ((int) $trans['usuario_id'] !== $userId) {
-            return ['success' => false, 'message' => 'Você não possui permissão para excluir lançamentos de terceiros.'];
+        if (!$this->canUserMutateTransaction($trans, $userId)) {
+            return ['success' => false, 'message' => 'Você não possui permissão para excluir este lançamento.'];
         }
 
         if (!empty($trans['fatura_id'])) {
@@ -751,11 +835,14 @@ class Transaction extends Model
             // Reverte saldo bancário caso estivesse pago/recebido
             if (empty($trans['fatura_id']) && !empty($trans['conta_id'])) {
                 $contaId = (int) $trans['conta_id'];
+                $contaOwnerId = isset($trans['conta_proprietario_id'])
+                    ? (int) $trans['conta_proprietario_id']
+                    : $this->accountOwnerId($contaId, $userId);
                 $valor = (float) $trans['valor'];
                 if ($trans['tipo'] === 'receita' && $trans['status'] === 'recebido') {
-                    $this->adjustAccountBalance($contaId, -$valor, (int) $trans['usuario_id']);
+                    $this->adjustAccountBalance($contaId, -$valor, $contaOwnerId);
                 } elseif ($trans['tipo'] === 'despesa' && $trans['status'] === 'pago') {
-                    $this->adjustAccountBalance($contaId, $valor, (int) $trans['usuario_id']);
+                    $this->adjustAccountBalance($contaId, $valor, $contaOwnerId);
                 }
             }
 
@@ -782,30 +869,56 @@ class Transaction extends Model
     }
 
     /**
-     * Retorna a listagem de transações filtradas com relacionamentos.
+     * Retorna a listagem de transações filtradas com relacionamentos (próprias e de contas compartilhadas nos períodos válidos).
      *
      * @param array<string, mixed> $filters
      * @return array<int, array<string, mixed>>
      */
     public function getFiltered(array $filters): array
     {
+        $userId = (int) AuthHelper::id();
+
         $sql = "SELECT t.*, 
-                       c.nome as conta_nome, c.cor as conta_cor,
+                       c.nome as conta_nome, c.cor as conta_cor, c.usuario_id as conta_proprietario_id,
                        cat.nome as categoria_nome, cat.icone as categoria_icone, cat.cor as categoria_cor,
                        mp.nome as meio_pagamento_nome,
                        cc.nome as cartao_nome, cc.cor as cartao_cor,
-                       u.nome as usuario_nome
+                       u.nome as usuario_nome,
+                       cp.permissao as compartilhamento_permissao
                 FROM `transacoes` t
                 LEFT JOIN `contas` c ON t.conta_id = c.id
                 LEFT JOIN `categorias` cat ON t.categoria_id = cat.id
                 LEFT JOIN `meios_pagamento` mp ON t.meio_pagamento_id = mp.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `usuarios` u ON t.usuario_id = u.id
-                WHERE t.excluido_em IS NULL";
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR c.usuario_id = :uid_owner
+                      OR (
+                          cp.id IS NOT NULL
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )";
 
-        $params = [];
-        $sql .= ' AND t.usuario_id = :usuario_id';
-        $params[':usuario_id'] = AuthHelper::id();
+        $params = [
+            ':uid_join'   => $userId,
+            ':uid_card'   => $userId,
+            ':uid_owner'  => $userId,
+            ':uid_period' => $userId,
+        ];
 
         if (!empty($filters['mes'])) {
             $sql .= " AND MONTH(t.data_vencimento) = :mes";
@@ -858,8 +971,22 @@ class Transaction extends Model
             }
         }
         $stmt->execute();
+        $rows = $stmt->fetchAll();
 
-        return $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            if (empty($row['conta_id'])) {
+                $row['pode_editar'] = ((int) $row['usuario_id'] === $userId);
+            } elseif ((int) ($row['conta_proprietario_id'] ?? 0) === $userId) {
+                $row['pode_editar'] = true;
+            } else {
+                $perm = (string) ($row['compartilhamento_permissao'] ?? 'visualizar');
+                $row['pode_editar'] = ($perm === 'total')
+                    || ($perm === 'proprios' && (int) $row['usuario_id'] === $userId);
+            }
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -868,32 +995,59 @@ class Transaction extends Model
      * @param int $mes
      * @param int $ano
      * @param int|null $contaId
+     * @param bool $forDashboardOnly Se true, filtra apenas contas marcadas para exibição no Dashboard
      * @return array{total_receitas: float, receitas_recebidas: float, receitas_pendentes: float, total_despesas: float, despesas_pagas: float, despesas_pendentes: float, saldo_periodo: float}
      */
-    public function getMonthlySummary(int $mes, int $ano, ?int $contaId = null): array
+    public function getMonthlySummary(int $mes, int $ano, ?int $contaId = null, bool $forDashboardOnly = false): array
     {
-        $sql = "SELECT 
-                    SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END) as total_receitas,
-                    SUM(CASE WHEN tipo = 'receita' AND status = 'recebido' THEN valor ELSE 0 END) as receitas_recebidas,
-                    SUM(CASE WHEN tipo = 'receita' AND status = 'pendente' THEN valor ELSE 0 END) as receitas_pendentes,
-                    SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END) as total_despesas,
-                    SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas,
-                    SUM(CASE WHEN tipo = 'despesa' AND status = 'pendente' THEN valor ELSE 0 END) as despesas_pendentes
-                FROM `transacoes`
-                WHERE excluido_em IS NULL
-                  AND MONTH(data_vencimento) = :mes
-                  AND YEAR(data_vencimento) = :ano";
+        $userId = (int) AuthHelper::id();
+        $ownerDashFilter = $forDashboardOnly ? "AND c.exibir_dashboard = TRUE AND c.tipo <> 'investimento'" : '';
+        $partDashFilter = $forDashboardOnly ? "AND cp.exibir_dashboard = TRUE AND c.tipo <> 'investimento'" : '';
 
-        $sql .= ' AND usuario_id = :usuario_id';
+        $sql = "SELECT 
+                    SUM(CASE WHEN t.tipo = 'receita' THEN t.valor ELSE 0 END) as total_receitas,
+                    SUM(CASE WHEN t.tipo = 'receita' AND t.status = 'recebido' THEN t.valor ELSE 0 END) as receitas_recebidas,
+                    SUM(CASE WHEN t.tipo = 'receita' AND t.status = 'pendente' THEN t.valor ELSE 0 END) as receitas_pendentes,
+                    SUM(CASE WHEN t.tipo = 'despesa' THEN t.valor ELSE 0 END) as total_despesas,
+                    SUM(CASE WHEN t.tipo = 'despesa' AND t.status = 'pago' THEN t.valor ELSE 0 END) as despesas_pagas,
+                    SUM(CASE WHEN t.tipo = 'despesa' AND t.status = 'pendente' THEN t.valor ELSE 0 END) as despesas_pendentes
+                FROM `transacoes` t
+                LEFT JOIN `contas` c ON t.conta_id = c.id
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
+                  AND MONTH(t.data_vencimento) = :mes
+                  AND YEAR(t.data_vencimento) = :ano
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR (c.usuario_id = :uid_owner {$ownerDashFilter})
+                      OR (
+                          cp.id IS NOT NULL {$partDashFilter}
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )";
 
         if ($contaId !== null) {
-            $sql .= " AND conta_id = :conta_id";
+            $sql .= " AND t.conta_id = :conta_id";
         }
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':mes', $mes, PDO::PARAM_INT);
         $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_card', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         if ($contaId !== null) {
             $stmt->bindValue(':conta_id', $contaId, PDO::PARAM_INT);
         }
@@ -922,7 +1076,8 @@ class Transaction extends Model
     }
 
     /**
-     * Retorna a evolução financeira dos últimos N meses para alimentar os gráficos do Dashboard.
+     * Retorna a evolução financeira dos últimos N meses para alimentar os gráficos do Dashboard
+     * (apenas contas marcadas para exibir no Dashboard + compras no cartão próprio).
      *
      * @param int $mesFinal
      * @param int $anoFinal
@@ -931,13 +1086,13 @@ class Transaction extends Model
      */
     public function getMonthlyEvolution(int $mesFinal, int $anoFinal, int $quantidadeMeses = 6): array
     {
+        $userId = (int) AuthHelper::id();
         $mesesNomesAbrev = [
             1 => 'Jan', 2 => 'Fev', 3 => 'Mar', 4 => 'Abr',
             5 => 'Mai', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
             9 => 'Set', 10 => 'Out', 11 => 'Nov', 12 => 'Dez'
         ];
 
-        // Gera a lista cronológica de meses
         $meses = [];
         $dataCursor = new DateTimeImmutable(sprintf('%04d-%02d-01', $anoFinal, $mesFinal));
         for ($i = $quantidadeMeses - 1; $i >= 0; $i--) {
@@ -963,23 +1118,48 @@ class Transaction extends Model
         $dataFim = (new DateTimeImmutable(sprintf('%04d-%02d-01', $ultimoMes['ano'], $ultimoMes['mes'])))->format('Y-m-t');
 
         $sql = "SELECT 
-                    YEAR(data_vencimento) as ano,
-                    MONTH(data_vencimento) as mes,
-                    SUM(CASE WHEN tipo = 'receita' THEN valor ELSE 0 END) as total_receitas,
-                    SUM(CASE WHEN tipo = 'receita' AND status = 'recebido' THEN valor ELSE 0 END) as receitas_recebidas,
-                    SUM(CASE WHEN tipo = 'despesa' THEN valor ELSE 0 END) as total_despesas,
-                    SUM(CASE WHEN tipo = 'despesa' AND status = 'pago' THEN valor ELSE 0 END) as despesas_pagas
-                FROM `transacoes`
-                WHERE excluido_em IS NULL";
-            $sql .= ' AND usuario_id = :usuario_id';
-        $sql .= " AND data_vencimento BETWEEN :data_inicio AND :data_fim
-                GROUP BY YEAR(data_vencimento), MONTH(data_vencimento)
+                    YEAR(t.data_vencimento) as ano,
+                    MONTH(t.data_vencimento) as mes,
+                    SUM(CASE WHEN t.tipo = 'receita' THEN t.valor ELSE 0 END) as total_receitas,
+                    SUM(CASE WHEN t.tipo = 'receita' AND t.status = 'recebido' THEN t.valor ELSE 0 END) as receitas_recebidas,
+                    SUM(CASE WHEN t.tipo = 'despesa' THEN t.valor ELSE 0 END) as total_despesas,
+                    SUM(CASE WHEN t.tipo = 'despesa' AND t.status = 'pago' THEN t.valor ELSE 0 END) as despesas_pagas
+                FROM `transacoes` t
+                LEFT JOIN `contas` c ON t.conta_id = c.id
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
+                  AND t.data_vencimento BETWEEN :data_inicio AND :data_fim
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR (c.usuario_id = :uid_owner AND c.exibir_dashboard = TRUE AND c.tipo <> 'investimento')
+                      OR (
+                          cp.id IS NOT NULL
+                          AND cp.exibir_dashboard = TRUE
+                          AND c.tipo <> 'investimento'
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )
+                GROUP BY YEAR(t.data_vencimento), MONTH(t.data_vencimento)
                 ORDER BY ano ASC, mes ASC";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':data_inicio', $dataInicio, PDO::PARAM_STR);
         $stmt->bindValue(':data_fim', $dataFim, PDO::PARAM_STR);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_card', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $registros = $stmt->fetchAll();
 
@@ -1000,7 +1180,7 @@ class Transaction extends Model
     }
 
     /**
-     * Retorna a distribuição de despesas por categoria no mês para alimentar o gráfico de rosca (Donut).
+     * Retorna a distribuição de despesas por categoria no mês para alimentar o gráfico de rosca (Donut) do Dashboard.
      *
      * @param int $mes
      * @param int $ano
@@ -1008,24 +1188,50 @@ class Transaction extends Model
      */
     public function getExpensesByCategory(int $mes, int $ano): array
     {
+        $userId = (int) AuthHelper::id();
+
         $sql = "SELECT c.id, c.nome, c.cor, c.icone,
                        SUM(t.valor) as total_valor,
                        COUNT(t.id) as total_lancamentos
                 FROM `transacoes` t
                 JOIN `categorias` c ON t.categoria_id = c.id
-                WHERE t.excluido_em IS NULL";
-            $sql .= ' AND t.usuario_id = :usuario_id';
-        $sql .= "
+                LEFT JOIN `contas` co ON t.conta_id = co.id
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
                   AND t.tipo = 'despesa'
                   AND MONTH(t.data_vencimento) = :mes
                   AND YEAR(t.data_vencimento) = :ano
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR (co.usuario_id = :uid_owner AND co.exibir_dashboard = TRUE AND co.tipo <> 'investimento')
+                      OR (
+                          cp.id IS NOT NULL
+                          AND cp.exibir_dashboard = TRUE
+                          AND co.tipo <> 'investimento'
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )
                 GROUP BY c.id, c.nome, c.cor, c.icone
                 ORDER BY total_valor DESC";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':mes', $mes, PDO::PARAM_INT);
         $stmt->bindValue(':ano', $ano, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_card', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $categorias = $stmt->fetchAll();
 
@@ -1041,8 +1247,7 @@ class Transaction extends Model
     }
 
     /**
-     * Retorna os próximos compromissos financeiros pendentes ou vencidos.
-     * Considera a data de vencimento da fatura do cartão quando for despesa em cartão de crédito.
+     * Retorna os próximos compromissos financeiros pendentes ou vencidos para o Dashboard.
      *
      * @param int $dias Intervalo em dias a partir de hoje
      * @param int $limite Quantidade máxima de registros retornados
@@ -1050,10 +1255,13 @@ class Transaction extends Model
      */
     public function getUpcomingPending(int $dias = 7, int $limite = 6): array
     {
+        $userId = (int) AuthHelper::id();
+
         $sql = "SELECT t.*, 
                        c.nome as categoria_nome, c.cor as categoria_cor, c.icone as categoria_icone,
-                       co.nome as conta_nome, co.cor as conta_cor,
+                       co.nome as conta_nome, co.cor as conta_cor, co.usuario_id as conta_proprietario_id,
                        cc.nome as cartao_nome, cc.cor as cartao_cor,
+                       cp.permissao as compartilhamento_permissao,
                        COALESCE(fc.data_vencimento, t.data_vencimento) as data_vencimento_efetiva,
                        (COALESCE(fc.data_vencimento, t.data_vencimento) - CURRENT_DATE) as dias_para_vencer
                 FROM `transacoes` t
@@ -1061,21 +1269,58 @@ class Transaction extends Model
                 LEFT JOIN `contas` co ON t.conta_id = co.id
                 LEFT JOIN `cartoes_credito` cc ON t.cartao_credito_id = cc.id
                 LEFT JOIN `faturas_cartao` fc ON t.fatura_id = fc.id
-                WHERE t.excluido_em IS NULL";
-            $sql .= ' AND t.usuario_id = :usuario_id';
-        $sql .= "
+                LEFT JOIN `compartilhamentos` cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = t.conta_id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE t.excluido_em IS NULL
                   AND t.status = 'pendente'
                   AND COALESCE(fc.data_vencimento, t.data_vencimento) <= (CURRENT_DATE + (:dias * INTERVAL '1 day'))
+                  AND (
+                      (t.conta_id IS NULL AND t.usuario_id = :uid_card)
+                      OR (co.usuario_id = :uid_owner AND co.exibir_dashboard = TRUE AND co.tipo <> 'investimento')
+                      OR (
+                          cp.id IS NOT NULL
+                          AND cp.exibir_dashboard = TRUE
+                          AND co.tipo <> 'investimento'
+                          AND EXISTS (
+                              SELECT 1 FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                      )
+                  )
                 ORDER BY data_vencimento_efetiva ASC, t.id ASC
                 LIMIT :limite";
 
         $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':uid_join', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':dias', $dias, PDO::PARAM_INT);
-        $stmt->bindValue(':usuario_id', AuthHelper::id(), PDO::PARAM_INT);
+        $stmt->bindValue(':uid_card', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_owner', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
         $stmt->execute();
+        $rows = $stmt->fetchAll();
 
-        return $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            if (empty($row['conta_id'])) {
+                $row['pode_alterar_status'] = ((int) $row['usuario_id'] === $userId);
+            } elseif ((int) ($row['conta_proprietario_id'] ?? 0) === $userId) {
+                $row['pode_alterar_status'] = true;
+            } else {
+                $perm = (string) ($row['compartilhamento_permissao'] ?? 'visualizar');
+                $row['pode_alterar_status'] = ($perm === 'total')
+                    || ($perm === 'proprios' && (int) $row['usuario_id'] === $userId);
+            }
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -1083,7 +1328,7 @@ class Transaction extends Model
      *
      * @param int $contaId
      * @param float $valor (positivo para crédito, negativo para débito)
-    * @param int $contaOwnerId
+     * @param int $contaOwnerId
      * @return void
      */
     private function adjustAccountBalance(int $contaId, float $valor, int $contaOwnerId): void
@@ -1103,15 +1348,26 @@ class Transaction extends Model
 
     private function accountOwnerId(int $contaId, int $requestUserId): int
     {
-        $sql = 'SELECT usuario_id FROM contas WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL';
-        $statement = $this->db->prepare($sql . ' LIMIT 1');
+        $sql = "SELECT c.usuario_id
+                FROM contas c
+                LEFT JOIN compartilhamentos cp
+                    ON cp.recurso_tipo = 'conta'
+                   AND cp.recurso_id = c.id
+                   AND cp.participante_id = :uid_join
+                   AND cp.status = 'ativo'
+                WHERE c.id = :id
+                  AND c.excluido_em IS NULL
+                  AND (c.usuario_id = :uid_owner OR cp.permissao IN ('proprios', 'total'))
+                LIMIT 1";
+        $statement = $this->db->prepare($sql);
+        $statement->bindValue(':uid_join', $requestUserId, PDO::PARAM_INT);
         $statement->bindValue(':id', $contaId, PDO::PARAM_INT);
-        $statement->bindValue(':usuario_id', $requestUserId, PDO::PARAM_INT);
+        $statement->bindValue(':uid_owner', $requestUserId, PDO::PARAM_INT);
         $statement->execute();
         $ownerId = $statement->fetchColumn();
 
         if ($ownerId === false) {
-            throw new InvalidArgumentException('A conta selecionada não está disponível para este usuário.');
+            throw new InvalidArgumentException('A conta selecionada não está disponível ou você não possui permissão de lançamento nela.');
         }
 
         return (int) $ownerId;
@@ -1149,12 +1405,23 @@ class Transaction extends Model
             throw new InvalidArgumentException('Este meio de pagamento exige uma conta bancária e não aceita cartão de crédito.');
         }
 
-        $stmt = $this->db->prepare("SELECT 1 FROM contas
-            WHERE id = :id AND usuario_id = :usuario_id AND status = 'ativa'
-                AND excluido_em IS NULL LIMIT 1");
-        $stmt->execute(['id' => $accountId, 'usuario_id' => $userId]);
+        $stmt = $this->db->prepare(
+            "SELECT 1
+             FROM contas c
+             LEFT JOIN compartilhamentos cp
+                 ON cp.recurso_tipo = 'conta'
+                AND cp.recurso_id = c.id
+                AND cp.participante_id = :uid_join
+                AND cp.status = 'ativo'
+             WHERE c.id = :id
+               AND c.status = 'ativa'
+               AND c.excluido_em IS NULL
+               AND (c.usuario_id = :uid_owner OR cp.permissao IN ('proprios', 'total'))
+             LIMIT 1"
+        );
+        $stmt->execute(['uid_join' => $userId, 'id' => $accountId, 'uid_owner' => $userId]);
         if ($stmt->fetchColumn() === false) {
-            throw new InvalidArgumentException('A conta selecionada está inativa ou indisponível para novas despesas.');
+            throw new InvalidArgumentException('A conta selecionada está inativa ou você não possui permissão para lançar despesas nela.');
         }
     }
 
@@ -1167,25 +1434,29 @@ class Transaction extends Model
         ?int $historicalPaymentMethodId = null
     ): void
     {
-        $checks = [
-            ['categorias', $categoriaId, 'Categoria'],
-        ];
+        $expectedCategoryOwnerId = $userId;
 
         if ($contaId !== null) {
-            $checks[] = ['contas', $contaId, 'Conta'];
-        }
-        if ($cartaoCreditoId !== null) {
-            $checks[] = ['cartoes_credito', $cartaoCreditoId, 'Cartão de crédito'];
+            $expectedCategoryOwnerId = $this->accountOwnerId($contaId, $userId);
         }
 
-        foreach ($checks as [$table, $id, $label]) {
-            $sql = "SELECT 1 FROM `{$table}` WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL";
-            $params = ['id' => $id, 'usuario_id' => $userId];
-            $stmt = $this->db->prepare($sql . ' LIMIT 1');
-            $stmt->execute($params);
-            if ($stmt->fetchColumn() === false) {
-                throw new InvalidArgumentException("{$label} inválido ou não pertence ao usuário autenticado.");
+        if ($cartaoCreditoId !== null) {
+            $stmtCard = $this->db->prepare(
+                'SELECT 1 FROM cartoes_credito WHERE id = :id AND usuario_id = :usuario_id AND excluido_em IS NULL LIMIT 1'
+            );
+            $stmtCard->execute(['id' => $cartaoCreditoId, 'usuario_id' => $userId]);
+            if ($stmtCard->fetchColumn() === false) {
+                throw new InvalidArgumentException('Cartão de crédito inválido ou não pertence ao usuário autenticado.');
             }
+        }
+
+        // Em conta compartilhada, a categoria escolhida pertence ao proprietário da conta
+        $stmtCat = $this->db->prepare(
+            'SELECT 1 FROM categorias WHERE id = :id AND usuario_id = :owner_id AND excluido_em IS NULL LIMIT 1'
+        );
+        $stmtCat->execute(['id' => $categoriaId, 'owner_id' => $expectedCategoryOwnerId]);
+        if ($stmtCat->fetchColumn() === false) {
+            throw new InvalidArgumentException('Categoria inválida ou não pertence ao proprietário da conta selecionada.');
         }
 
         $paymentMethod = new PaymentMethod();

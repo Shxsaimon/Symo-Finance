@@ -11,6 +11,11 @@ defined('APP_RUNNING') or die('Acesso direto proibido.');
  */
 $currentUser = AuthHelper::user();
 $pageTitle   = $title ?? 'Painel Financeiro';
+$pendingNotifications = !empty($currentUser['id'])
+    ? Share::getPendingNotificationsForUser((int) $currentUser['id'])
+    : [];
+$hasPendingNotifications = !empty($pendingNotifications);
+$currentUriForRedirect = Router::getCurrentUri() ?: '/dashboard';
 ?>
 <header class="navbar-symo">
     <!-- Lado Esquerdo: Botão Mobile & Título Contextual -->
@@ -40,8 +45,17 @@ $pageTitle   = $title ?? 'Painel Financeiro';
         <!-- Dropdown de Usuário -->
         <div class="dropdown">
             <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--symo-primary-brand), var(--symo-secondary-brand)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(111,2,255,0.2);">
-                    <?= htmlspecialchars(mb_strtoupper(mb_substr($currentUser['nome'] ?? 'U', 0, 1, 'UTF-8'), 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>
+                <div class="position-relative" style="width: 38px; height: 38px;">
+                    <?php if (!empty($currentUser['avatar'])): ?>
+                        <img src="<?= BASE_URL ?>/media/avatar/<?= (int) $currentUser['id'] ?>" alt="Avatar" class="rounded-circle" style="width: 38px; height: 38px; object-fit: cover; box-shadow: 0 2px 6px rgba(111,2,255,0.2);">
+                    <?php else: ?>
+                        <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--symo-primary-brand), var(--symo-secondary-brand)); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; box-shadow: 0 2px 6px rgba(111,2,255,0.2);">
+                            <?= htmlspecialchars(mb_strtoupper(mb_substr($currentUser['nome'] ?? 'U', 0, 1, 'UTF-8'), 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($hasPendingNotifications): ?>
+                        <span style="position: absolute; top: -1px; right: -1px; width: 11px; height: 11px; border-radius: 50%; background-color: var(--symo-primary-brand); border: 2px solid #ffffff;" title="Você possui notificações pendentes"></span>
+                    <?php endif; ?>
                 </div>
                 <div class="text-start d-none d-xl-block">
                     <div style="font-size: 0.875rem; font-weight: 600; color: var(--symo-on-surface); line-height: 1.2;">
@@ -53,10 +67,26 @@ $pageTitle   = $title ?? 'Painel Financeiro';
                 </div>
                 <i class="bi bi-chevron-down ms-1" style="font-size: 0.75rem; color: var(--symo-outline);"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end symo-modal-content border-0 shadow-sm mt-2" aria-labelledby="userDropdown" style="min-width: 200px; padding: 0.5rem;">
+            <ul class="dropdown-menu dropdown-menu-end symo-modal-content border-0 shadow-sm mt-2" aria-labelledby="userDropdown" style="min-width: 215px; padding: 0.5rem;">
                 <li class="px-3 py-2 border-bottom d-xl-none">
                     <p class="mb-0 fw-bold" style="font-size: 0.875rem;"><?= htmlspecialchars($currentUser['nome'] ?? '', ENT_QUOTES, 'UTF-8') ?></p>
                     <small class="text-muted"><?= htmlspecialchars($currentUser['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></small>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item py-2 d-flex align-items-center justify-content-between gap-2 border-0 bg-transparent w-100" data-bs-toggle="modal" data-bs-target="#modalNotificacoes">
+                        <span class="d-flex align-items-center gap-2">
+                            <span class="position-relative d-inline-flex align-items-center">
+                                <i class="bi bi-bell"></i>
+                                <?php if ($hasPendingNotifications): ?>
+                                    <span style="position: absolute; top: -2px; right: -3px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--symo-primary-brand);"></span>
+                                <?php endif; ?>
+                            </span>
+                            <span>Notificações</span>
+                        </span>
+                        <?php if ($hasPendingNotifications): ?>
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--symo-primary-brand); display: inline-block;"></span>
+                        <?php endif; ?>
+                    </button>
                 </li>
                 <li>
                     <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="<?= BASE_URL ?>/dashboard">
@@ -92,6 +122,80 @@ $pageTitle   = $title ?? 'Painel Financeiro';
         </div>
     </div>
 </header>
+
+<!-- Modal de Notificações (Convites de Compartilhamento) -->
+<div class="modal fade" id="modalNotificacoes" tabindex="-1" aria-labelledby="modalNotificacoesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content symo-modal-content">
+            <div class="modal-header border-bottom" style="background-color: var(--symo-primary-brand); color: white;">
+                <h5 class="modal-title fw-bold" id="modalNotificacoesLabel">
+                    <i class="bi bi-bell-fill me-2"></i>Notificações
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <?php if (empty($pendingNotifications)): ?>
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-bell-slash fs-1 d-block mb-2 text-secondary"></i>
+                        <p class="mb-0 fw-semibold">Você não possui notificações pendentes.</p>
+                        <small>Convites de contas bancárias e investimentos compartilhados aparecerão aqui.</small>
+                    </div>
+                <?php else: ?>
+                    <div class="d-flex flex-column gap-3">
+                        <?php foreach ($pendingNotifications as $notif): ?>
+                            <?php
+                                $ehInvest = ($notif['recurso_tipo'] ?? 'conta') === 'investimento';
+                                $iconeNotif = $ehInvest ? 'bi-piggy-bank-fill' : 'bi-bank';
+                                $tipoLabelNotif = $ehInvest ? 'Investimento' : 'Conta Bancária';
+                                $permLabelNotif = Share::PERMISSOES[$notif['permissao']] ?? $notif['permissao'];
+                            ?>
+                            <div class="p-3 border rounded-3 bg-light">
+                                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width: 36px; height: 36px; border-radius: 8px; background-color: var(--symo-primary-fixed); color: var(--symo-on-primary-fixed); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+                                            <i class="bi <?= $iconeNotif ?>"></i>
+                                        </div>
+                                        <div>
+                                            <span class="badge text-bg-light border text-muted" style="font-size: 0.7rem;"><?= $tipoLabelNotif ?></span>
+                                            <div class="fw-bold" style="color: var(--symo-on-surface);">
+                                                <?= htmlspecialchars((string) ($notif['recurso_nome'] ?? 'Item compartilhado'), ENT_QUOTES, 'UTF-8') ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.75rem;"><?= FormatHelper::date($notif['convidado_em']) ?></small>
+                                </div>
+                                <p class="small text-muted mb-2">
+                                    <strong><?= htmlspecialchars((string) $notif['proprietario_nome'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                    (<?= htmlspecialchars((string) $notif['proprietario_email'], ENT_QUOTES, 'UTF-8') ?>) convidou você com a permissão:
+                                    <span class="fw-semibold" style="color: var(--symo-primary-brand);"><?= htmlspecialchars($permLabelNotif, ENT_QUOTES, 'UTF-8') ?></span>.
+                                </p>
+                                <div class="d-flex justify-content-end gap-2 mt-2">
+                                    <form action="<?= BASE_URL ?>/compartilhamentos/recusar/<?= (int) $notif['id'] ?>" method="POST" class="d-inline">
+                                        <?= CsrfHelper::inputField() ?>
+                                        <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($currentUriForRedirect, ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-x-lg me-1"></i>Recusar
+                                        </button>
+                                    </form>
+                                    <form action="<?= BASE_URL ?>/compartilhamentos/aceitar/<?= (int) $notif['id'] ?>" method="POST" class="d-inline">
+                                        <?= CsrfHelper::inputField() ?>
+                                        <input type="hidden" name="redirect_to" value="<?= htmlspecialchars($currentUriForRedirect, ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" class="btn btn-sm btn-symo-primary">
+                                            <i class="bi bi-check-lg me-1"></i>Aceitar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="modalFeedback" tabindex="-1" aria-labelledby="modalFeedbackLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

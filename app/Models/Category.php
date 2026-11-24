@@ -40,6 +40,104 @@ class Category extends Model
     }
 
     /**
+     * Retorna as categorias ativas agrupadas por usuario_id (proprietário) para alimentar
+     * dinamicamente os modais de lançamento ao selecionar contas próprias ou compartilhadas.
+     *
+     * @param array<int, int> $ownerIds
+     * @return array<int, array{receita: array<int, array<string, mixed>>, despesa: array<int, array<string, mixed>>}>
+     */
+    public function getActiveCategoriesByOwners(array $ownerIds): array
+    {
+        $ownerIds = array_values(array_unique(array_filter(array_map('intval', $ownerIds), fn ($id) => $id > 0)));
+        if (empty($ownerIds)) {
+            return [];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($ownerIds as $idx => $uid) {
+            $ph = ":uid_{$idx}";
+            $placeholders[] = $ph;
+            $params[$ph] = $uid;
+        }
+        $inList = implode(', ', $placeholders);
+
+        $sql = "SELECT id, usuario_id, nome, tipo, icone, cor
+                FROM `categorias`
+                WHERE usuario_id IN ({$inList})
+                  AND status = 'ativa'
+                  AND excluido_em IS NULL
+                ORDER BY nome ASC";
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $grouped = [];
+        foreach ($ownerIds as $uid) {
+            $grouped[$uid] = ['receita' => [], 'despesa' => []];
+        }
+        foreach ($rows as $row) {
+            $uid = (int) $row['usuario_id'];
+            $tipo = $row['tipo'] === 'receita' ? 'receita' : 'despesa';
+            $grouped[$uid][$tipo][] = $row;
+        }
+        return $grouped;
+    }
+
+    /**
+     * Retorna as categorias para os filtros de Lançamentos e Relatórios:
+     * categorias ativas do próprio usuário + categorias utilizadas em lançamentos visíveis de contas compartilhadas.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getFilterCategoriesForUser(): array
+    {
+        $userId = (int) AuthHelper::id();
+
+        $sql = "SELECT DISTINCT cat.*,
+                       CASE WHEN cat.usuario_id = :uid_flag THEN 1 ELSE 0 END AS eh_propria,
+                       u.nome AS proprietario_nome
+                FROM `categorias` cat
+                INNER JOIN `usuarios` u ON u.id = cat.usuario_id
+                WHERE (
+                    (cat.usuario_id = :uid_own AND cat.status = 'ativa' AND cat.excluido_em IS NULL)
+                    OR EXISTS (
+                        SELECT 1
+                        FROM `transacoes` t
+                        INNER JOIN `compartilhamentos` cp
+                            ON cp.recurso_tipo = 'conta'
+                           AND cp.recurso_id = t.conta_id
+                           AND cp.participante_id = :uid_part
+                           AND cp.status = 'ativo'
+                        WHERE t.categoria_id = cat.id
+                          AND t.excluido_em IS NULL
+                          AND EXISTS (
+                              SELECT 1
+                              FROM `compartilhamento_periodos` p
+                              WHERE p.recurso_tipo = 'conta'
+                                AND p.recurso_id = t.conta_id
+                                AND p.participante_id = :uid_period
+                                AND t.criado_em >= p.aceito_em
+                                AND (p.encerrado_em IS NULL OR t.criado_em <= p.encerrado_em)
+                          )
+                    )
+                )
+                ORDER BY cat.tipo ASC, eh_propria DESC, cat.nome ASC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':uid_flag', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_own', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_part', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':uid_period', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Retorna todas as categorias ativas e não excluídas, agrupadas logicamente por tipo e ordenadas por nome.
      *
      * @return array<int, array<string, mixed>>
